@@ -1,0 +1,18 @@
+{
+    "Watson": {
+        "API_KEY": "your_watson_api_key",
+        "API_URL": "your_watson_api_url"
+    },
+    "Microsoft": {
+        "TOKEN": "your_microsoft_token",
+        "region": "brazilsouth"
+    },
+    "Google": {
+        "creds_path": "path/to/your/google_creds.json"
+    },
+    "Polly": {
+        "region": "your_region",
+        "aws_key_id": "your_aws_key_id",
+        "aws_access_key": "your_aws_access_key"
+    }
+}
