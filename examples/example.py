@@ -1,9 +1,12 @@
+# if running within the project dir
+# export PYTHONPATH="/path/to/your_project:$PYTHONPATH"
+# python examples/all_engines_example.py
+
 # examples/all_engines_example.py
 import sys
 import json
 import logging
 from tts_wrapper import PollyTTS, PollyClient, MicrosoftTTS, MicrosoftClient, WatsonTTS, WatsonClient, GoogleTTS, GoogleClient, ElevenLabsTTS, ElevenLabsClient, DeepLearningTTSTTS, DeepLearningTTSClient
-from tts_wrapper.audio_player import AudioPlayer
 
 def load_settings_from_file():
     try:
@@ -60,4 +63,12 @@ def main():
     service = sys.argv[1] if len(sys.argv) > 1 else "all"
     settings = load_settings_from_file()
 
-    services = ["polly", "
+    services = ["polly", "microsoft", "watson", "google"] if service == "all" else [service]
+
+    for svc in services:
+        print(f"Testing {svc.upper()} TTS engine.")
+        tts = create_tts_client(svc, settings)
+        test_tts_engine(tts)
+
+if __name__ == "__main__":
+    main()
