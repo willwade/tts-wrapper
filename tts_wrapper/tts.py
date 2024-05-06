@@ -111,17 +111,31 @@ class AbstractTTS(ABC):
         if not self.stream:
             self.setup_stream()
         try:
-            self.stream.start_stream()
+            # Use a thread to handle playback
+            self.play_thread = threading.Thread(target=self._start_stream)
+            self.play_thread.start()
         except Exception as e:
             print(f"Failed to play audio: {e}")
             raise  # Correct placement of raise within the except block
-        # Keep the main thread alive while the stream is being processed
-        while self.stream.is_active():
-            time.sleep(0.1)
-    
-        self.stream.stop_stream()
-        self.stream.close()
-        self.stream = None  # Ensure the stream is cleaned up
+
+        
+    def _start_stream(self):
+        """
+        Starts the stream and waits for it to finish in a thread.
+        """
+        try:
+            if self.stream:
+                self.stream.start_stream()
+                while self.stream.is_active() or self.playing:
+                    time.sleep(0.1)
+        except Exception as e:
+            print(f"Failed to play audio: {e}")
+        finally:
+            if self.stream:
+                self.stream.stop_stream()
+                self.stream.close()
+                self.stream = None
+        
 
     def pause_audio(self):
         """Pauses the audio playback."""
@@ -129,13 +143,19 @@ class AbstractTTS(ABC):
 
     def resume_audio(self):
         """Resumes the paused audio playback."""
+        if not self.stream:
+            self.setup_stream()
         self.playing = True
+        if not self.stream.is_active():
+            self.stream.start_stream()
 
     def stop_audio(self):
         """Stops the audio stream and cleans up any active timers."""
+        self.playing = False
         if self.stream:
             self.stream.stop_stream()
-        self.playing = False
+            self.stream.close()
+            self.stream = None
         for timer in self.timers:
             timer.cancel()
         self.timers = []
