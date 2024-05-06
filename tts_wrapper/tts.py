@@ -92,8 +92,11 @@ class AbstractTTS(ABC):
         @return: A tuple containing the chunk of data to be played and a flag indicating whether to continue.
         """
         if self.playing:
-            data = self.audio_bytes[self.position:self.position + frame_count]
-            self.position += len(data)
+            end_position = self.position + frame_count * 2  # *2 because each frame for 16-bit audio is 2 bytes
+            data = self.audio_bytes[self.position:end_position]
+            self.position = end_position
+            if self.position >= len(self.audio_bytes):
+                return (data, pyaudio.paComplete)  # Signal end of buffer
             return (data, pyaudio.paContinue)
         else:
             return (None, pyaudio.paContinue)
@@ -112,7 +115,13 @@ class AbstractTTS(ABC):
         except Exception as e:
             print(f"Failed to play audio: {e}")
             raise  # Correct placement of raise within the except block
-
+        # Keep the main thread alive while the stream is being processed
+        while self.stream.is_active():
+            time.sleep(0.1)
+    
+        self.stream.stop_stream()
+        self.stream.close()
+        self.stream = None  # Ensure the stream is cleaned up
 
     def pause_audio(self):
         """Pauses the audio playback."""
