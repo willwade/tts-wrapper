@@ -1,20 +1,7 @@
 from ...exceptions import ModuleNotInstalled
 
-try:
-    from google.cloud import texttospeech
-    from google.oauth2 import service_account  # type: ignore
 
-    FORMATS = {
-        "wav": texttospeech.AudioEncoding.LINEAR16,
-        "mp3": texttospeech.AudioEncoding.MP3,
-    }
-except ImportError:
-    texttospeech = None  # type: ignore
-    service_account = None  # type: ignore
-    FORMATS = {}
-
-
-class DeepLearningTTSClient:
+class DeepLearningClient:
     def __init__(self, api_key):
         self.api_key = api_key
         self.base_url = "https://api.deeplearningtts.com"

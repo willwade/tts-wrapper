@@ -1,14 +1,14 @@
 # if running within the project dir
-# export PYTHONPATH="/path/to/your_project:$PYTHONPATH"
+# export PYTHONPATH="/Users/willwade/GitHub/tts-wrapper:$PYTHONPATH"
 # python examples/all_engines_example.py
 
 # examples/all_engines_example.py
 import sys
 import json
 import logging
-from tts_wrapper import PollyTTS, PollyClient, MicrosoftTTS, MicrosoftClient, WatsonTTS, WatsonClient, GoogleTTS, GoogleClient, ElevenLabsTTS, ElevenLabsClient, DeepLearningTTSTTS, DeepLearningTTSClient
+from tts_wrapper import PollyTTS, PollyClient, MicrosoftTTS, MicrosoftClient, WatsonTTS, WatsonClient, GoogleTTS, GoogleClient, ElevenLabsTTS, ElevenLabsClient, DeepLearningTTS, DeepLearningClient
 
-def load_settings_from_file():
+def load_settings():
     try:
         with open('settings.json', 'r') as f:
             settings = json.load(f)

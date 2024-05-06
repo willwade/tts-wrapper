@@ -2,10 +2,10 @@ from typing import Any, List, Optional
 
 from ...exceptions import UnsupportedFileFormat
 from ...tts import AbstractTTS, FileFormat
-from . import GoogleClient, GoogleSSML
+from . import DeepLearningClient, DeepLearningSSML
 
 
-class DeepLearningTTSTTS(AbstractTTS):
+class DeepLearningTTS(AbstractTTS):
     def __init__(self, client):
         self.client = client
 

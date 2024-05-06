@@ -40,12 +40,13 @@ class AbstractTTS(ABC):
         pass
 
     @abstractmethod
-    def synth_to_bytes(self, text: Any, format: FileFormat) -> bytes:
+    def synth_to_bytes(self, text: Any, format: Optional[FileFormat] = "wav") -> bytes:
+
         """
         Transforms written text to audio bytes on supported formats.
 
         @param text: Text to be transformed into audio bytes
-        @param format: File format to be used when transforming to audio bytes, if supported
+        @param format: File format to be used when transforming to audio bytes, defaults to 'wav'
         @returns: audio bytes created
         @raises UnsupportedFileFormat: if file format is not supported
         """
@@ -157,6 +158,11 @@ class AbstractTTS(ABC):
 
     def __del__(self):
         """Cleans up resources upon deletion of the instance."""
-        if self.stream:
+        # Safely check and close the stream
+        if getattr(self, 'stream', None) is not None:
+            self.stream.stop_stream()
             self.stream.close()
-        self.p.terminate()
+        
+        # Safely terminate PyAudio instance
+        if hasattr(self, 'p') and self.p is not None:
+            self.p.terminate()

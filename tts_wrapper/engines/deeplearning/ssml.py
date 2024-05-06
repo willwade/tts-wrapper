@@ -1,3 +1,3 @@
 from ...ssml import BaseSSMLRoot, SSMLNode
 
-GoogleSSML = BaseSSMLRoot
+DeepLearningSSML = BaseSSMLRoot
