@@ -1,4 +1,4 @@
-from typing import Tuple
+from typing import Tuple, List, Dict, Any
 
 from ...exceptions import ModuleNotInstalled
 

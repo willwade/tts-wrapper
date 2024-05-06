@@ -1,4 +1,4 @@
-from typing import List, Optional
+from typing import List, Dict, Any, Optional
 
 from tts_wrapper.tts import FileFormat
 

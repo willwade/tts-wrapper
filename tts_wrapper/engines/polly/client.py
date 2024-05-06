@@ -1,4 +1,4 @@
-from typing import Optional, Tuple
+from typing import Optional, Tuple, Dict, List, Any
 
 from ...engines.utils import process_wav
 from ...exceptions import ModuleNotInstalled

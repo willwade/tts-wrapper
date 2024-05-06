@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Any, List, Literal, Optional, Union
+from typing import Any, List, Literal, Optional, Union, Dict
 import pyaudio
 import threading
 import time
@@ -137,14 +137,16 @@ class AbstractTTS(ABC):
         Callback function that is called when a word is spoken.
 
         @param word: The word that was spoken.
-        """        print(f"Word spoken: {word}")
+        """        
+        print(f"Word spoken: {word}")
 
     def start_playback_with_callbacks(self, audio_data: bytes):
         """
         Plays back audio with callbacks triggered based on predefined timings.
 
         @param audio_data: Byte array containing audio data.
-        """        self.play_audio(audio_data)
+        """        
+        self.play_audio(audio_data)
         start_time = time.time()
         for word, timing in self.timings:
             delay = timing - (time.time() - start_time)

@@ -1,4 +1,4 @@
-from typing import Any, List, Optional
+from typing import Any, List, Optional, Dict
 
 from tts_wrapper.exceptions import UnsupportedFileFormat
 
