@@ -64,3 +64,10 @@ class SSMLNode(AbstractSSMLNode):
 
         self._children.append(child)
         return self
+
+    def update_attributes(self, new_attrs: Attr):
+        """Updates the attributes of the SSML node.
+
+        @param new_attrs: Dictionary of attributes to update.
+        """
+        self._attrs.update(new_attrs)

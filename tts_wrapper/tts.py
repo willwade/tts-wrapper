@@ -25,13 +25,16 @@ class AbstractTTS(ABC):
         """Retrieves a list of available voices from the TTS service."""
         pass
 
-    def set_voice(self, voice_id: str):
+    def set_voice(self, voice_id: str, lang: str = "en-US"):
         """
-        Sets the voice by its ID.
+        Sets the voice by its ID and language for synthesis.
 
         @param voice_id: The ID of the voice to be used for synthesis.
+        @param lang: The language code to be used.
         """
         self.voice_id = voice_id
+        self.lang = lang
+
         
     @classmethod
     @abstractmethod
@@ -98,15 +101,18 @@ class AbstractTTS(ABC):
     def play_audio(self, audio_bytes: bytes):
         """
         Starts playback of audio data.
-
-        @param audio_bytes: Byte array containing audio data to be played.
         """
         self.audio_bytes = audio_bytes
         self.position = 0
         self.playing = True
         if not self.stream:
             self.setup_stream()
-        self.stream.start_stream()
+        try:
+            self.stream.start_stream()
+        except Exception as e:
+            print(f"Failed to play audio: {e}")
+            raise  # Correct placement of raise within the except block
+
 
     def pause_audio(self):
         """Pauses the audio playback."""

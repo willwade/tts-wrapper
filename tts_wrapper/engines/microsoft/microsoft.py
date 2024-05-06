@@ -6,19 +6,14 @@ from . import MicrosoftClient, MicrosoftSSML
 
 
 class MicrosoftTTS(AbstractTTS):
+    def __init__(self, client: MicrosoftClient, lang: Optional[str] = None, voice: Optional[str] = None):
+        super().__init__()  # This is crucial
+        self._client = client
+        self.set_voice(voice or "en-US-JessaNeural", lang or "en-US")
+
     @classmethod
     def supported_formats(cls) -> List[FileFormat]:
         return ["wav", "mp3"]
-
-    def __init__(
-        self,
-        client: MicrosoftClient,
-        lang: Optional[str] = None,
-        voice: Optional[str] = None,
-    ) -> None:
-        self._client = client
-        self._lang = lang or "en-US"
-        self._voice = voice or "en-US-JessaNeural"
 
     def synth_to_bytes(self, text: Any, format: Optional[FileFormat] = "wav") -> bytes:    
         if format not in self.supported_formats():
@@ -33,7 +28,7 @@ class MicrosoftTTS(AbstractTTS):
         """Fetches available voices from Microsoft Azure TTS service."""
         return self._client.get_available_voices()
         
-    def set_voice(self, voice_id: str):
+    def set_voice(self, voice_id: str, lang_id: str):
         """
         Sets the voice for the TTS engine and updates the SSML configuration accordingly.
 
@@ -41,5 +36,5 @@ class MicrosoftTTS(AbstractTTS):
         """
         super().set_voice(voice_id)  # Optionally manage voice at the AbstractTTS level if needed
         self._voice = voice_id
-        self._lang = lang
-        self._ssml.set_voice_and_language(voice_id, lang) 
+        self._lang = lang_id
+        self.ssml.set_voice(voice_id, lang_id) 

@@ -72,7 +72,9 @@ def test_tts_engine(tts, service_name):
         print(f"- {voice['DisplayName']} ({voice['Locale']}): {voice['ShortName']}")
     if len(voices) > 1:
         new_voice_id = voices[1]['ShortName']
-        tts.set_voice(new_voice_id)
+        new_lang_id = voices[1]['Locale']
+        print(f"running with {new_voice_id} and {new_lang_id}")
+        tts.set_voice(new_voice_id,new_lang_id)
         ssml_text_part2 = tts.ssml.add('Continuing with a new voice!')
         audio_content_part2 = tts.synth_to_bytes(ssml_text_part2)
         tts.play_audio(audio_content_part2)
