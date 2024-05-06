@@ -31,3 +31,7 @@ class GoogleTTS(AbstractTTS):
     @property
     def ssml(self) -> GoogleSSML:
         return GoogleSSML()
+
+    def get_voices(self) -> List[Dict[str, Any]]:
+        """Retrieves a list of available voices from the Google TTS service."""
+        return self._client.get_voices()

@@ -34,3 +34,13 @@ class GoogleClient:
             input=s_input, voice=voice, audio_config=audio_config
         )
         return resp.audio_content
+
+    def get_voices(self) -> List[Dict[str, Any]]:
+        """Fetches available voices from Google Cloud Text-to-Speech service."""
+        voices = self._client.list_voices()
+        return [{
+            'name': voice.name,
+            'language_codes': voice.language_codes,
+            'ssml_gender': voice.ssml_gender,
+            'natural_sample_rate_hertz': voice.natural_sample_rate_hertz
+        } for voice in voices.voices]

@@ -27,3 +27,7 @@ class PollyTTS(AbstractTTS):
     @property
     def ssml(self) -> PollySSML:
         return PollySSML()
+
+    def get_voices(self) -> List[Dict[str, Any]]:
+        """Retrieves a list of available voices from the Polly service."""
+        return self._client.get_voices()

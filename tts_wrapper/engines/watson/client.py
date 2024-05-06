@@ -30,3 +30,9 @@ class WatsonClient:
             .get_result()
             .content
         )
+
+    def get_voices(self) -> List[Dict[str, Any]]:
+        """Fetches available voices from IBM Watson TTS service."""
+        voices = self._client.list_voices().get_result()
+        return [{'name': voice['name'], 'language': voice['language'], 'description': voice['description']}
+                for voice in voices['voices']]

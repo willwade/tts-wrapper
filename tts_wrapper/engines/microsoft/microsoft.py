@@ -28,3 +28,18 @@ class MicrosoftTTS(AbstractTTS):
     @property
     def ssml(self) -> MicrosoftSSML:
         return MicrosoftSSML(self._lang, self._voice)
+
+    def get_voices(self) -> List[Dict[str, Any]]:
+        """Fetches available voices from Microsoft Azure TTS service."""
+        return self._client.get_available_voices()
+        
+    def set_voice(self, voice_id: str):
+        """
+        Sets the voice for the TTS engine and updates the SSML configuration accordingly.
+
+        @param voice_id: The ID of the voice to be used for synthesis.
+        """
+        super().set_voice(voice_id)  # Optionally manage voice at the AbstractTTS level if needed
+        self._voice = voice_id
+        self._lang = lang
+        self._ssml.set_voice_and_language(voice_id, lang) 

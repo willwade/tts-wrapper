@@ -58,3 +58,12 @@ class MicrosoftClient:
             raise Exception(f"Server replied with {response.status_code}")
 
         return response.content
+
+    def get_available_voices(self) -> List[Dict[str, Any]]:
+        """Makes an API call to retrieve available voices."""
+        url = f"https://{self._region}.tts.speech.microsoft.com/cognitiveservices/voices/list"
+        response = self._session.get(url)
+        if response.status_code == 200:
+            return response.json()
+        else:
+            raise Exception(f"Failed to fetch voices, status code: {response.status_code}")

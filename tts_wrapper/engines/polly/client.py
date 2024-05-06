@@ -51,3 +51,13 @@ class PollyClient:
             return process_wav(raw)
         else:
             return raw
+
+    def get_voices(self) -> List[Dict[str, Any]]:
+        """Fetches available voices from Amazon Polly."""
+        response = self._client.describe_voices()
+        return [{
+            'VoiceId': voice['Id'],
+            'LanguageCode': voice['LanguageCode'],
+            'Gender': voice['Gender'],
+            'SupportedEngines': voice['SupportedEngines']
+        } for voice in response.get('Voices', [])]
