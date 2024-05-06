@@ -55,8 +55,12 @@ class MicrosoftClient:
         )
 
         if response.status_code != 200:
-            raise Exception(f"Server replied with {response.status_code}")
-
+            error_message = f"Failed to synthesize speech: {response.status_code} - {response.reason}"
+            if response.content:
+                error_details = response.json().get('error', {}).get('message', 'No error details available.')
+                error_message += f" Details: {error_details}"
+            print(error_message)
+            raise Exception(error_message)
         return response.content
 
     def get_available_voices(self) -> List[Dict[str, Any]]:

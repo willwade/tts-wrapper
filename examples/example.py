@@ -6,7 +6,8 @@
 import sys
 import json
 import logging
-from tts_wrapper import PollyTTS, PollyClient, MicrosoftTTS, MicrosoftClient, WatsonTTS, WatsonClient, GoogleTTS, GoogleClient, ElevenLabsTTS, ElevenLabsClient, DeepLearningTTS, DeepLearningClient
+from pathlib import Path
+from tts_wrapper import PollyTTS, PollyClient, MicrosoftTTS, MicrosoftClient, WatsonTTS, WatsonClient, GoogleTTS, GoogleClient, ElevenLabsTTS, ElevenLabsClient
 
 def load_settings():
     try:
@@ -25,7 +26,7 @@ def create_tts_client(service, settings):
         tts = PollyTTS(client=client, voice='Joanna')
     elif service == "microsoft":
         creds = settings.get('Microsoft', {})
-        client = MicrosoftClient(credentials=creds.get('TOKEN'))
+        client = MicrosoftClient(credentials=creds.get('TOKEN'), region=creds.get('region'))
         tts = MicrosoftTTS(client=client)
     elif service == "watson":
         creds = settings.get('Watson', {})
@@ -40,19 +41,26 @@ def create_tts_client(service, settings):
     return tts
 
 def test_tts_engine(tts, service_name):
-    text_read = 'Hello, world!'
-    ssml_text = tts.ssml.add(text_read)  # Assuming there's a method to add SSML correctly
-    audio_content = tts.synth_to_bytes(ssml_text)  # Default format assumed internally
+    try:
+        text_read = 'Hello, world!'
+        ssml_text = tts.ssml.add(text_read)  # Assuming there's a method to add SSML correctly
+        print(ssml_text)
+        try:
+            audio_content = tts.synth_to_bytes(ssml_text)  # Default format assumed internally
+        except Exception as e:
+            print(f"Error synthesizing speech: {e}")
+        # Play audio content directly
+        tts.play_audio(audio_content)
+        input("Press enter to pause...")
+        tts.pause_audio()
+        input("Press enter to resume...")
+        tts.resume_audio()
+        input("Press enter to stop...")
+        tts.stop_audio()
 
-    # Play audio content directly
-    tts.play_audio(audio_content)
-    input("Press enter to pause...")
-    tts.pause_audio()
-    input("Press enter to resume...")
-    tts.resume_audio()
-    input("Press enter to stop...")
-    tts.stop_audio()
-
+    except Exception as e:
+        print(f"Error testing {service_name} TTS engine: {e}")
+        
     # Demonstrate saving audio to a file
     output_file = Path(f"output_{service_name}.mp3")
     tts.synth_to_file(ssml_text, str(output_file), format='mp3')
@@ -60,9 +68,10 @@ def test_tts_engine(tts, service_name):
 
     # Change voice and test again if possible
     voices = tts.get_voices()
-    print("Available Voices:", voices)
+    for voice in voices[:4]:  # Limit the output to 'count' entries
+        print(f"- {voice['DisplayName']} ({voice['Locale']}): {voice['ShortName']}")
     if len(voices) > 1:
-        new_voice_id = voices[1]['name']
+        new_voice_id = voices[1]['ShortName']
         tts.set_voice(new_voice_id)
         ssml_text_part2 = tts.ssml.add('Continuing with a new voice!')
         audio_content_part2 = tts.synth_to_bytes(ssml_text_part2)
