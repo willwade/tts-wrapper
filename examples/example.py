@@ -39,9 +39,12 @@ def create_tts_client(service, settings):
         raise ValueError("Unsupported TTS service")
     return tts
 
-def test_tts_engine(tts):
+def test_tts_engine(tts, service_name):
     text_read = 'Hello, world!'
-    audio_content = tts.synth_to_bytes(text_read, 'mp3')
+    ssml_text = tts.ssml.add(text_read)  # Assuming there's a method to add SSML correctly
+    audio_content = tts.synth_to_bytes(ssml_text)  # Default format assumed internally
+
+    # Play audio content directly
     tts.play_audio(audio_content)
     input("Press enter to pause...")
     tts.pause_audio()
@@ -50,25 +53,30 @@ def test_tts_engine(tts):
     input("Press enter to stop...")
     tts.stop_audio()
 
+    # Demonstrate saving audio to a file
+    output_file = Path(f"output_{service_name}.mp3")
+    tts.synth_to_file(ssml_text, str(output_file), format='mp3')
+    print(f"Audio content saved to {output_file}")
+
+    # Change voice and test again if possible
     voices = tts.get_voices()
     print("Available Voices:", voices)
-
     if len(voices) > 1:
-        tts.set_voice(voices[1]['name'])
-        text_read_part2 = 'Continuing with a new voice!'
-        audio_content = tts.synth_to_bytes(text_read_part2, 'mp3')
-        tts.play_audio(audio_content)
+        new_voice_id = voices[1]['name']
+        tts.set_voice(new_voice_id)
+        ssml_text_part2 = tts.ssml.add('Continuing with a new voice!')
+        audio_content_part2 = tts.synth_to_bytes(ssml_text_part2)
+        tts.play_audio(audio_content_part2)
 
 def main():
     service = sys.argv[1] if len(sys.argv) > 1 else "all"
-    settings = load_settings_from_file()
+    settings = load_settings()
 
-    services = ["polly", "microsoft", "watson", "google"] if service == "all" else [service]
-
+    services = ["polly", "microsoft", "watson", "google", "elevenlabs", "deeplearning"] if service == "all" else [service]
     for svc in services:
         print(f"Testing {svc.upper()} TTS engine.")
         tts = create_tts_client(svc, settings)
-        test_tts_engine(tts)
+        test_tts_engine(tts, svc)
 
 if __name__ == "__main__":
     main()
