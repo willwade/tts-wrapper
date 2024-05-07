@@ -242,7 +242,7 @@ class AbstractTTS(ABC):
         finally:
             self.stream = None
             self.p = None
-
+            
 
     def __del__(self):
         """Cleans up resources upon deletion of the instance."""

@@ -36,12 +36,17 @@ class GoogleClient:
         )
         return resp.audio_content
 
+
     def get_voices(self) -> List[Dict[str, Any]]:
         """Fetches available voices from Google Cloud Text-to-Speech service."""
-        voices = self._client.list_voices()
-        return [{
-            'name': voice.name,
-            'language_codes': voice.language_codes,
-            'ssml_gender': voice.ssml_gender,
-            'natural_sample_rate_hertz': voice.natural_sample_rate_hertz
-        } for voice in voices.voices]
+        response = self._client.list_voices()
+        voices = response.voices  # Assuming this returns a list of voice objects
+        standardized_voices = []
+        for voice in voices:
+            voice_data = voice.__dict__  # or convert to dict if not already one
+            voice_data['id'] = voice.name
+            voice_data['language_codes'] = voice.language_codes
+            voice_data['display_name'] = voice.name
+            voice_data['gender'] = voice.ssml_gender
+            standardized_voices.append(voice_data)
+        return standardized_voices

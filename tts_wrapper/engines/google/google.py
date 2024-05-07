@@ -11,19 +11,7 @@ class GoogleTTS(AbstractTTS):
         return ["wav", "mp3"]
 
     def __init__(self, client: GoogleClient, lang: Optional[str] = None, voice: Optional[str] = None):
-        super().__init__()  # This is crucial
-        """
-        @param credentials: The path to the json file that contains the credentials.
-        """
-        self._client = client
-        self.set_voice(voice or "en-US-Wavenet-C", lang or "en-US")
-
-    def __init__(
-        self,
-        client: GoogleClient,
-        lang: Optional[str] = None,
-        voice: Optional[str] = None,
-    ) -> None:
+        super().__init__()  # This ensures that all initialization in AbstractTTS is done
         self._client = client
         self._lang = lang or "en-US"
         self._voice = voice or "en-US-Wavenet-C"
@@ -36,6 +24,7 @@ class GoogleTTS(AbstractTTS):
     @property
     def ssml(self) -> GoogleSSML:
         return GoogleSSML()
+
 
     def get_voices(self) -> List[Dict[str, Any]]:
         """Retrieves a list of available voices from the Google TTS service."""

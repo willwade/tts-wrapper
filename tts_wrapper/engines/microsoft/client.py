@@ -93,10 +93,18 @@ class MicrosoftClient:
         return response.content
 
     def get_available_voices(self) -> List[Dict[str, Any]]:
-        """Makes an API call to retrieve available voices."""
+        """Makes an API call to retrieve available voices from Microsoft Azure TTS."""
         url = f"https://{self._region}.tts.speech.microsoft.com/cognitiveservices/voices/list"
         response = self._session.get(url)
         if response.status_code == 200:
-            return response.json()
+            voices = response.json()
+            standardized_voices = []
+            for voice in voices:
+                voice['id'] = voice['ShortName']
+                voice['language_codes'] = [voice['Locale']]
+                voice['display_name'] = voice['DisplayName']
+                voice['gender'] = voice['Gender']
+                standardized_voices.append(voice)
+            return standardized_voices
         else:
-            raise Exception(f"Failed to fetch voices, status code: {response.status_code}")
+            raise Exception(f"Failed to retrieve voices: {response.status_code} - {response.text}")
