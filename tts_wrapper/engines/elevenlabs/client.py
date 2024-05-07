@@ -6,7 +6,8 @@ from ...exceptions import UnsupportedFileFormat
 
 
 FORMATS = {
-    "mp3": "audio/mp3",
+    "wav": "pcm_44100",
+    "mp3": "mp3_44100_128",
 }
 
 
@@ -25,7 +26,7 @@ class ElevenLabsClient:
             "xi-api-key": self.api_key,
             "Accept": "audio/mpeg"
         }
-        print(headers)
+        params = {"output_format": FORMATS[format]}  # Ensuring the format is passed as a query parameter
         data = {
             'text': text,
             'model_id': 'eleven_monolingual_v1',  # assuming a default model; may need customization
@@ -34,17 +35,23 @@ class ElevenLabsClient:
                 'similarity_boost': 0.5
             }
         }
-        response = requests.post(url, headers=headers, json=data)
+        print(url, headers, data, params)
+        response = requests.post(url, headers=headers, json=data, params=params)
         if response.status_code == 200:
-            if format == "mp3":
-                return response.content
-            else:
-                raise UnsupportedFileFormat(format, "ElevenLabs API")
+            return response.content
         else:
             error_message = f"Failed to synthesize speech: {response.status_code} - {response.reason}"
-            if response.content:
-                error_details = response.json().get('error', {}).get('message', 'No error details available.')
-                error_message += f" Details: {error_details}"
+            try:
+                json_response = response.json()
+                if 'detail' in json_response:
+                    status = json_response['detail'].get('status', 'No status available')
+                    message = json_response['detail'].get('message', 'No message provided')
+                    error_message += f" Status: {status}. Message: {message}"
+                else:
+                    error_details = json_response.get('error', {}).get('message', 'No error details available.')
+                    error_message += f" Details: {error_details}"
+            except ValueError:  # includes simplejson.decoder.JSONDecodeError
+                error_message += " Error details not in JSON format."
             raise Exception(error_message)
 
 

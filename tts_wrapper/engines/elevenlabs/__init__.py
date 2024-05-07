@@ -1,3 +1,3 @@
 from .client import ElevenLabsClient
-from .ssml import ElevenLabsSSML
+from .ssml import ElevenLabsSSMLNode, ElevenLabsSSMLRoot
 from .elevenlabs import ElevenLabsTTS
