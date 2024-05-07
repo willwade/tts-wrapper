@@ -20,7 +20,6 @@ class ElevenLabsClient:
 
     def synth(self, text: str, voice_id: str, format: FileFormat) -> bytes:
         url = f"{self.base_url}/v1/text-to-speech/{voice_id}"
-        print(url)
         headers = {
             'Content-Type': 'application/json',
             "xi-api-key": self.api_key,
@@ -35,7 +34,6 @@ class ElevenLabsClient:
                 'similarity_boost': 0.5
             }
         }
-        print(url, headers, data, params)
         response = requests.post(url, headers=headers, json=data, params=params)
         if response.status_code == 200:
             return response.content
