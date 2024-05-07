@@ -2,6 +2,7 @@ from abc import ABC, abstractmethod
 from typing import Any, List, Literal, Optional, Union, Dict
 import pyaudio
 import threading
+from threading import Event
 import time
 
 FileFormat = Union[Literal["wav"], Literal["mp3"]]
@@ -15,7 +16,8 @@ class AbstractTTS(ABC):
         self.p = pyaudio.PyAudio()
         self.stream = None
         self.audio_bytes = None
-        self.playing = False
+        self.playing = Event()
+        self.playing.clear()  # Not playing by default
         self.position = 0  # Position in the byte stream
         self.timings = []
         self.timers = []
@@ -67,6 +69,31 @@ class AbstractTTS(ABC):
         with open(filename, "wb") as file:
             file.write(audio_content)
 
+    def synth(self, text: str, filename: str, format: Optional[FileFormat] = "wav"):
+        """
+        Synthesizes text to speech and directly saves it to a file. Alias
+        """
+        self.synth_to_file(text,filename,format)
+
+    def speak(self, text: Any, format: Optional[FileFormat] = "wav") -> bytes:
+        """
+        Directly plays audio data without using streaming.
+        """
+        try:
+            audio_bytes = self.synth_to_bytes(text,format)
+            # Initialize PyAudio and open a stream
+            p = pyaudio.PyAudio()
+            stream = p.open(format=pyaudio.paInt16, channels=1, rate=22050, output=True)
+            # Play the entire byte array
+            stream.write(audio_bytes)
+            # Cleanup
+            stream.stop_stream()
+            stream.close()
+            p.terminate()
+        except Exception as e:
+            print(f"Error playing audio: {e}")
+            
+            
     def setup_stream(self, format=pyaudio.paInt16, channels=1, rate=22050):
         """
         Configures and opens an audio stream with specified format settings.
@@ -75,11 +102,23 @@ class AbstractTTS(ABC):
         @param channels: Number of audio channels (default is 1 for mono).
         @param rate: Sampling rate in Hz (default is 22050 Hz).
         """
-        self.stream = self.p.open(format=format,
-                                  channels=channels,
-                                  rate=rate,
-                                  output=True,
-                                  stream_callback=self.callback)
+        try:
+            if self.p is None:
+                self.p = pyaudio.PyAudio()
+            if self.stream is not None:
+                self.stream.stop_stream()
+                self.stream.close()
+                self.stream = None
+            self.stream = self.p.open(format=format,
+                                      channels=channels,
+                                      rate=rate,
+                                      output=True,
+                                      stream_callback=self.callback)
+        except Exception as e:
+            print(f"Failed to setup audio stream: {e}")
+            raise
+
+
 
     def callback(self, in_data, frame_count, time_info, status):
         """
@@ -101,13 +140,13 @@ class AbstractTTS(ABC):
         else:
             return (None, pyaudio.paContinue)
 
-    def play_audio(self, audio_bytes: bytes):
+    def speak_streamed(self, audio_bytes: bytes):
         """
         Starts playback of audio data.
         """
         self.audio_bytes = audio_bytes
         self.position = 0
-        self.playing = True
+        self.playing.set()
         if not self.stream:
             self.setup_stream()
         try:
@@ -123,42 +162,41 @@ class AbstractTTS(ABC):
         """
         Starts the stream and waits for it to finish in a thread.
         """
-        try:
-            if self.stream:
-                self.stream.start_stream()
-                while self.stream.is_active() or self.playing:
-                    time.sleep(0.1)
-        except Exception as e:
-            print(f"Failed to play audio: {e}")
-        finally:
-            if self.stream:
-                self.stream.stop_stream()
-                self.stream.close()
-                self.stream = None
-        
+        if self.stream:
+            self.stream.start_stream()
+        while self.stream.is_active() and self.playing.is_set():
+            time.sleep(0.1)
+        if self.stream:
+            self.stream.stop_stream()
+            self.stream.close()
+            self.stream = None
 
     def pause_audio(self):
         """Pauses the audio playback."""
-        self.playing = False
+        self.playing.clear()
 
     def resume_audio(self):
         """Resumes the paused audio playback."""
+        self.playing.set()  # Set the playing event to resume
         if not self.stream:
             self.setup_stream()
-        self.playing = True
-        if not self.stream.is_active():
+        if self.stream and not self.stream.is_active():
             self.stream.start_stream()
 
     def stop_audio(self):
-        """Stops the audio stream and cleans up any active timers."""
-        self.playing = False
+        """
+        Explicitly stops the audio playback and ensures all resources are released.
+        """
+        self.playing.clear()  # Signal to stop playback
+        if self.play_thread and self.play_thread.is_alive():
+            self.play_thread.join()  # Wait for the playback thread to finish
         if self.stream:
             self.stream.stop_stream()
             self.stream.close()
             self.stream = None
         for timer in self.timers:
             timer.cancel()
-        self.timers = []
+        self.timers.clear()
 
     def set_timings(self, timing_data):
         """
@@ -182,7 +220,7 @@ class AbstractTTS(ABC):
 
         @param audio_data: Byte array containing audio data.
         """        
-        self.play_audio(audio_data)
+        self.speak_streamed(audio_data)
         start_time = time.time()
         for word, timing in self.timings:
             delay = timing - (time.time() - start_time)
@@ -190,14 +228,24 @@ class AbstractTTS(ABC):
                 timer = threading.Timer(delay, self.on_word_callback, args=(word,))
                 timer.start()
                 self.timers.append(timer)
+                
+    def finish(self):
+        try:
+            if self.stream and not self.stream.is_stopped():
+                self.stream.stop_stream()
+            if self.stream:
+                self.stream.close()
+            if self.p:
+                self.p.terminate()
+        except Exception as e:
+            print(f"Failed to clean up audio resources: {e}")
+        finally:
+            self.stream = None
+            self.p = None
+
 
     def __del__(self):
         """Cleans up resources upon deletion of the instance."""
         # Safely check and close the stream
-        if getattr(self, 'stream', None) is not None:
-            self.stream.stop_stream()
-            self.stream.close()
-        
-        # Safely terminate PyAudio instance
-        if hasattr(self, 'p') and self.p is not None:
-            self.p.terminate()
+        self.finish()
+
