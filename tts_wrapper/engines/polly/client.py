@@ -55,9 +55,12 @@ class PollyClient:
     def get_voices(self) -> List[Dict[str, Any]]:
         """Fetches available voices from Amazon Polly."""
         response = self._client.describe_voices()
-        return [{
-            'VoiceId': voice['Id'],
-            'LanguageCode': voice['LanguageCode'],
-            'Gender': voice['Gender'],
-            'SupportedEngines': voice['SupportedEngines']
-        } for voice in response.get('Voices', [])]
+        voices = response.get('Voices', [])
+        standardized_voices = []
+        for voice in voices:
+            voice['id'] = voice['Id']
+            voice['language_codes'] = [voice['LanguageCode']]
+            voice['display_name'] = voice['Name']
+            voice['gender'] = voice['Gender']
+            standardized_voices.append(voice)
+        return standardized_voices
