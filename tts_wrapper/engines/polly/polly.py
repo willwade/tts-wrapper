@@ -15,6 +15,7 @@ class PollyTTS(AbstractTTS):
         super().__init__()  # This is crucial
         self._client = client
         self.set_voice(voice or "Joanna", lang or "en-US")
+        self.audio_rate = 16000
 
     def synth_to_bytes(self, text: Any, format: Optional[FileFormat] = "wav") -> bytes:
         if format not in self.supported_formats():

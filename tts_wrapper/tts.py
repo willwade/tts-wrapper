@@ -15,6 +15,7 @@ class AbstractTTS(ABC):
         self.audio_object = None
         self.p = pyaudio.PyAudio()
         self.stream = None
+        self.audio_rate = 22050
         self.audio_bytes = None
         self.playing = Event()
         self.playing.clear()  # Not playing by default
@@ -85,7 +86,7 @@ class AbstractTTS(ABC):
             audio_bytes = self.apply_fade_in(audio_bytes)
             # Initialize PyAudio and open a stream
             p = pyaudio.PyAudio()
-            stream = p.open(format=pyaudio.paInt16, channels=1, rate=22050, output=True)
+            stream = p.open(format=pyaudio.paInt16, channels=1, rate=self.audio_rate, output=True)
             # Play the entire byte array
             stream.write(audio_bytes)
             # Cleanup
@@ -96,7 +97,7 @@ class AbstractTTS(ABC):
             print(f"Error playing audio: {e}")
             
             
-    def setup_stream(self, format=pyaudio.paInt16, channels=1, rate=22050):
+    def setup_stream(self, format=pyaudio.paInt16, channels=1):
         """
         Configures and opens an audio stream with specified format settings.
         
@@ -113,7 +114,7 @@ class AbstractTTS(ABC):
                 self.stream = None
             self.stream = self.p.open(format=format,
                                       channels=channels,
-                                      rate=rate,
+                                      rate=self.audio_rate,
                                       output=True,
                                       stream_callback=self.callback)
         except Exception as e:
