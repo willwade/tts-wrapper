@@ -81,6 +81,8 @@ class AbstractTTS(ABC):
         """
         try:
             audio_bytes = self.synth_to_bytes(text,format)
+            #lets fade in
+            audio_bytes = self.apply_fade_in(audio_bytes)
             # Initialize PyAudio and open a stream
             p = pyaudio.PyAudio()
             stream = p.open(format=pyaudio.paInt16, channels=1, rate=22050, output=True)
@@ -145,6 +147,7 @@ class AbstractTTS(ABC):
         Starts playback of audio data.
         """
         self.audio_bytes = audio_bytes
+        self.audio_bytes = self.apply_fade_in(audio_bytes)
         self.position = 0
         self.playing.set()
         if not self.stream:
@@ -156,6 +159,26 @@ class AbstractTTS(ABC):
         except Exception as e:
             print(f"Failed to play audio: {e}")
             raise  # Correct placement of raise within the except block
+
+    def apply_fade_in(self, audio_bytes, fade_duration_ms=50, sample_rate=22050):
+        """
+        Applies a fade-in effect to the start of the audio bytes.
+        `fade_duration_ms` in milliseconds, `sample_rate` in Hz.
+        """
+        num_fade_samples = int(fade_duration_ms * sample_rate / 1000)
+        fade_in = [i / num_fade_samples for i in range(num_fade_samples)]
+    
+        # Convert byte data to a list of samples (16-bit signed integers)
+        audio_samples = list(int.from_bytes(audio_bytes[2 * i:2 * i + 2], 'little', signed=True)
+                             for i in range(len(audio_bytes) // 2))
+    
+        # Apply fade-in by multiplying samples by corresponding fade-in factor
+        for i in range(min(len(audio_samples), num_fade_samples)):
+            audio_samples[i] = int(audio_samples[i] * fade_in[i])
+    
+        # Convert samples back to byte data
+        faded_audio_bytes = b''.join((sample.to_bytes(2, 'little', signed=True) for sample in audio_samples))
+        return faded_audio_bytes
 
         
     def _start_stream(self):
