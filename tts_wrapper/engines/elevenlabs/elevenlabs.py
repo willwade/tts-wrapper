@@ -1,25 +1,36 @@
-from typing import Any, List, Dict
+from typing import Any, List,Dict, Optional
 from ...exceptions import UnsupportedFileFormat
 from ...tts import AbstractTTS, FileFormat
-from . import ElevenLabsClient
+from . import ElevenLabsClient, ElevenLabsSSML
 
 class ElevenLabsTTS(AbstractTTS):
-    def __init__(self, client: ElevenLabsClient):
-        super().__init__()
-        self.client = client
+    def __init__(self, client: ElevenLabsClient, lang: Optional[str] = None, voice: Optional[str] = None):
+        super().__init__()  # This is crucial
+        self._client = client
+        self.set_voice(voice or "Sam", lang or "en-US")
 
-    def synth_to_bytes(self, text: Any, format: FileFormat) -> bytes:
+    def synth_to_bytes(self, text: Any, format: Optional[FileFormat] = "mp3") -> bytes:
         if format not in self.supported_formats():
-            raise UnsupportedFileFormat(f"Format {format} is not supported")
-        return self.client.synth(text, self.voice_id, format)  # Ensure `voice_id` is properly managed
+            raise UnsupportedFileFormat(format, "ElevenLabs API")
+        if not self._voice:
+            raise ValueError("Voice ID must be set before synthesizing speech.")
+        return self._client.synth(str(text), self._voice, format)
 
     def get_voices(self) -> List[Dict[str, Any]]:
-        return self.client.get_voices()
+        return self._client.get_voices()
+
+    @property
+    def ssml(self) -> ElevenLabsSSML:
+        return ElevenLabsSSML()
 
     @classmethod
     def supported_formats(cls) -> List[FileFormat]:
-        return ["mp3"]  # Assuming only MP3 is supported based on your setup
+        return ["mp3"]
 
-    def set_voice(self, voice_id: str):
+    def set_voice(self, voice_id: str, lang_id: str=None):
         """Updates the currently set voice ID."""
-        self.voice_id = voice_id
+        super().set_voice(voice_id)
+        self._voice = voice_id
+        #NB: Lang doesnt do much for ElevenLabs
+        self._lang = lang_id
+ 
