@@ -25,6 +25,7 @@ google = ["google-cloud-texttospeech"]
 watson = ["ibm-watson"]
 polly = ["boto3"]
 microsoft = ["requests"]
+elevenlabs = ["requests"]
 sapi = ["pyttsx3"]
 
 [tool.poetry.dev-dependencies]
