@@ -118,7 +118,13 @@ Even if you don't use SSML features that much its wise to use the same syntax - 
 
 ```python
 ssml_text = tts.ssml.add('Hello world!')
-# e.g..
+```
+
+### Speak 
+
+This will use the default audio output of your device to play the audio immediatley
+
+```python
 tts.speak(ssml_text)
 ```
 
@@ -151,6 +157,11 @@ tts.stop_audio()
 
 ```python
 tts.synth_to_file(ssml_text, 'output.mp3', format='mp3')
+```
+there is also "synth" method which is legacy
+
+```Python
+tts.synth('<speak>Hello, world!</speak>', 'hello.mp3', format='mp3)
 ```
 
 ### Fetch Available Voices
