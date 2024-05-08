@@ -15,6 +15,7 @@ Currently the following services are supported:
 - Google TTS
 - Microsoft TTS
 - IBM Watson
+- ElevenLabs
 - PicoTTS
 - SAPI (Microsoft Speech API)
 
