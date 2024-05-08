@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "tts-wrapper"
-version = "0.8.0"
+version = "0.9.0"
 description = "TTS-Wrapper makes it easier to use text-to-speech APIs by providing a unified and easy-to-use interface."
 authors = ["Giulio Bottari <giuliobottari@gmail.com>"]
 license = "MIT"
