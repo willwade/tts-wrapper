@@ -37,7 +37,7 @@ def create_tts_client(service, settings):
     return client, tts
 
 
-engines = ["polly", "google", "elevenlabs", "microsoft", "watson"] 
+engines = [ "elevenlabs", "polly", "google", "microsoft", "watson"] 
 settings = load_settings()
 
 for engine in engines:
@@ -48,9 +48,9 @@ for engine in engines:
     #we will pick a default English one
     print(f"speaking with {engine}")
     tts.speak(ssml_text) 
-    print(f"saving with {engine}")
+
     #Lets save that as a file. 
-    tts.synth_to_file(ssml_text, "output_{engine}.mp3", format='mp3')
+    tts.synth_to_file(ssml_text, f"output_{engine}.mp3", format='mp3')
     
     #So lets choose a new voice
     voices = tts.get_voices()
@@ -65,4 +65,5 @@ for engine in engines:
         # Demo speaking streamed with a new voice
         ssml_text_part2 = tts.ssml.add(f"Continuing with a new voice using {engine}!")
         audio_content_part2 = tts.synth_to_bytes(ssml_text_part2)
-        tts.speak_streamed(audio_content_part2)        
+        tts.speak_streamed(audio_content_part2)       
+    exit()

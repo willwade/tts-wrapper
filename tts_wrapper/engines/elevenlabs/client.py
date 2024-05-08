@@ -6,8 +6,8 @@ from ...exceptions import UnsupportedFileFormat
 
 
 FORMATS = {
-    "wav": "pcm_16000",
-    "mp3": "mp3_44100_128",
+    "wav": "pcm_22050",
+    "mp3": "mp3_22050_32",
 }
 
 class ElevenLabsClient:
