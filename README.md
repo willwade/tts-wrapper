@@ -1,3 +1,4 @@
+
 # TTS-Wrapper
 
 [![PyPI version](https://badge.fury.io/py/tts-wrapper.svg)](https://badge.fury.io/py/tts-wrapper)
@@ -5,139 +6,157 @@
 [![codecov](https://codecov.io/gh/mediatechlab/tts-wrapper/branch/master/graph/badge.svg?token=79IG7GAK0B)](https://codecov.io/gh/mediatechlab/tts-wrapper)
 [![Maintainability](https://api.codeclimate.com/v1/badges/b327dda20742c054bcf0/maintainability)](https://codeclimate.com/github/mediatechlab/tts-wrapper/maintainability)
 
-> ## **Contributions are welcome! Check our [contribution guide](./CONTRIBUTING.md).**
+> **Contributions are welcome! Check our [contribution guide](./CONTRIBUTING.md).**
 
-_TTS-Wrapper_ makes it easier to use text-to-speech APIs by providing a unified and easy-to-use interface.
+_TTS-Wrapper_ simplifies using text-to-speech APIs by providing a unified interface across multiple services, allowing easy integration and manipulation of TTS capabilities.
 
-Currently the following services are supported:
-
+## Supported Services
 - AWS Polly
 - Google TTS
-- Microsoft TTS
+- Microsoft Azure TTS
 - IBM Watson
 - ElevenLabs
 - PicoTTS
 - SAPI (Microsoft Speech API)
 
-## Installation
+## Features
+- **Text to Speech**: Convert text into spoken audio.
+- **SSML Support**: Use Speech Synthesis Markup Language to enhance speech synthesis.
+- **Voice and Language Selection**: Customize the voice and language for speech synthesis.
+- **Streaming and Direct Play**: Stream audio or play it directly.
+- **Pause, Resume, and Stop Controls**: Manage audio playback dynamically.
+- **File Output**: Save spoken audio to files in various formats.
 
-Install using pip.
+## Installation
 
 ```sh
 pip install TTS-Wrapper
 ```
 
-**Note: for each service you want to use, you have to install the required packages.**
-
-Example: to use `google` and `watson`:
+### Dependencies
+Install additional dependencies based on the services you want to use:
 
 ```sh
-pip install TTS-Wrapper[google, watson]
+pip install "TTS-Wrapper[google, watson]"
 ```
 
-For PicoTTS you need to install the package on your machine. For Debian (Ubuntu and others) install the package `libttspico-utils` and for Arch (Manjaro and others) there is a package called `aur/pico-tts`.
+For PicoTTS on Debian systems:
 
-**Note: If you get an error installing this like "bad pattern: TTS-Wrapper[..." then try using quotes e.g. `pip install "TTS-Wrapper[google, watson]"`**
+```sh
+sudo apt-get install libttspico-utils
+```
 
-## Usage
+## Basic Usage
 
-Simply instantiate an object from the desired service and call `synth()`.
+```python
+from tts_wrapper import PollyClient
+client = PollyClient(credentials=('aws_key_id', 'aws_secret_access_key'))
 
-```Python
-from tts_wrapper import PollyTTS, PollyClient
+from tts_wrapper import PollyTTS
 
 tts = PollyTTS(client=PollyClient())
-tts.synth('<speak>Hello, world!</speak>', 'hello.wav')
+tts.speak('Hello, world!')
 ```
 
-Notice that you must create a client object to work with your service. Each service uses different authorization techniques. Check out [the documentation](#authorization) to learn more.
+## Authorization
+Each service uses different methods for authentication:
 
-### Selecting a Voice
+### Polly
 
-You can change the default voice and lang like this:
-
-```Python
-PollyTTS(voice='Camila', lang='pt-BR')
-```
-
-Check out the list of available voices for [Polly](https://docs.aws.amazon.com/polly/latest/dg/voicelist.html), [Google](https://cloud.google.com/text-to-speech/docs/voices), [Microsoft](https://docs.microsoft.com/en-us/azure/cognitive-services/speech-service/rest-text-to-speech#get-a-list-of-voices), and [Watson](https://cloud.ibm.com/docs/text-to-speech?topic=text-to-speech-voices).
-
-### SSML
-
-You can also use [SSML](https://en.wikipedia.org/wiki/Speech_Synthesis_Markup_Language) markup to control the output of compatible engines.
-
-```Python
-tts.synth('<speak>Hello, <break time="3s"/> world!</speak>', 'hello.wav')
-```
-
-It is recommended to use the `ssml` attribute that will create the correct boilerplate tags for each engine:
-
-```Python
-tts.synth(tts.ssml.add('Hello, <break time="3s"/> world!'), 'hello.wav')
-```
-
-Learn which tags are available for each service: [Polly](https://docs.aws.amazon.com/polly/latest/dg/supportedtags.html), [Google](https://cloud.google.com/text-to-speech/docs/ssml), [Microsoft](https://docs.microsoft.com/en-us/cortana/skills/speech-synthesis-markup-language), and [Watson](https://cloud.ibm.com/docs/text-to-speech?topic=text-to-speech-ssml).
-
-### Authorization
-
-To setup credentials to access each engine, create the respective client.
-
-#### Polly
-
-If you don't explicitly define credentials, `boto3` will try to find them in your system's credentials file or your environment variables. However, you can specify them with a tuple:
-
-```Python
+```python
 from tts_wrapper import PollyClient
-client = PollyClient(credentials=(region, aws_key_id, aws_access_key))
+client = PollyClient(credentials=('aws_key_id', 'aws_secret_access_key'))
 ```
 
-#### Google
+### Google
 
-Point to your [Oauth 2.0 credentials file](https://developers.google.com/identity/protocols/OAuth2) path:
-
-```Python
+```python
 from tts_wrapper import GoogleClient
 client = GoogleClient(credentials='path/to/creds.json')
 ```
 
-#### Microsoft
+### Microsoft
 
-Just provide your [subscription key](https://docs.microsoft.com/en-us/azure/cognitive-services/speech-service/rest-text-to-speech#authentication), like so:
-
-```Python
+```python
 from tts_wrapper import MicrosoftClient
-client = MicrosoftClient(credentials='TOKEN')
+client = MicrosoftClient(credentials='subscription_key')
 ```
 
-If your region is not the default "useast", you can change it like so:
+### Watson
 
-```Python
-client = MicrosoftClient(credentials='TOKEN', region='brazilsouth')
-```
-
-#### Watson
-
-Pass your [API key and URL](https://cloud.ibm.com/apidocs/text-to-speech/text-to-speech#authentication) to the initializer:
-
-```Python
+```python
 from tts_wrapper import WatsonClient
-client = WatsonClient(credentials=('API_KEY', 'API_URL'))
+client = WatsonClient(credentials=('api_key', 'api_url'))
 ```
+
+### ElevenLabs
+
+```python
+from tts_wrapper import ElevenLabs
+client = ElevenLabsClient(credentials=('api_key'))
+```
+
+and then for each engine then bring in the TTS class 
+
+```python
+from tts_wrapper import PollyTTS
+tts = PollyTTS(client=client, voice='Joanna')
+```
+
+You then can peform the following methods.
+
+## Advanced Usage
+
+### Streaming and Playback Control
+
+```python
+tts.speak_streamed('Hello, world!')
+tts.pause_audio()
+tts.resume_audio()
+tts.stop_audio()
+```
+
+### File Output
+
+```python
+tts.synth_to_file('Hello, world!', 'output.mp3', format='mp3')
+```
+
+### Fetch Available Voices
+
+```python
+voices = tts.get_voices()
+print(voices)
+```
+
+### Voice Selection
+
+```python
+tts.set_voice('en-US-JessaNeural')
+```
+
+### SSML
+
+```python
+ssml_text = tts.ssml.add('Hello, <break time="500ms"/> world!')
+tts.speak(ssml_text)
+```
+
 
 #### PicoTTS & SAPI
 
 These clients dont't require authorization since they run offline.
 
-```Python
+```python
 from tts_wrapper import PicoClient, SAPIClient
 client = PicoClient()
 # or
 client = SAPIClient()
 ```
 
-## File Format
+## Supported File Formats
 
-By default, all audio will be a wave file but you can change it to a mp3 using the `format` option:
+By default, all engines output audio in the WAV format, but can be configured to output MP3 or other formats where supported.
 
 ```Python
 tts.synth('<speak>Hello, world!</speak>', 'hello.mp3', format='mp3)
@@ -145,4 +164,4 @@ tts.synth('<speak>Hello, world!</speak>', 'hello.mp3', format='mp3)
 
 ## License
 
-Licensed under the [MIT License](./LICENSE).
+This project is licensed under the [MIT License](./LICENSE).
