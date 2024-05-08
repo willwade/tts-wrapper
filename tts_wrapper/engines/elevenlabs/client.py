@@ -6,10 +6,9 @@ from ...exceptions import UnsupportedFileFormat
 
 
 FORMATS = {
-    "wav": "pcm_44100",
+    "wav": "pcm_16000",
     "mp3": "mp3_44100_128",
 }
-
 
 class ElevenLabsClient:
     def __init__(self, credentials):
@@ -57,12 +56,25 @@ class ElevenLabsClient:
         url = f"{self.base_url}/v1/voices"
         response = requests.get(url)
         if response.ok:
-            voices_data =  response.json()
+            voices_data = response.json()
             voices = voices_data['voices']
             standardized_voices = []
+            accent_to_language_code = {
+                'american': 'en-US',
+                'british': 'en-GB',
+                'british-essex': 'en-GB',
+                'american-southern': 'en-US',
+                'australian': 'en-AU',
+                'irish': 'en-IE',
+                'english-italian': 'en-IT',  # Assuming 'en-IT' represents English spoken with an Italian accent
+                'english-swedish': 'en-SE',  # Assuming 'en-SE' represents English spoken with a Swedish accent
+                'american-irish': 'en-IE-US' # This is a complex case, could be either en-IE or en-US
+            }
             for voice in voices:
                 voice['id'] = voice['voice_id']
-                voice['language_codes'] = [voice['fine_tuning']['language']]
+                accent = voice['labels'].get('accent', 'american')
+                language_code = accent_to_language_code.get(accent, 'en-US')  # Default to 'en-US'
+                voice['language_codes'] = [language_code] 
                 voice['display_name'] = voice['name']
                 voice['gender'] = 'Unknown'
                 standardized_voices.append(voice)

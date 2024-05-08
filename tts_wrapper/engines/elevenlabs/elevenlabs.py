@@ -17,7 +17,12 @@ class ElevenLabsTTS(AbstractTTS):
             raise UnsupportedFileFormat(format, "ElevenLabs API")
         if not self._voice:
             raise ValueError("Voice ID must be set before synthesizing speech.")
-        return self._decode_mp3_to_pcm(self._client.synth(str(text), self._voice, format))
+        if format == 'mp3':
+            return self._decode_mp3_to_pcm(self._client.synth(str(text), self._voice, format))
+        else:
+            self.audio_rate = 16000
+            return self._client.synth(str(text), self._voice, format)
+
 
     def get_voices(self) -> List[Dict[str, Any]]:
         return self._client.get_voices()
