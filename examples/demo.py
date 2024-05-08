@@ -66,4 +66,4 @@ for engine in engines:
         ssml_text_part2 = tts.ssml.add(f"Continuing with a new voice using {engine}!")
         audio_content_part2 = tts.synth_to_bytes(ssml_text_part2)
         tts.speak_streamed(audio_content_part2)       
-    exit()
+

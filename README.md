@@ -38,7 +38,7 @@ pip install TTS-Wrapper
 Install additional dependencies based on the services you want to use:
 
 ```sh
-pip install "TTS-Wrapper[google, watson]"
+pip install "TTS-Wrapper[google, watson, polly, elevenlabs, microsoft]"
 ```
 
 For PicoTTS on Debian systems:
@@ -59,6 +59,8 @@ tts = PollyTTS(pollyClient)
 ssml_text = tts.ssml.add('Hello, <break time="500ms"/> world!')
 tts.speak(ssml_text)
 ```
+
+for a full demo see the examples folder. You'll need to fill out the credentials.json
 
 ## Authorization
 Each service uses different methods for authentication:
