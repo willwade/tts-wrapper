@@ -26,6 +26,7 @@ _TTS-Wrapper_ simplifies using text-to-speech APIs by providing a unified interf
 - **Streaming and Direct Play**: Stream audio or play it directly.
 - **Pause, Resume, and Stop Controls**: Manage audio playback dynamically.
 - **File Output**: Save spoken audio to files in various formats.
+- **Unified Voice handling** Get Voices across all TTS engines with alike keys
 
 ## Installation
 
