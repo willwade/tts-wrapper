@@ -51,12 +51,13 @@ sudo apt-get install libttspico-utils
 
 ```python
 from tts_wrapper import PollyClient
-client = PollyClient(credentials=('aws_key_id', 'aws_secret_access_key'))
+pollyClient = PollyClient(credentials=('aws_key_id', 'aws_secret_access_key'))
 
 from tts_wrapper import PollyTTS
 
-tts = PollyTTS(client=PollyClient())
-tts.speak('Hello, world!')
+tts = PollyTTS(pollyClient)
+ssml_text = tts.ssml.add('Hello, <break time="500ms"/> world!')
+tts.speak(ssml_text)
 ```
 
 ## Authorization
@@ -65,62 +66,91 @@ Each service uses different methods for authentication:
 ### Polly
 
 ```python
-from tts_wrapper import PollyClient
+from tts_wrapper import PollyTTS, PollyClient
+
 client = PollyClient(credentials=('aws_key_id', 'aws_secret_access_key'))
+
+tts = PollyTTS(client)
 ```
 
 ### Google
 
 ```python
-from tts_wrapper import GoogleClient
+from tts_wrapper import GoogleTTS, GoogleClient
 client = GoogleClient(credentials='path/to/creds.json')
+
+tts = GoogleTTS(client)
 ```
 
 ### Microsoft
 
 ```python
-from tts_wrapper import MicrosoftClient
-client = MicrosoftClient(credentials='subscription_key')
+from tts_wrapper import MicrosoftTTS, MicrosoftClient
+client = MicrosoftClient(credentials='subscription_key',region='subscription_region')
+
+tts = MicrosoftTTS(client)
 ```
 
 ### Watson
 
 ```python
-from tts_wrapper import WatsonClient
+from tts_wrapper import WatsonTTS, WatsonClient
 client = WatsonClient(credentials=('api_key', 'api_url'))
+
+tts = WatsonTTS(client)
 ```
 
 ### ElevenLabs
 
 ```python
-from tts_wrapper import ElevenLabs
+from tts_wrapper import ElevenLabsTTS, ElevenLabsClient
 client = ElevenLabsClient(credentials=('api_key'))
+tts = ElevenLabsTTS(client)
 ```
 
-and then for each engine then bring in the TTS class 
-
-```python
-from tts_wrapper import PollyTTS
-tts = PollyTTS(client=client, voice='Joanna')
-```
-
-You then can peform the following methods.
+You then can perform the following methods.
 
 ## Advanced Usage
+
+### SSML
+
+Even if you don't use SSML features that much its wise to use the same syntax - so pass SSML not text to all engines
+
+```python
+ssml_text = tts.ssml.add('Hello world!')
+# e.g..
+tts.speak(ssml_text)
+```
 
 ### Streaming and Playback Control
 
 ```python
-tts.speak_streamed('Hello, world!')
+tts.speak_streamed(audio_bytes)
+
 tts.pause_audio()
 tts.resume_audio()
+tts.stop_audio()
+```
+
+here's an example of this in use
+
+```python
+ssml_text = tts.ssml.add('Hello world!')
+audio_content = tts.synth_to_bytes(ssml_text)
+
+tts.speak_streamed(audio_content)
+input("Press enter to pause...")
+tts.pause_audio()
+input("Press enter to resume...")
+tts.resume_audio()
+input("Press enter to stop...")
 tts.stop_audio()
 ```
 
 ### File Output
 
 ```python
-tts.synth_to_file('Hello, world!', 'output.mp3', format='mp3')
+tts.synth_to_file(ssml_text, 'output.mp3', format='mp3')
 ```
 
 ### Fetch Available Voices
@@ -130,11 +160,21 @@ voices = tts.get_voices()
 print(voices)
 ```
 
+NB: All voices will have a id, dict of language_codes, display_name and gender. Just note not all voice engines provide gender
+
 ### Voice Selection
 
 ```python
-tts.set_voice('en-US-JessaNeural')
+tts.set_voice(voice_id,lang_code=en-US)
 ```
+
+e.g.
+
+```python
+tts.set_voice('en-US-JessaNeural','en-US')
+```
+
+Use the id - not a name
 
 ### SSML
 
