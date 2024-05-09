@@ -196,7 +196,7 @@ tts.speak(ssml_text)
 
 ### Using callbacks on word level boundaries
 
-Note Polly and Microsoft can do this. We can't do this in anything else
+Note only **Polly, Microsoft and Watson** can do this. We can't do this in anything else
 
 ```python
 def my_callback(word: str, start_time: float):

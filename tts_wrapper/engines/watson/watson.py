@@ -15,11 +15,20 @@ class WatsonTTS(AbstractTTS):
         self._client = client
         self._voice = voice or "en-US_LisaV3Voice"
         self.audio_rate = 22050
+        self.word_timings = []
 
+    # def synth_to_bytes_orig(self, text: Any, format: Optional[FileFormat] = "wav") -> bytes:
+    #     if format not in self.supported_formats():
+    #         raise UnsupportedFileFormat(format, self.__class__.__name__)
+    #     return self._client.synth(str(text), self._voice, format)
+    
     def synth_to_bytes(self, text: Any, format: Optional[FileFormat] = "wav") -> bytes:
         if format not in self.supported_formats():
             raise UnsupportedFileFormat(format, self.__class__.__name__)
-        return self._client.synth(str(text), self._voice, format)
+        self.word_timings.clear()
+        audio_data = self._client.synth_with_timings(str(text), self._voice, format)
+        self.set_timings(self._client.word_timings)
+        return audio_data
 
     @property
     def ssml(self) -> WatsonSSML:

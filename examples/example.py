@@ -38,7 +38,7 @@ def create_tts_client(service, settings):
         tts = MicrosoftTTS(client=client)
     elif service == "watson":
         creds = settings.get('Watson', {})
-        client = WatsonClient(credentials=(creds.get('API_KEY'), creds.get('API_URL')))
+        client = WatsonClient(credentials=(creds.get('api_key'), creds.get('region'), creds.get('instance_id')))
         tts = WatsonTTS(client=client)
     elif service == "google":
         creds = settings.get('Google', {})
@@ -110,7 +110,7 @@ def main():
     service = sys.argv[1] if len(sys.argv) > 1 else "all"
     settings = load_settings()
 
-    services = [ "google", "elevenlabs", "microsoft","polly", "watson", ] if service == "all" else [service]
+    services = ["watson", "google", "elevenlabs", "microsoft","polly", ] if service == "all" else [service]
     for svc in services:
         print(f"Testing {svc.upper()} TTS engine.")
         tts = create_tts_client(svc, settings)
