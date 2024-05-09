@@ -66,9 +66,15 @@ class MicrosoftTTS(AbstractTTS):
             speech_config=self._client.speech_config, 
             audio_config=self.audio_config
         )
+        # Reset word timings
+        self.word_timings = []
+        # Subscribe to synthesis_word_boundary event
+        self.synthesizer.synthesis_word_boundary.connect(lambda evt: self.word_timings.append((float(evt.audio_offset / 10000000),evt.text)))
         ssml_string = str(ssml)
         result = self.synthesizer.speak_ssml_async(ssml_string).get()  # Use speak_ssml_async for SSML input
         if result.reason == speechsdk.ResultReason.SynthesizingAudioCompleted:
+            # Store word timings
+            self.set_timings(self.word_timings)
             return result.audio_data
         elif result.reason == speechsdk.ResultReason.Canceled:
             cancellation_details = result.cancellation_details
@@ -78,4 +84,3 @@ class MicrosoftTTS(AbstractTTS):
                 raise Exception(f"Synthesis error: {cancellation_details.error_details}")
         else:
             raise Exception("Synthesis failed without detailed error message.")
-

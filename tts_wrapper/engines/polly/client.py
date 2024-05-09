@@ -2,6 +2,7 @@ from typing import Optional, Tuple, Dict, List, Any
 
 from ...engines.utils import process_wav
 from ...exceptions import ModuleNotInstalled
+import json
 
 try:
     import boto3
@@ -51,6 +52,22 @@ class PollyClient:
             return process_wav(raw)
         else:
             return raw
+
+    def get_speech_marks(self, ssml: str, voice: str) -> List[Dict[str, Any]]:
+        response = self._client.synthesize_speech(
+            Engine="neural",
+            OutputFormat='json',
+            VoiceId=voice,
+            TextType="ssml",
+            Text=ssml,
+            SpeechMarkTypes=['word']
+        )
+        speech_marks_str = response['AudioStream'].read().decode('utf-8')
+        speech_marks_lines = speech_marks_str.splitlines()
+        speech_marks = [json.loads(line) for line in speech_marks_lines]
+        word_timings = [(float(mark['time']) / 1000, mark['value']) for mark in speech_marks if mark['type'] == 'word']
+        return word_timings
+
 
     def get_voices(self) -> List[Dict[str, Any]]:
         """Fetches available voices from Amazon Polly."""

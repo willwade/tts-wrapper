@@ -144,7 +144,7 @@ class AbstractTTS(ABC):
         else:
             return (None, pyaudio.paContinue)
     
-    
+
     def speak_streamed(self, text: Any, format: Optional[FileFormat] = "wav"):
         """
         Starts playback of audio data.
@@ -232,6 +232,7 @@ class AbstractTTS(ABC):
         Sets the timing data for triggering callbacks during audio playback.
 
         @param timing_data: List of timing information for words or sounds in the audio.
+        Note it should be timing, worded pairs where timing is a float in seconds and word is a string.
         """
         self.timings = timing_data
 
@@ -241,20 +242,23 @@ class AbstractTTS(ABC):
 
         @param word: The word that was spoken.
         """        
-        logging(f"Word spoken: {word}")
+        print(f"Word spoken: {word}")
 
-    def start_playback_with_callbacks(self, audio_data: bytes):
+    def start_playback_with_callbacks(self, ssml_text: bytes, callback=None):
         """
         Plays back audio with callbacks triggered based on predefined timings.
 
         @param audio_data: Byte array containing audio data.
-        """        
-        self.speak_streamed(audio_data)
+        """ 
+        if callback is None:
+            callback = self.on_word_callback
+
+        self.speak_streamed(ssml_text)
         start_time = time.time()
-        for word, timing in self.timings:
+        for timing, word in self.timings:
             delay = timing - (time.time() - start_time)
             if delay > 0:
-                timer = threading.Timer(delay, self.on_word_callback, args=(word,))
+                timer = threading.Timer(delay, callback, args=(word, timing))
                 timer.start()
                 self.timers.append(timer)
                 

@@ -4,7 +4,8 @@ from tts_wrapper.exceptions import UnsupportedFileFormat
 
 from ...tts import AbstractTTS, FileFormat
 from . import PollyClient, PollySSML
-
+import threading
+import time
 
 class PollyTTS(AbstractTTS):
     @classmethod
@@ -20,7 +21,10 @@ class PollyTTS(AbstractTTS):
     def synth_to_bytes(self, text: Any, format: Optional[FileFormat] = "wav") -> bytes:
         if format not in self.supported_formats():
             raise UnsupportedFileFormat(format, self.__class__.__name__)
+        word_timings = self._client.get_speech_marks(str(text), self._voice)
+        self.set_timings(word_timings)
         return self._client.synth(str(text), self._voice, format)
+
 
     @property
     def ssml(self) -> PollySSML:
