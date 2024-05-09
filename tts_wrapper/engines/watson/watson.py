@@ -10,13 +10,11 @@ class WatsonTTS(AbstractTTS):
     def supported_formats(cls) -> List[FileFormat]:
         return ["wav", "mp3"]
 
-    def __init__(
-        self,
-        client: WatsonClient,
-        voice: Optional[str] = None,
-    ) -> None:
+    def __init__(self, client: WatsonClient, lang: Optional[str] = None, voice: Optional[str] = None):
+        super().__init__() 
         self._client = client
         self._voice = voice or "en-US_LisaV3Voice"
+        self.audio_rate = 22050
 
     def synth_to_bytes(self, text: Any, format: Optional[FileFormat] = "wav") -> bytes:
         if format not in self.supported_formats():
@@ -29,4 +27,14 @@ class WatsonTTS(AbstractTTS):
 
     def get_voices(self) -> List[Dict[str, Any]]:
         """Retrieves a list of available voices from the Watson TTS service."""
-        return self._client.get_voices()
+        return self._client.get_voices()    
+            
+    def set_voice(self, voice_id: str, lang_id: str):
+        """
+        Sets the voice for the TTS engine and updates the SSML configuration accordingly.
+
+        @param voice_id: The ID of the voice to be used for synthesis.
+        """
+        super().set_voice(voice_id)  # Optionally manage voice at the AbstractTTS level if needed
+        self._voice = voice_id
+        self._lang = lang_id

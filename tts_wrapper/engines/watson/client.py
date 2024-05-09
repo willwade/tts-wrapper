@@ -33,6 +33,15 @@ class WatsonClient:
 
     def get_voices(self) -> List[Dict[str, Any]]:
         """Fetches available voices from IBM Watson TTS service."""
-        voices = self._client.list_voices().get_result()
-        return [{'name': voice['name'], 'language': voice['language'], 'description': voice['description']}
-                for voice in voices['voices']]
+        voice_data = self._client.list_voices().get_result()
+        voices = voice_data["voices"]
+        standardized_voices = []
+        for voice in voices:
+            standardized_voice = {}
+            standardized_voice['id'] = voice['name']
+            standardized_voice['language_codes'] = [voice['language']]
+            standardized_voice['display_name'] = voice['name'].split('_')[1].replace('V3Voice', '')
+            standardized_voice['gender'] = voice['gender']
+            standardized_voices.append(standardized_voice)
+        return standardized_voices
+    
