@@ -9,17 +9,11 @@ try:
 except ImportError:
     requests = None  # type: ignore
 
-FORMATS = {
-    "wav": "riff-24khz-16bit-mono-pcm",
-    "mp3": "audio-24khz-160kbitrate-mono-mp3",
-}
-
 class MicrosoftClient:
-    @property
-    @classmethod
-    def supported_formats(cls) -> List[FileFormat]:
-        return ["wav", "mp3"]
-
+    FORMATS = {
+        "wav": "Riff24Khz16BitMonoPcm",
+        "mp3": "Audio24Khz160KBitRateMonoMp3",
+    }
     def __init__(
         self, credentials: str, region: Optional[str] = None
     ) -> None:
@@ -29,7 +23,6 @@ class MicrosoftClient:
         self._credentials = credentials
         self._region = region or "eastus"
         self.speech_config = speechsdk.SpeechConfig(subscription=self._credentials, region=self._region)
-
 
     def get_available_voices(self) -> List[Dict[str, Any]]:
         """Fetches available voices from Microsoft Azure TTS service."""

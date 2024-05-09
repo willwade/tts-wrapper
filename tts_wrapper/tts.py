@@ -152,7 +152,7 @@ class AbstractTTS(ABC):
         try:
             audio_bytes = self.synth_to_bytes(text, format)
         except Exception as e:
-            print(f"Error synthesizing speech: {e}")
+            logging.error(f"Error synthesizing speech: {e}")
         self.audio_bytes = self.apply_fade_in(audio_bytes)
         self.position = 0
         self.playing.set()
