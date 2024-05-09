@@ -133,7 +133,7 @@ tts.speak(ssml_text)
 ### Streaming and Playback Control
 
 ```python
-tts.speak_streamed(audio_bytes)
+tts.speak_streamed(ssml_text)
 
 tts.pause_audio()
 tts.resume_audio()
@@ -144,9 +144,8 @@ here's an example of this in use
 
 ```python
 ssml_text = tts.ssml.add('Hello world!')
-audio_content = tts.synth_to_bytes(ssml_text)
 
-tts.speak_streamed(audio_content)
+tts.speak_streamed(ssml_text)
 input("Press enter to pause...")
 tts.pause_audio()
 input("Press enter to resume...")
