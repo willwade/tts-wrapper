@@ -3,6 +3,7 @@ from typing import Any, List, Literal, Optional, Union, Dict
 import pyaudio
 import threading
 from threading import Event
+import logging
 import time
 
 FileFormat = Union[Literal["wav"], Literal["mp3"]]
@@ -94,7 +95,7 @@ class AbstractTTS(ABC):
             stream.close()
             p.terminate()
         except Exception as e:
-            print(f"Error playing audio: {e}")
+            logging(f"Error playing audio: {e}")
             
             
     def setup_stream(self, format=pyaudio.paInt16, channels=1):
@@ -118,7 +119,7 @@ class AbstractTTS(ABC):
                                       output=True,
                                       stream_callback=self.callback)
         except Exception as e:
-            print(f"Failed to setup audio stream: {e}")
+            logging(f"Failed to setup audio stream: {e}")
             raise
 
 
@@ -142,12 +143,16 @@ class AbstractTTS(ABC):
             return (data, pyaudio.paContinue)
         else:
             return (None, pyaudio.paContinue)
-
-    def speak_streamed(self, audio_bytes: bytes):
+    
+    
+    def speak_streamed(self, text: Any, format: Optional[FileFormat] = "wav"):
         """
         Starts playback of audio data.
         """
-        self.audio_bytes = audio_bytes
+        try:
+            audio_bytes = self.synth_to_bytes(text, format)
+        except Exception as e:
+            print(f"Error synthesizing speech: {e}")
         self.audio_bytes = self.apply_fade_in(audio_bytes)
         self.position = 0
         self.playing.set()
@@ -158,7 +163,7 @@ class AbstractTTS(ABC):
             self.play_thread = threading.Thread(target=self._start_stream)
             self.play_thread.start()
         except Exception as e:
-            print(f"Failed to play audio: {e}")
+            logging(f"Failed to play audio: {e}")
             raise  # Correct placement of raise within the except block
 
     def apply_fade_in(self, audio_bytes, fade_duration_ms=50, sample_rate=22050):
@@ -236,7 +241,7 @@ class AbstractTTS(ABC):
 
         @param word: The word that was spoken.
         """        
-        print(f"Word spoken: {word}")
+        logging(f"Word spoken: {word}")
 
     def start_playback_with_callbacks(self, audio_data: bytes):
         """
@@ -262,7 +267,7 @@ class AbstractTTS(ABC):
             if self.p:
                 self.p.terminate()
         except Exception as e:
-            print(f"Failed to clean up audio resources: {e}")
+            logging(f"Failed to clean up audio resources: {e}")
         finally:
             self.stream = None
             self.p = None

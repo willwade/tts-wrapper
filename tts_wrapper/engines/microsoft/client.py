@@ -1,5 +1,5 @@
 from typing import List, Dict, Any, Optional
-
+import azure.cognitiveservices.speech as speechsdk
 from tts_wrapper.tts import FileFormat
 
 from ...exceptions import ModuleNotInstalled
@@ -14,36 +14,6 @@ FORMATS = {
     "mp3": "audio-24khz-160kbitrate-mono-mp3",
 }
 
-# Other formats from MS
-# amr-wb-16000hz
-# audio-16khz-16bit-32kbps-mono-opus
-# audio-16khz-32kbitrate-mono-mp3
-# audio-16khz-64kbitrate-mono-mp3
-# audio-16khz-128kbitrate-mono-mp3
-# audio-24khz-16bit-24kbps-mono-opus
-# audio-24khz-16bit-48kbps-mono-opus
-# audio-24khz-48kbitrate-mono-mp3
-# audio-24khz-96kbitrate-mono-mp3
-# audio-24khz-160kbitrate-mono-mp3
-# audio-48khz-96kbitrate-mono-mp3
-# audio-48khz-192kbitrate-mono-mp3
-# ogg-16khz-16bit-mono-opus
-# ogg-24khz-16bit-mono-opus
-# ogg-48khz-16bit-mono-opus
-# raw-8khz-8bit-mono-alaw
-# raw-8khz-8bit-mono-mulaw
-# raw-8khz-16bit-mono-pcm
-# raw-16khz-16bit-mono-pcm
-# raw-16khz-16bit-mono-truesilk
-# raw-22050hz-16bit-mono-pcm
-# raw-24khz-16bit-mono-pcm
-# raw-24khz-16bit-mono-truesilk
-# raw-44100hz-16bit-mono-pcm
-# raw-48khz-16bit-mono-pcm
-# webm-16khz-16bit-mono-opus
-# webm-24khz-16bit-24kbps-mono-opus
-# webm-24khz-16bit-mono-opus
-
 class MicrosoftClient:
     @property
     @classmethod
@@ -51,60 +21,34 @@ class MicrosoftClient:
         return ["wav", "mp3"]
 
     def __init__(
-        self, credentials: str, region: Optional[str] = None, verify_ssl=True
+        self, credentials: str, region: Optional[str] = None
     ) -> None:
-        if requests is None:
-            raise ModuleNotInstalled("requests")
+        if speechsdk is None:
+            raise ModuleNotInstalled("speechsdk")
 
         self._credentials = credentials
         self._region = region or "eastus"
+        self.speech_config = speechsdk.SpeechConfig(subscription=self._credentials, region=self._region)
 
-        self._session = requests.Session()
-        self._session.verify = verify_ssl
-        self._session.headers["Content-Type"] = "application/ssml+xml"
-
-    def _fetch_access_token(self) -> str:
-        fetch_token_url = (
-            f"https://{self._region}.api.cognitive.microsoft.com/sts/v1.0/issueToken"
-        )
-        headers = {"Ocp-Apim-Subscription-Key": self._credentials}
-        response = requests.post(fetch_token_url, headers=headers)
-        return str(response.text)
-
-    def synth(self, ssml: str, format: FileFormat) -> bytes:
-        self._session.headers["X-Microsoft-OutputFormat"] = FORMATS[format]
-
-        if "Authorization" not in self._session.headers:
-            access_token = self._fetch_access_token()
-            self._session.headers["Authorization"] = "Bearer " + access_token
-
-        response = self._session.post(
-            f"https://{self._region}.tts.speech.microsoft.com/cognitiveservices/v1",
-            data=ssml.encode("utf-8"),
-        )
-
-        if response.status_code != 200:
-            error_message = f"Failed to synthesize speech: {response.status_code} - {response.reason}"
-            if response.content:
-                error_details = response.json().get('error', {}).get('message', 'No error details available.')
-                error_message += f" Details: {error_details}"
-            print(error_message)
-            raise Exception(error_message)
-        return response.content
 
     def get_available_voices(self) -> List[Dict[str, Any]]:
-        """Makes an API call to retrieve available voices from Microsoft Azure TTS."""
-        url = f"https://{self._region}.tts.speech.microsoft.com/cognitiveservices/voices/list"
-        response = self._session.get(url)
-        if response.status_code == 200:
-            voices = response.json()
+        """Fetches available voices from Microsoft Azure TTS service."""
+        speech_synthesizer = speechsdk.SpeechSynthesizer(speech_config=self.speech_config, audio_config=None)
+        result = speech_synthesizer.get_voices_async().get()
+        # Check the result
+        if result.reason == speechsdk.ResultReason.VoicesListRetrieved:
             standardized_voices = []
-            for voice in voices:
-                voice['id'] = voice['ShortName']
-                voice['language_codes'] = [voice['Locale']]
-                voice['display_name'] = voice['DisplayName']
-                voice['gender'] = voice['Gender']
-                standardized_voices.append(voice)
+            for voice in result.voices:
+                voice_dict = {
+                    'id': voice.short_name,
+                    'language_codes': [voice.locale],
+                    'display_name': voice.local_name,
+                    'gender': voice.gender.name,  # Convert enum to string
+                }
+                standardized_voices.append(voice_dict)
             return standardized_voices
-        else:
-            raise Exception(f"Failed to retrieve voices: {response.status_code} - {response.text}")
+        elif result.reason == speechsdk.ResultReason.Canceled:
+            cancellation_details = result.cancellation_details
+            print(f"Speech synthesis canceled; error details: {cancellation_details.error_details}")
+            return []  # Return an empty list or raise an exception
+
