@@ -9,7 +9,7 @@ from tts_wrapper import (
 )
 
 # Load settings and create clients
-def load_settings():
+def load__json_settings():
     try:
         with open('settings.json', 'r') as f:
             return json.load(f)
@@ -17,8 +17,18 @@ def load_settings():
         st.error("Settings file not found. Ensure 'settings.json' is in the correct location.")
         return {}
 
+def load_settings():
+    try:
+        # Assume all settings are structured under 'settings' in your Streamlit Secrets
+        settings = st.secrets["settings"]
+        return settings
+    except KeyError:
+        st.error("Settings not found in Streamlit secrets.")
+        return {}
+
+
 def create_tts_client(service, settings):
-    creds = settings.get(service, {})
+    creds = st.secrets[service]
     if service == "polly":
         client = PollyClient(credentials=(creds['region'], creds['aws_key_id'], creds['aws_access_key']))
         tts = PollyTTS(client=client)
