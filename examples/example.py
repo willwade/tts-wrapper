@@ -91,7 +91,7 @@ def test_tts_engine(tts, service_name):
     print('Getting voices')
     for voice in voices[:4]:  # Show details for first four voices
         language_codes = voice.get('language_codes', [])
-        display_name = voice.get('display_name', 'Unknown voice')
+        display_name = voice.get('name', 'Unknown voice')
         # Safely get the first language code, default to 'Unknown' if not available
         first_language_code = language_codes[0] if language_codes else 'Unknown'
         print(f"{display_name} ({first_language_code}): {voice['id']}")

@@ -106,7 +106,7 @@ class WatsonClient:
             standardized_voice = {}
             standardized_voice['id'] = voice['name']
             standardized_voice['language_codes'] = [voice['language']]
-            standardized_voice['display_name'] = voice['name'].split('_')[1].replace('V3Voice', '')
+            standardized_voice['name'] = voice['name'].split('_')[1].replace('V3Voice', '')
             standardized_voice['gender'] = voice['gender']
             standardized_voices.append(standardized_voice)
         return standardized_voices
