@@ -24,3 +24,4 @@ class MicrosoftSSML(BaseSSMLRoot):
         self.lang = new_lang
         self._inner.update_attributes({"name": new_voice})
         self._root.update_attributes({"xml:lang": new_lang})
+

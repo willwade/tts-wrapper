@@ -77,7 +77,7 @@ class PollyClient:
         for voice in voices:
             voice['id'] = voice['Id']
             voice['language_codes'] = [voice['LanguageCode']]
-            voice['display_name'] = voice['Name']
+            voice['name'] = voice['Name']
             voice['gender'] = voice['Gender']
             standardized_voices.append(voice)
         return standardized_voices

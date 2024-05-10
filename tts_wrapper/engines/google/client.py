@@ -46,7 +46,7 @@ class GoogleClient:
             voice_data = voice.__dict__  # or convert to dict if not already one
             voice_data['id'] = voice.name
             voice_data['language_codes'] = voice.language_codes
-            voice_data['display_name'] = voice.name
+            voice_data['name'] = voice.name
             voice_data['gender'] = voice.ssml_gender
             standardized_voices.append(voice_data)
         return standardized_voices

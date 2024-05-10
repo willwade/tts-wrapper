@@ -35,7 +35,7 @@ class MicrosoftClient:
                 voice_dict = {
                     'id': voice.short_name,
                     'language_codes': [voice.locale],
-                    'display_name': voice.local_name,
+                    'name': voice.local_name,
                     'gender': voice.gender.name,  # Convert enum to string
                 }
                 standardized_voices.append(voice_dict)
