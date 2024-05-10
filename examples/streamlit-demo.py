@@ -20,7 +20,7 @@ def load__json_settings():
 def load_settings():
     try:
         # Assume all settings are structured under 'settings' in your Streamlit Secrets
-        settings = st.secrets["settings"]
+        settings = st.secrets
         return settings
     except KeyError:
         st.error("Settings not found in Streamlit secrets.")
