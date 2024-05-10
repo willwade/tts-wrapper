@@ -126,7 +126,7 @@ def main():
     filtered_voices = voices_df[voices_df['Language'].str.startswith(selected_language_code)]  # Filter the DataFrame based on the selected language
 
     # Display the relevant columns
-    st.write("### Available Voices")
+    st.write(f"### Available Voices for {selected_language_code}")
     st.write(filtered_voices[['Engine', 'Gender', 'Name', 'Status']])
 
     # Display statistics

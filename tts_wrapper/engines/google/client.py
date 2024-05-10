@@ -48,5 +48,13 @@ class GoogleClient:
             voice_data['language_codes'] = voice.language_codes
             voice_data['name'] = voice.name
             voice_data['gender'] = voice.ssml_gender
+            if voice.ssml_gender == 1:
+                voice_data['gender'] = "Male"
+            elif voice.ssml_gender == 2:
+                voice_data['gender'] = "Female"
+            elif voice.ssml_gender == 3:
+                voice_data['gender'] = "Neutral"
+            else:
+                voice_data['gender'] = "Unknown"
             standardized_voices.append(voice_data)
         return standardized_voices
