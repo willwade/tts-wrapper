@@ -25,7 +25,7 @@ pyaudio = {version = "^0.2.11", optional = true}
 google = ["google-cloud-texttospeech"]
 watson = ["ibm-watson"]
 polly = ["boto3"]
-microsoft = ["requests"]
+microsoft = ["azure.cognitiveservices.speech"]
 elevenlabs = ["requests"]
 sapi = ["pyttsx3"]
 
