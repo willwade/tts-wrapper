@@ -171,7 +171,7 @@ voices = tts.get_voices()
 print(voices)
 ```
 
-NB: All voices will have a id, dict of language_codes, display_name and gender. Just note not all voice engines provide gender
+NB: All voices will have a id, dict of language_codes, name and gender. Just note not all voice engines provide gender
 
 ### Voice Selection
 

@@ -75,7 +75,7 @@ class ElevenLabsClient:
                 accent = voice['labels'].get('accent', 'american')
                 language_code = accent_to_language_code.get(accent, 'en-US')  # Default to 'en-US'
                 voice['language_codes'] = [language_code] 
-                voice['display_name'] = voice['name']
+                voice['name'] = voice['name']
                 voice['gender'] = 'Unknown'
                 standardized_voices.append(voice)
             return standardized_voices
