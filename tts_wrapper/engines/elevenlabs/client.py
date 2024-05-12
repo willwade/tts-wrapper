@@ -66,15 +66,78 @@ class ElevenLabsClient:
                 'american-southern': 'en-US',
                 'australian': 'en-AU',
                 'irish': 'en-IE',
-                'english-italian': 'en-IT',  # Assuming 'en-IT' represents English spoken with an Italian accent
-                'english-swedish': 'en-SE',  # Assuming 'en-SE' represents English spoken with a Swedish accent
-                'american-irish': 'en-IE-US' # This is a complex case, could be either en-IE or en-US
+                'english-italian': 'en-IT',
+                'english-swedish': 'en-SE',
+                'american-irish': 'en-IE-US',
+                'chinese': 'zh-CN',
+                'korean': 'ko-KR',
+                'dutch': 'nl-NL',
+                'turkish': 'tr-TR',
+                'swedish': 'sv-SE',
+                'indonesian': 'id-ID',
+                'filipino': 'fil-PH',
+                'japanese': 'ja-JP',
+                'ukrainian': 'uk-UA',
+                'greek': 'el-GR',
+                'czech': 'cs-CZ',
+                'finnish': 'fi-FI',
+                'romanian': 'ro-RO',
+                'danish': 'da-DK',
+                'bulgarian': 'bg-BG',
+                'malay': 'ms-MY',
+                'slovak': 'sk-SK',
+                'croatian': 'hr-HR',
+                'classic-arabic': 'ar-SA',
+                'tamil': 'ta-IN'
+            }
+            supported_languages_v1 = {
+                'en-US': 'English',
+                'pl-PL': 'Polish',
+                'de-DE': 'German',
+                'es-ES': 'Spanish',
+                'fr-FR': 'French',
+                'it-IT': 'Italian',
+                'hi-IN': 'Hindi',
+                'pt-BR': 'Portuguese'
+            }
+            supported_languages_v2 = {
+                'en-US': 'English',
+                'pl-PL': 'Polish',
+                'de-DE': 'German',
+                'es-ES': 'Spanish',
+                'fr-FR': 'French',
+                'it-IT': 'Italian',
+                'hi-IN': 'Hindi',
+                'pt-BR': 'Portuguese',
+                'zh-CN': 'Chinese',
+                'ko-KR': 'Korean',
+                'nl-NL': 'Dutch',
+                'tr-TR': 'Turkish',
+                'sv-SE': 'Swedish',
+                'id-ID': 'Indonesian',
+                'fil-PH': 'Filipino',
+                'ja-JP': 'Japanese',
+                'uk-UA': 'Ukrainian',
+                'el-GR': 'Greek',
+                'cs-CZ': 'Czech',
+                'fi-FI': 'Finnish',
+                'ro-RO': 'Romanian',
+                'da-DK': 'Danish',
+                'bg-BG': 'Bulgarian',
+                'ms-MY': 'Malay',
+                'sk-SK': 'Slovak',
+                'hr-HR': 'Croatian',
+                'ar-SA': 'Classic Arabic',
+                'ta-IN': 'Tamil'
             }
             for voice in voices:
                 voice['id'] = voice['voice_id']
                 accent = voice['labels'].get('accent', 'american')
                 language_code = accent_to_language_code.get(accent, 'en-US')  # Default to 'en-US'
-                voice['language_codes'] = [language_code] 
+                if voice['high_quality_base_model_ids'] == 'eleven_multilingual_v1':
+                    voice['language_codes'] = [language_code for language_code in supported_languages_v1.keys()]
+                else:
+                    voice['language_codes'] = [language_code for language_code in supported_languages_v2.keys()]
                 voice['name'] = voice['name']
                 voice['gender'] = 'Unknown'
                 standardized_voices.append(voice)
