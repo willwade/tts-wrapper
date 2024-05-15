@@ -23,6 +23,10 @@ class AbstractTTS(ABC):
         self.position = 0  # Position in the byte stream
         self.timings = []
         self.timers = []
+        self._volume = None
+        self._pitch = None
+        self._pitch_contour = None
+
 
     @abstractmethod
     def get_voices(self) -> List[Dict[str, Any]]:
@@ -281,4 +285,37 @@ class AbstractTTS(ABC):
         """Cleans up resources upon deletion of the instance."""
         # Safely check and close the stream
         self.finish()
+    
+    @property
+    def rate(self):
+        return self._rate
+
+    @rate.setter
+    def rate(self, value):
+        self._rate = value
+
+    @property
+    def volume(self):
+        return self._volume
+
+    @volume.setter
+    def volume(self, value):
+        self._volume = value
+
+    @property
+    def pitch(self):
+        return self._pitch
+
+    @pitch.setter
+    def pitch(self, value):
+        self._pitch = value
+
+    @property
+    def pitch_contour(self):
+        return self._pitch_contour
+
+    @pitch_contour.setter
+    def pitch_contour(self, value):
+        self._pitch_contour = value
+
 

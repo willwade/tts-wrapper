@@ -17,6 +17,7 @@ class MicrosoftSSML(BaseSSMLRoot):
                 "xmlns:mstts": "https://www.w3.org/2001/mstts",
             }
         ).add(self._inner)
+        self._prosody = None
 
     def set_voice(self, new_voice: str, new_lang: str):
         """Updates the voice and language for the SSML without reconstructing the SSML nodes."""

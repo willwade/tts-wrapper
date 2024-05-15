@@ -9,12 +9,12 @@ from azure.cognitiveservices.speech import SpeechConfig, SpeechSynthesizer, Audi
 import azure.cognitiveservices.speech as speechsdk
 import logging
 
-
 class MicrosoftTTS(AbstractTTS):
     def __init__(self, client: MicrosoftClient, lang: Optional[str] = None, voice: Optional[str] = None):
         super().__init__()
         self._client = client
         self.set_voice(voice or "en-US-JessaNeural", lang or "en-US")
+        self._ssml = MicrosoftSSML(self._lang,self._voice) 
         audio_config = speechsdk.audio.AudioOutputConfig(use_default_speaker=True)
         self.synthesizer = speechsdk.SpeechSynthesizer(
             speech_config=self._client.speech_config,
@@ -84,3 +84,17 @@ class MicrosoftTTS(AbstractTTS):
                 raise Exception(f"Synthesis error: {cancellation_details.error_details}")
         else:
             raise Exception("Synthesis failed without detailed error message.")
+    
+    @property
+    def ssml(self) -> MicrosoftSSML:
+        return self._ssml
+
+    @AbstractTTS.volume.setter
+    def volume(self, value):
+        self._volume = value
+        self._ssml.volume = value
+
+    @AbstractTTS.rate.setter
+    def rate(self, value):
+        self._rate = value
+        self._ssml.rate = value

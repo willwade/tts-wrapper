@@ -41,7 +41,7 @@ class MicrosoftClient:
                 standardized_voices.append(voice_dict)
             return standardized_voices
         elif result.reason == speechsdk.ResultReason.Canceled:
-            cancellation_details = result.cancellation_details
-            print(f"Speech synthesis canceled; error details: {cancellation_details.error_details}")
+            cancellation_details = result.error_details
+            print(f"Speech synthesis canceled; error details: {cancellation_details}")
             return []  # Return an empty list or raise an exception
 
