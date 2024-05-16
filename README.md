@@ -28,6 +28,12 @@ _TTS-Wrapper_ simplifies using text-to-speech APIs by providing a unified interf
 - **File Output**: Save spoken audio to files in various formats.
 - **Unified Voice handling** Get Voices across all TTS engines with alike keys
 
+## To-Do
+
+- Add support for piper TTS
+- Fix and do a better job of changing rate, volume etc (use getproperty and setProperty like pyttsx3)
+- Add more tests and more logging code throughout. And exception handling
+
 ## Installation
 
 ```sh
