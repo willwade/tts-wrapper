@@ -21,6 +21,7 @@ google-cloud-texttospeech = {version = "^2.11.1", optional = true}
 pyttsx3 = {version = "^2.90", optional = true}
 pyaudio = {version = "^0.2.11", optional = true}
 azure-cognitiveservices-speech = "^1.15.0"  # Ensure the version matches what's compatible with your package
+pythonnet = "^3.0.1"
 
 [tool.poetry.extras]
 google = ["google-cloud-texttospeech"]
@@ -29,6 +30,7 @@ polly = ["boto3"]
 microsoft = ["azure.cognitiveservices.speech"]
 elevenlabs = ["requests"]
 sapi = ["pyttsx3"]
+uwp = ["pythonnet"]
 
 [tool.poetry.dev-dependencies]
 pytest = "^6.2.1"
