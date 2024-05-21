@@ -15,8 +15,8 @@ class UWPClient:
         voices = self._synthesizer.AllVoices
         return [voice.DisplayName for voice in voices]
 
-    def synth(self, text: str) -> bytes:
-        stream = self._synthesizer.SynthesizeTextToStreamAsync(text).GetResults()
+    def synth(self, ssml: str) -> bytes:
+        stream = self._synthesizer.SynthesizeSsmlToStreamAsync(ssml).GetResults()
         
         # Read the stream into a byte buffer
         input_stream = stream.GetInputStreamAt(0)
@@ -32,5 +32,3 @@ class UWPClient:
         # Convert to Python bytes
         bytes_data = bytes(byte_array)
         return bytes_data
-
-
