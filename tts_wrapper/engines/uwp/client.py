@@ -68,6 +68,17 @@ class UWPClient:
 
         # Convert to Python bytes
         bytes_data = bytes(byte_array)
+        
+        # Get word timings
+        markers = []
+        for marker in stream.Markers:
+            markers.append({
+                'timing': marker.Time.TotalSeconds,
+                'word': marker.Text
+            })
+
+        # Set the timings on the parent abstracted class
+        self.set_timings(markers)
         return bytes_data
         
     def set_voice(self, voice_id: str, lang_id: Optional[str] = None):
