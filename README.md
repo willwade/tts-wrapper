@@ -32,7 +32,7 @@ _TTS-Wrapper_ simplifies using text-to-speech APIs by providing a unified interf
 ## To-Do
 
 - Add support for piper TTS (see branch piperTts)
-- Fix and do a better job of changing rate, volume etc (use getproperty and setProperty like pyttsx3) see https://gist.github.com/willwade/a2b96ac3793dbedbfcbb8b71770e8c97)
+- Fix and do a better job of changing rate, volume etc (started this. need to make syre engines use the properties abd docs updated for event handling)
 - Add more tests and more logging code throughout. And exception handling
 - look at https://github.com/synesthesiam/opentts/
 - look at Orca
