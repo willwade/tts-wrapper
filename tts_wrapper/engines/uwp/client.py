@@ -4,12 +4,19 @@ from typing import List
 
 clr.AddReference('Windows')
 from System import Array
-from Windows.Media.SpeechSynthesis import SpeechSynthesizer, VoiceInformation
+from Windows.Foundation.Metadata import ApiInformation
+from Windows.Media.SpeechSynthesis import SpeechSynthesizer
 
 class UWPClient:
     def __init__(self) -> None:
+        if not self.is_api_contract_present():
+            raise RuntimeError("Required UWP API contract is not present.")
         self._synthesizer = SpeechSynthesizer()
 
+    def is_api_contract_present(self) -> bool:
+        """Check if the UniversalApiContract is present."""
+        return ApiInformation.IsApiContractPresent("Windows.Foundation.UniversalApiContract", 1)
+        
     def get_voices(self) -> List[str]:
         """Returns a list of available voices."""
         voices = self._synthesizer.AllVoices
