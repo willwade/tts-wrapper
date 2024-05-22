@@ -10,6 +10,7 @@ class UWPTTS(AbstractTTS):
         return ["wav"]
 
     def __init__(self, client: UWPClient) -> None:
+        super().__init__()
         self._client = client
 
     def synth_to_bytes(self, text: Any, format: FileFormat) -> bytes:
