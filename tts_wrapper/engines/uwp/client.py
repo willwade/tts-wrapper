@@ -36,10 +36,19 @@ class UWPClient:
         return ApiInformation.IsApiContractPresent("Windows.Foundation.UniversalApiContract", 1)
     
     
-    def get_voices(self) -> List[str]:
-        """Returns a list of available voices."""
+    def get_voices(self) -> List[Dict[str, Any]]:
+        """Returns a list of available voices with standardized keys."""
         voices = self._synthesizer.AllVoices
-        return [voice.DisplayName for voice in voices]
+        standardized_voices = []
+        for voice in voices:
+            standardized_voice = {
+                'id': voice.Id,
+                'language_codes': [voice.Language],
+                'name': voice.DisplayName,
+                'gender': voice.Gender.ToString()
+            }
+            standardized_voices.append(standardized_voice)
+        return standardized_voices
 
     def synth(self, ssml: str) -> bytes:
         stream = self._synthesizer.SynthesizeSsmlToStreamAsync(ssml).GetResults()
