@@ -37,6 +37,7 @@ _TTS-Wrapper_ simplifies using text-to-speech APIs by providing a unified interf
 - look at https://github.com/synesthesiam/opentts/
 - look at Orca
 - check uwp. very quick untested write 
+- migtate to portaudio as issues with linux
 
 ## Installation
 
