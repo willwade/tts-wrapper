@@ -23,6 +23,8 @@ class UWPClient:
         if not self._is_api_contract_present():
             raise RuntimeError("Required UWP API contract is not present.")
         self._synthesizer = SpeechSynthesizer()
+        if voice:
+            self.set_voice(voice, lang)
 
     def _check_modules(self) -> None:
         """Check if the required modules are installed."""
@@ -67,3 +69,12 @@ class UWPClient:
         # Convert to Python bytes
         bytes_data = bytes(byte_array)
         return bytes_data
+        
+    def set_voice(self, voice_id: str, lang_id: Optional[str] = None):
+        """
+        Sets the voice for the TTS engine and updates the SSML configuration accordingly.
+
+        @param voice_id: The ID of the voice to be used for synthesis.
+        """
+        super().set_voice(voice_id)  # Optionally manage voice at the AbstractTTS level if needed
+        self._client.set_voice(voice_id)
