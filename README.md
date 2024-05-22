@@ -31,13 +31,13 @@ _TTS-Wrapper_ simplifies using text-to-speech APIs by providing a unified interf
 
 ## To-Do
 
-- Add support for piper TTS
-- Fix and do a better job of changing rate, volume etc (use getproperty and setProperty like pyttsx3)
+- Add support for piper TTS (see branch piperTts)
+- Fix and do a better job of changing rate, volume etc (use getproperty and setProperty like pyttsx3) see https://gist.github.com/willwade/a2b96ac3793dbedbfcbb8b71770e8c97)
 - Add more tests and more logging code throughout. And exception handling
 - look at https://github.com/synesthesiam/opentts/
 - look at Orca
 - check uwp. very quick untested write 
-- migtate to portaudio as issues with linux
+- migtate to portaudio as issues with linux https://chatgpt.com/share/1c31a2ac-d26d-401b-a13e-8a4eb75bf7d4)
 
 ## Installation
 
