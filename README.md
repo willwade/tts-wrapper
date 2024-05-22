@@ -36,6 +36,7 @@ _TTS-Wrapper_ simplifies using text-to-speech APIs by providing a unified interf
 - Add more tests and more logging code throughout. And exception handling
 - look at https://github.com/synesthesiam/opentts/
 - look at Orca
+- check uwp. very quick untested write 
 
 ## Installation
 
