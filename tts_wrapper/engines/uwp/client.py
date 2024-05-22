@@ -1,22 +1,41 @@
+from typing import List, Optional, Tuple
 import os
-import clr
-from typing import List
 
-clr.AddReference('Windows')
-from System import Array
-from Windows.Foundation.Metadata import ApiInformation
-from Windows.Media.SpeechSynthesis import SpeechSynthesizer
+try:
+    import clr
+except ImportError:
+    clr = None  # type: ignore
+
+try:
+    from System import Array, Byte
+    from Windows.Foundation.Metadata import ApiInformation
+    from Windows.Media.SpeechSynthesis import SpeechSynthesizer
+    import Windows.Storage.Streams
+except ImportError:
+    ApiInformation = None
+    SpeechSynthesizer = None
+
+from ...exceptions import ModuleNotInstalled
 
 class UWPClient:
     def __init__(self) -> None:
-        if not self.is_api_contract_present():
+        self._check_modules()
+        if not self._is_api_contract_present():
             raise RuntimeError("Required UWP API contract is not present.")
         self._synthesizer = SpeechSynthesizer()
 
-    def is_api_contract_present(self) -> bool:
+    def _check_modules(self) -> None:
+        """Check if the required modules are installed."""
+        if clr is None:
+            raise ModuleNotInstalled("pythonnet")
+        if ApiInformation is None or SpeechSynthesizer is None:
+            raise ModuleNotInstalled("Windows Runtime APIs")
+
+    def _is_api_contract_present(self) -> bool:
         """Check if the UniversalApiContract is present."""
         return ApiInformation.IsApiContractPresent("Windows.Foundation.UniversalApiContract", 1)
-        
+    
+    
     def get_voices(self) -> List[str]:
         """Returns a list of available voices."""
         voices = self._synthesizer.AllVoices
