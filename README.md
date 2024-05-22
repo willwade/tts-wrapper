@@ -18,6 +18,7 @@ _TTS-Wrapper_ simplifies using text-to-speech APIs by providing a unified interf
 - ElevenLabs
 - PicoTTS
 - SAPI (Microsoft Speech API)
+- UWP (WinRT) Speech system (win 10+)
 
 ## Features
 - **Text to Speech**: Convert text into spoken audio.
@@ -115,6 +116,14 @@ tts = WatsonTTS(client)
 from tts_wrapper import ElevenLabsTTS, ElevenLabsClient
 client = ElevenLabsClient(credentials=('api_key'))
 tts = ElevenLabsTTS(client)
+```
+
+### UWP
+
+```python
+from tts_wrapper import UWPTTS, UWPClient
+client = UWPClient()
+tts = UWPTTS(client)
 ```
 
 You then can perform the following methods.
