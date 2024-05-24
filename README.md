@@ -16,6 +16,7 @@ _TTS-Wrapper_ simplifies using text-to-speech APIs by providing a unified interf
 - Microsoft Azure TTS
 - IBM Watson
 - ElevenLabs
+- Wit.Ai 
 - PicoTTS
 - SAPI (Microsoft Speech API)
 - UWP (WinRT) Speech system (win 10+)
@@ -119,6 +120,14 @@ tts = WatsonTTS(client)
 from tts_wrapper import ElevenLabsTTS, ElevenLabsClient
 client = ElevenLabsClient(credentials=('api_key'))
 tts = ElevenLabsTTS(client)
+```
+
+### Wit.Ai
+
+```python
+from tts_wrapper import WitAiTTS, WitAiClient
+client = WitAiClient(credentials=('token'))
+tts = WitAiTTS(client)
 ```
 
 ### UWP
