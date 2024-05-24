@@ -225,7 +225,7 @@ tts.speak(ssml_text)
 
 ### Using callbacks on word level boundaries
 
-Note only **Polly, Microsoft and Watson** can do this. We can't do this in anything else
+Note only **Polly, Microsoft, Google, UWP, SAPI and Watson** can do this **correctly**. We can't do this in anything else but we do do a estimated tonings for all other engines (ie elevenlabs abd witAi)
 
 ```python
 def my_callback(word: str, start_time: float):
