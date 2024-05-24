@@ -1,3 +1,3 @@
-from .client import WitClient
-from .ssml import WitSSML
-from .wit import WitTTS
+from .client import WitAiClient
+from .ssml import WitAiSSML
+from .wit import WitAiTTS
