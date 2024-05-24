@@ -1,8 +1,8 @@
 from tts_wrapper import AbstractTTS, UnsupportedFileFormat
-from .wit_ssml import WitSSML
+from .wit_ssml import WitAiSSML
 
-class WitTTS(AbstractTTS):
-    def __init__(self, client: WitClient, voice: Optional[str] = "Rebecca", lang: Optional[str] = "en-US"):
+class WitAiTTS(AbstractTTS):
+    def __init__(self, client: WitAiClient, voice: Optional[str] = "Rebecca", lang: Optional[str] = "en-US"):
         super().__init__()
         self._client = client
         self._voice = voice
