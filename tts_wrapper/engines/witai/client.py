@@ -2,11 +2,15 @@ import requests
 from typing import Any, Dict, Optional, List
 
 class WitAiClient:
-    def __init__(self, token: str) -> None:
+    def __init__(self, credentials: tuple) -> None:
+        if not credentials or not credentials[0]:
+            raise ValueError("An API token for Wit.ai must be provided")
+        
+        # Assuming credentials is a tuple where the first item is the token
+        self.token = credentials[0]
         self.base_url = "https://api.wit.ai"
-        self.token = token
         self.api_version = "20240304"
-
+        
     def synth(self, text: str, voice: str, format: str = "pcm") -> bytes:
         headers = {
             "Authorization": f"Bearer {self.token}",
