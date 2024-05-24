@@ -240,7 +240,7 @@ Word "timing" spoken at 1.3625 ms
 Word "test" spoken at 1.7375 ms
 ```
 
-#### PicoTTS & SAPI
+#### PicoTTS, SAPI & UWP
 
 These clients dont't require authorization since they run offline.
 
@@ -257,6 +257,96 @@ By default, all engines output audio in the WAV format, but can be configured to
 
 ```Python
 tts.synth('<speak>Hello, world!</speak>', 'hello.mp3', format='mp3)
+```
+
+
+## Developer's Guide: Adding a New Engine to TTS Wrapper
+
+This guide provides a step-by-step approach to adding a new engine to the existing Text-to-Speech (TTS) wrapper system.
+
+### Step 1: Create Engine Directory Structure
+
+1. **Create a new folder** for your engine within the `engines` directory. Name this folder according to your engine, such as `witai` for Wit.ai.
+
+   Directory structure:
+   ```
+   engines/witai/
+   ```
+
+2. **Create necessary files** within this new folder:
+   - `__init__.py` - Makes the directory a Python package.
+   - `client.py` - Handles all interactions with the TTS API.
+   - `engine.py` - Contains the TTS class that integrates with your abstract TTS system.
+   - `ssml.py` - Defines any SSML handling specific to this engine.
+
+   Final directory setup:
+   ```
+   engines/
+   └── witai/
+       ├── __init__.py
+       ├── client.py
+       ├── engine.py
+       └── ssml.py
+   ```
+
+### Step 2: Implement Client Functionality in `client.py`
+
+Implement authentication and necessary setup for API connection. This file should manage tasks such as sending synthesis requests and fetching available voices.
+
+```python
+class TTSClient:
+    def __init__(self, api_key):
+        self.api_key = api_key
+        # Setup other necessary API connection details here
+
+    def synth(self, text, options):
+        # Code to send a synthesis request to the TTS API
+        pass
+
+    def get_voices(self):
+        # Code to retrieve available voices from the TTS API
+        pass
+```
+
+### Step 3: Define the TTS Engine in `engine.py`
+
+This class should inherit from the abstract TTS class and implement required methods such as `get_voices` and `synth_to_bytes`.
+
+```python
+from .client import TTSClient
+from your_tts_module.abstract_tts import AbstractTTS
+
+class WitTTS(AbstractTTS):
+    def __init__(self, api_key):
+        super().__init__()
+        self.client = TTSClient(api_key)
+
+    def get_voices(self):
+        return self.client.get_voices()
+
+    def synth_to_bytes(self, text, format='wav'):
+        return self.client.synth(text, {'format': format})
+```
+
+### Step 4: Implement SSML Handling in `ssml.py`
+
+If the engine has specific SSML requirements or supports certain SSML tags differently, implement this logic here.
+
+```python
+from your_tts_module.abstract_ssml import BaseSSMLRoot, SSMLNode
+
+class EngineSSML(BaseSSMLRoot):
+    def add_break(self, time='500ms'):
+        self.root.add(SSMLNode('break', attrs={'time': time}))
+```
+
+### Step 5: Update `__init__.py`
+
+Make sure the `__init__.py` file properly imports and exposes the TTS class and any other public classes or functions from your engine.
+
+```python
+from .engine import WitTTS
+from .ssml import EngineSSML
 ```
 
 ## License
