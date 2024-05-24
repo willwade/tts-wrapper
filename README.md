@@ -32,13 +32,15 @@ _TTS-Wrapper_ simplifies using text-to-speech APIs by providing a unified interf
 
 ## To-Do
 
+- fux google & Microsoft credentials to use a tuple.  
 - Add support for piper TTS (see branch piperTts)
 - Fix and do a better job of changing rate, volume etc (started this. need to make syre engines use the properties abd docs updated for event handling)
 - Add more tests and more logging code throughout. And exception handling
 - look at https://github.com/synesthesiam/opentts/
 - look at Orca
-- look at wit ai https://wit.ai/docs/http/20240304/#post__synthesize_link
-- check uwp. very quick untested write 
+- chek wit ai 
+- check uwp. 
+- check and integrate callbaxks fir finishd abd start
 - migtate to portaudio as issues with linux https://chatgpt.com/share/1c31a2ac-d26d-401b-a13e-8a4eb75bf7d4)
 
 ## Installation
