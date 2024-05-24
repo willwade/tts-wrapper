@@ -1,5 +1,8 @@
 from tts_wrapper import AbstractTTS, UnsupportedFileFormat
+from .client import WitAiClient
 from .wit_ssml import WitAiSSML
+from ...engines.utils import estimate_word_timings  # Import the timing estimation function
+
 
 class WitAiTTS(AbstractTTS):
     def __init__(self, client: WitAiClient, voice: Optional[str] = "Rebecca", lang: Optional[str] = "en-US"):
@@ -12,6 +15,8 @@ class WitAiTTS(AbstractTTS):
     def synth_to_bytes(self, text: str, format: Optional[str] = "pcm") -> bytes:
         if format not in ["pcm", "mp3", "wav"]:
             raise UnsupportedFileFormat(format, self.__class__.__name__)
+        word_timings = estimate_word_timings(text)
+        self.set_timings(word_timings)
         return self._client.synth(text, self._voice, format)
 
     @property
