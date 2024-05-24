@@ -1,7 +1,7 @@
 import requests
 from typing import Any, Dict, Optional, List
 
-class WitClient:
+class WitAiClient:
     def __init__(self, token: str) -> None:
         self.base_url = "https://api.wit.ai"
         self.token = token
