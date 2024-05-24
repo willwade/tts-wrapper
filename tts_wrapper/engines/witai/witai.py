@@ -1,3 +1,6 @@
+from tts_wrapper import AbstractTTS, UnsupportedFileFormat
+from .wit_ssml import WitSSML
+
 class WitTTS(AbstractTTS):
     def __init__(self, client: WitClient, voice: Optional[str] = "Rebecca", lang: Optional[str] = "en-US"):
         super().__init__()
@@ -12,9 +15,9 @@ class WitTTS(AbstractTTS):
         return self._client.synth(text, self._voice, format)
 
     @property
-    def ssml(self) -> None:
-        """Implement if Wit.ai supports SSML directly; adjust method accordingly."""
-        return None
+    def ssml(self) -> WitSSML:
+        """Returns an instance of the WitSSML class for constructing SSML strings."""
+        return WitSSML()
 
     def get_voices(self) -> List[Dict[str, Any]]:
         """Retrieves a list of available voices from the Wit.ai service."""
