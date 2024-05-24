@@ -2,7 +2,7 @@ from typing import Any, List,Dict, Optional
 from ...exceptions import UnsupportedFileFormat
 from ...tts import AbstractTTS, FileFormat
 from . import ElevenLabsClient, ElevenLabsSSMLRoot
-
+from ...engines.utils import estimate_word_timings  
 
 class ElevenLabsTTS(AbstractTTS):
     def __init__(self, client: ElevenLabsClient, lang: Optional[str] = None, voice: Optional[str] = None):
@@ -16,7 +16,8 @@ class ElevenLabsTTS(AbstractTTS):
             raise UnsupportedFileFormat(format, "ElevenLabs API")
         if not self._voice:
             raise ValueError("Voice ID must be set before synthesizing speech.")
-        
+        word_timings = estimate_word_timings(text)
+        self.set_timings(word_timings)
         # Get the audio from the ElevenLabs API
         return self._client.synth(str(text), self._voice, format)
 
