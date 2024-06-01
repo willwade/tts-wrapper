@@ -5,6 +5,7 @@ import tempfile
 import wave
 from io import BytesIO
 import re
+from typing import List, Dict
 
 
 def process_wav(raw: bytes) -> bytes:
@@ -22,7 +23,7 @@ def create_temp_filename(suffix="") -> str:
     )
 
 
-def estimate_word_timings(self, text: str, wpm: int = 150) -> List[Dict[str, float]]:
+def estimate_word_timings(text: str, wpm: int = 150) -> List[Dict[str, float]]:
     words = re.findall(r'\b\w+\b', text)
     words_per_second = wpm / 60
     seconds_per_word = 1 / words_per_second
