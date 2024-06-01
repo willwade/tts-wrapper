@@ -1,8 +1,6 @@
-from tts_wrapper import AbstractTTS, UnsupportedFileFormat
-from .client import WitAiClient
-from .wit_ssml import WitAiSSML
+from ...tts import AbstractTTS, FileFormat
+from . import WitAUClient, WitAISML
 from ...engines.utils import estimate_word_timings  # Import the timing estimation function
-
 
 class WitAiTTS(AbstractTTS):
     def __init__(self, client: WitAiClient, voice: Optional[str] = "Rebecca", lang: Optional[str] = "en-US"):

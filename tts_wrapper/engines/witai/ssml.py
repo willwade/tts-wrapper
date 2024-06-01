@@ -1,4 +1,4 @@
-from . import BaseSSMLRoot, SSMLNode, Child
+from ...ssml import BaseSSMLRoot, SSMLNode
 
 class WitAiSSML(BaseSSMLRoot):
     def break_(self, time: str) -> "WitAiSSML":
