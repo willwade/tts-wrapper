@@ -88,13 +88,3 @@ class MicrosoftTTS(AbstractTTS):
     @property
     def ssml(self) -> MicrosoftSSML:
         return self._ssml
-
-    @AbstractTTS.volume.setter
-    def volume(self, value):
-        self._volume = value
-        self._ssml.volume = value
-
-    @AbstractTTS.rate.setter
-    def rate(self, value):
-        self._rate = value
-        self._ssml.rate = value
