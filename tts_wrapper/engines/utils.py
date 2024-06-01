@@ -24,6 +24,8 @@ def create_temp_filename(suffix="") -> str:
 
 
 def estimate_word_timings(text: str, wpm: int = 150) -> List[Dict[str, float]]:
+    #remove ssml
+    text = re.sub('<[^<]+?>', '', text)
     words = re.findall(r'\b\w+\b', text)
     words_per_second = wpm / 60
     seconds_per_word = 1 / words_per_second
