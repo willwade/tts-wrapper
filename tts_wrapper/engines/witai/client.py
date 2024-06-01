@@ -22,10 +22,9 @@ class WitAiClient:
         # Assuming credentials is a tuple where the first item is the token
         self.token = credentials[0]
         self.base_url = "https://api.wit.ai"
-        self.api_version = "20240304"
+        self.api_version = "20240601"
         self.logger = logging.getLogger(__name__)
         
-    
     def _get_mime_type(self, format: str) -> str:
         """Maps logical format names to MIME types."""
         formats = {
@@ -72,9 +71,12 @@ class WitAiClient:
         }
         
         try:
+            print(headers)  # Debug print statement
+            print(data)  # Debug print statement
             response = requests.post(f"{self.base_url}/synthesize?v={self.api_version}", headers=headers, json=data)
             response.raise_for_status()
             return response.content
         except requests.exceptions.RequestException as e:
+            print(e.response.text)  # Debug print statement
             self.logger.error(f"Failed to synthesize text with Wit.ai: {e}")
             raise
