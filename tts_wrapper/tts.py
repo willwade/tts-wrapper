@@ -184,11 +184,14 @@ class AbstractTTS(ABC):
         self.speak_streamed(ssml_text)
         start_time = time.time()
         for timing, word in self.timings:
-            delay = timing - (time.time() - start_time)
-            if delay > 0:
-                timer = threading.Timer(delay, callback, args=(word, timing))
-                timer.start()
-                self.timers.append(timer)
+            try:
+                delay = timing - (time.time() - start_time)
+                if delay > 0:
+                    timer = threading.Timer(delay, callback, args=(word, timing))
+                    timer.start()
+                    self.timers.append(timer)
+            except Exception as e:
+                logging.error(f"Error in start_playback_with_callbacks: {e}")
                 
     def finish(self):
         try:

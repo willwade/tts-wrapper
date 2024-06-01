@@ -5,8 +5,7 @@ import tempfile
 import wave
 from io import BytesIO
 import re
-from typing import List, Dict
-
+from typing import List, Dict, Tuple
 
 def process_wav(raw: bytes) -> bytes:
     bio = BytesIO()
@@ -23,7 +22,7 @@ def create_temp_filename(suffix="") -> str:
     )
 
 
-def estimate_word_timings(text: str, wpm: int = 150) -> List[Dict[str, float]]:
+def estimate_word_timings(text: str, wpm: int = 150) -> List[Tuple[float, str]]:
     #remove ssml
     text = re.sub('<[^<]+?>', '', text)
     words = re.findall(r'\b\w+\b', text)
@@ -32,9 +31,7 @@ def estimate_word_timings(text: str, wpm: int = 150) -> List[Dict[str, float]]:
     timings = []
     current_time = 0
     for word in words:
-        timings.append({
-            'word': word,
-            'start_time': float(current_time)  # Convert current_time to float
-        })
+        # Append a tuple instead of a dictionary
+        timings.append((float(current_time), word))
         current_time += seconds_per_word
     return timings
