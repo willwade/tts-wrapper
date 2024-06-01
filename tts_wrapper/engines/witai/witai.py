@@ -1,5 +1,5 @@
 from ...tts import AbstractTTS, FileFormat
-from . import WitAUClient, WitAISML
+from . import WitAiClient, WitAiSSML
 from ...engines.utils import estimate_word_timings  # Import the timing estimation function
 
 class WitAiTTS(AbstractTTS):
