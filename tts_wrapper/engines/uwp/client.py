@@ -1,5 +1,6 @@
-from typing import List, Optional, Tuple
-import os
+from typing import List, Dict, Any, Optional
+from typing import Optional, Tuple, Dict, List, Any
+from ...exceptions import ModuleNotInstalled
 
 try:
     import clr
@@ -23,6 +24,8 @@ class UWPClient:
         if not self._is_api_contract_present():
             raise RuntimeError("Required UWP API contract is not present.")
         self._synthesizer = SpeechSynthesizer()
+        voice = None  # Define the variable "voice"
+        lang = None  # Define the variable "lang"
         if voice:
             self.set_voice(voice, lang)
 
