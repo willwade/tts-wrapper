@@ -7,3 +7,4 @@ from .watson import *
 from .elevenlabs import *
 from .uwp import *
 from .witai import *
+from .piper import *
