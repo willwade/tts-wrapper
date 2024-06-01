@@ -1,3 +1,3 @@
-from .client import OrcaClient
-from .ssml import OrcaSSML
-from .orca import OrcaTTS
+from .client import PiperClient
+from .ssml import PiperSSML
+from .piper import PiperTTS
