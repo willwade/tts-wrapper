@@ -17,13 +17,10 @@ class WitAiTTS(AbstractTTS):
         return ["mp3", "pcm", "wav"]
     
     def synth_to_bytes(self, text: str, format: Optional[str] = "pcm") -> bytes:
-        print("WitAiTTS.synth_to_bytes")
         if format not in ["pcm", "mp3", "wav"]:
             raise UnsupportedFileFormat(format, self.__class__.__name__)
         word_timings = estimate_word_timings(str(text))
         self.set_timings(word_timings)
-        print(f"Synthesizing text: {text}")
-        print(f"word_timings: {word_timings}")
         return self._client.synth(str(text), self._voice, format)
 
     @property

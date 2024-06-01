@@ -34,7 +34,7 @@ def estimate_word_timings(text: str, wpm: int = 150) -> List[Dict[str, float]]:
     for word in words:
         timings.append({
             'word': word,
-            'start_time': current_time
+            'start_time': float(current_time)  # Convert current_time to float
         })
         current_time += seconds_per_word
     return timings
