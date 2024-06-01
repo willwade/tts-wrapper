@@ -40,7 +40,7 @@ _TTS-Wrapper_ simplifies using text-to-speech APIs by providing a unified interf
 - look at Orca
 - check uwp. 
 - check and integrate callbaxks fir finishd abd start
-- migtate to portaudio as issues with linux https://chatgpt.com/share/1c31a2ac-d26d-401b-a13e-8a4eb75bf7d4)
+- migtate to portaudio as issues with linux https://chatgpt.com/share/1c31a2ac-d26d-401b-a13e-8a4eb75bf7d4) (not going ahead  - that too has problems)
 
 ## Installation
 
