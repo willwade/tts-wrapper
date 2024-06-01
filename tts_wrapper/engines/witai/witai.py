@@ -1,6 +1,8 @@
 from ...tts import AbstractTTS, FileFormat
+from typing import Optional, List, Dict, Any
 from . import WitAiClient, WitAiSSML
 from ...engines.utils import estimate_word_timings  # Import the timing estimation function
+from ...exceptions import UnsupportedFileFormat
 
 class WitAiTTS(AbstractTTS):
     def __init__(self, client: WitAiClient, voice: Optional[str] = "Rebecca", lang: Optional[str] = "en-US"):
@@ -10,17 +12,23 @@ class WitAiTTS(AbstractTTS):
         self._lang = lang
         self.audio_rate = 24000  # Adjusted based on Wit.ai's 24kHz sample rate for PCM
 
+    @classmethod
+    def supported_formats(cls) -> List[FileFormat]:
+        return ["mp3", "pcm", "wav"]
+    
     def synth_to_bytes(self, text: str, format: Optional[str] = "pcm") -> bytes:
         if format not in ["pcm", "mp3", "wav"]:
             raise UnsupportedFileFormat(format, self.__class__.__name__)
         word_timings = estimate_word_timings(text)
         self.set_timings(word_timings)
-        return self._client.synth(text, self._voice, format)
+        print(f"Synthesizing text: {text}")
+        print(f"word_timings: {word_timings}")
+        return self._client.synth(str(text), self._voice, format)
 
     @property
-    def ssml(self) -> WitSSML:
+    def ssml(self) -> WitAiSSML:
         """Returns an instance of the WitSSML class for constructing SSML strings."""
-        return WitSSML()
+        return WitAiSSML()
 
     def get_voices(self) -> List[Dict[str, Any]]:
         """Retrieves a list of available voices from the Wit.ai service."""

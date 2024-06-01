@@ -1,6 +1,11 @@
 from ...ssml import BaseSSMLRoot, SSMLNode
 
 class WitAiSSML(BaseSSMLRoot):
+    def __str__(self):
+        # Return a string representation of the SSML
+        print("i got called")
+        return self.to_ssml()
+    
     def break_(self, time: str) -> "WitAiSSML":
         self.add(SSMLNode("break", attrs={"time": time}))
         return self
