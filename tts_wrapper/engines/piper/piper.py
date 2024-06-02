@@ -6,6 +6,8 @@ from ...tts import AbstractTTS, FileFormat
 from . import PiperClient, PiperSSML
 import threading
 import time
+from ...engines.utils import estimate_word_timings  # Import the timing estimation function
+
 
 class PiperTTS(AbstractTTS):
     @classmethod
@@ -22,6 +24,8 @@ class PiperTTS(AbstractTTS):
     def synth_to_bytes(self, text: Any, format: Optional[FileFormat] = "wav") -> bytes:
         if format not in self.supported_formats():
             raise UnsupportedFileFormat(format, self.__class__.__name__)
+        word_timings = estimate_word_timings(str(text))
+        self.set_timings(word_timings)
         return self._client.synth(str(text), format)
 
     @property
