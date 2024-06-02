@@ -27,26 +27,18 @@ setup(
     url='https://github.com/mediatechlab/tts-wrapper',
     packages=find_packages(),
     install_requires=[
-        'requests>=2.28.0',
-        'boto3>=1.24.34',
-        'ibm-watson>=6.0.0',
-        'google-cloud-texttospeech>=2.11.1',
-        'pyttsx3>=2.90',
-        'pyaudio>=0.2.11',
-        'azure-cognitiveservices-speech>=1.15.0',
-        'pythonnet>=3.0.1',
-        'piper_tts>=1.2.0'
+        'pyaudio>=0.2.11'
     ],
     extras_require={
-        'google': ['google-cloud-texttospeech'],
-        'watson': ['ibm-watson'],
-        'polly': ['boto3'],
-        'microsoft': ['azure-cognitiveservices-speech'],
-        'elevenlabs': ['requests'],
-        'witai': ['requests'],
-        'sapi': ['pyttsx3'],
-        'uwp': ['pythonnet'],
-        'piper': ['piper_tts']
+        'google': ['google-cloud-texttospeech>=2.11.1'],
+        'watson': ['ibm-watson>=6.0.0'],
+        'polly': ['boto3>=1.24.34'],
+        'microsoft': ['azure-cognitiveservices-speech>=1.15.0'],
+        'elevenlabs': ['requests>=2.28.0'],
+        'witai': ['requests>=2.28.0'],
+        'sapi': ['pyttsx3>=2.90'],
+        'uwp': ['pythonnet>=3.0.1'],
+        'piper': ['piper_tts>=1.2.0']
     },
     cmdclass={
         'install': CustomInstallCommand,

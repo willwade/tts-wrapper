@@ -42,20 +42,59 @@ _TTS-Wrapper_ simplifies using text-to-speech APIs by providing a unified interf
 - check and integrate callbaxks fir finishd abd start
 - migtate to portaudio as issues with linux https://chatgpt.com/share/1c31a2ac-d26d-401b-a13e-8a4eb75bf7d4) (not going ahead  - that too has problems)
 
-## Installation
+### Using pip
 
-```sh
-pip install TTS-Wrapper
-```
+1. Clone the repository:
+   ```sh
+   git clone https://github.com/mediatechlab/tts-wrapper.git
+   cd tts-wrapper
+   ```
 
-### Dependencies
-Install additional dependencies based on the services you want to use:
+2. Install the package and system dependencies:
+   ```sh
+   pip install .
+   ```
 
-```sh
-pip install "TTS-Wrapper[google, watson, polly, elevenlabs, microsoft]"
-```
+   To install optional dependencies, use:
+   ```sh
+   pip install .[google, watson, polly, elevenlabs, microsoft]
+   ```
 
-For PicoTTS on Debian systems:
+This will install Python dependencies and system dependencies required for this project. Note that system dependencies will only be installed automatically on Linux.
+
+### Using Poetry
+
+1. Clone the repository:
+   ```sh
+   git clone https://github.com/mediatechlab/tts-wrapper.git
+   cd tts-wrapper
+   ```
+
+2. Install Python dependencies:
+   ```sh
+   poetry install
+   ```
+
+3. Install system dependencies (Linux only):
+   ```sh
+   poetry run postinstall
+   ```
+
+4. Run your project:
+   ```sh
+   poetry run python your_project_script.py
+   ```
+
+## System Dependencies
+
+This project requires the following system dependencies on Linux:
+
+- `portaudio19-dev`
+
+You can install these dependencies using the provided setup script or manually with the appropriate package manager (e.g., `apt-get` for Debian-based systems). The setup script will only run on Linux systems.
+
+
+### For PicoTTS on Debian systems:
 
 ```sh
 sudo apt-get install libttspico-utils
