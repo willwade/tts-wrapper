@@ -6,8 +6,7 @@ from ...tts import AbstractTTS, FileFormat
 from . import PiperClient, PiperSSML
 import threading
 import time
-from ...engines.utils import estimate_word_timings  # Import the timing estimation function
-
+from ...engines.utils import estimate_word_timings  
 
 class PiperTTS(AbstractTTS):
     @classmethod

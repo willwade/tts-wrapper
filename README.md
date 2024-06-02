@@ -20,6 +20,7 @@ _TTS-Wrapper_ simplifies using text-to-speech APIs by providing a unified interf
 - PicoTTS
 - SAPI (Microsoft Speech API)
 - UWP (WinRT) Speech system (win 10+)
+- Piper TTS (experimental and Linux Only)
 
 ## Features
 - **Text to Speech**: Convert text into spoken audio.
@@ -162,6 +163,8 @@ client = ElevenLabsClient(credentials=('api_key'))
 tts = ElevenLabsTTS(client)
 ```
 
+- **Note**: ElevenLabs does not support SSML.
+
 ### Wit.Ai
 
 ```python
@@ -177,6 +180,16 @@ from tts_wrapper import UWPTTS, UWPClient
 client = UWPClient()
 tts = UWPTTS(client)
 ```
+
+### Piper
+
+```python
+from tts_wrapper import PiperTTS, PiperClient
+client = PiperClient()
+tts = PiperTTS(client)
+```
+
+- **Note:** Piper is experimental and only works on Linux only right now. Please also note SSML is not supported so SSML tags will just be rendered as text.
 
 You then can perform the following methods.
 
@@ -265,7 +278,7 @@ tts.speak(ssml_text)
 
 ### Using callbacks on word level boundaries
 
-Note only **Polly, Microsoft, Google, UWP, SAPI and Watson** can do this **correctly**. We can't do this in anything else but we do do a estimated tonings for all other engines (ie elevenlabs abd witAi)
+Note only **Polly, Microsoft, Google, UWP, SAPI and Watson** can do this **correctly**. We can't do this in anything else but we do do a estimated tonings for all other engines (ie elevenlabs, witAi and Piper)
 
 ```python
 def my_callback(word: str, start_time: float):
