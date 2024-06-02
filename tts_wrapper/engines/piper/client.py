@@ -56,7 +56,8 @@ class PiperClient:
         if not model_path.exists():
             # Load voice info
             try:
-                voices_info = get_voices(download_dir, update_voices=True)
+                self.voices_info = get_voices(download_dir, update_voices=True)
+
             except Exception as e:
                 print(f"Error getting voices: {e}")  # Print any exceptions raised by get_voices
                 raise
@@ -64,15 +65,15 @@ class PiperClient:
             try:
 
                 print(f"Model path: {model_path}")
-                print(f"Voices info keys: {voices_info.keys()}")
+                print(f"Voices info keys: {self.voices_info.keys()}")
                 # Check if model_path is in voices_info
-                if model_path_str not in voices_info:
+                if model_path_str not in self.voices_info:
                     print(f"Voice not found in voices_info: {model_path_str}")
                 else:
                     print(f"Voice found in voices_info: {model_path_str}")
 
                 print(f"Ensuring voice exists: {model_path}, {download_dir}, {download_dir}")
-                ensure_voice_exists(model_path_str, [download_dir], download_dir, voices_info)
+                ensure_voice_exists(model_path_str, [download_dir], download_dir, self.voices_info)
                 print(f"Voice exists: {model_path}")
                 print(f"Finding voice: {model_path}, {download_dir}")
                 model_path, config_path = find_voice(model_path, [download_dir])
@@ -99,9 +100,8 @@ class PiperClient:
 
     def get_voices(self) -> List[Dict[str, Any]]:
         try:
-            voices_info = get_voices(self._client.download_dir)
             voices = []
-            for voice_id, voice_data in voices_info.items():
+            for voice_id, voice_data in self.voices_info.items():
                 lang_code = voice_data["language"]["code"].replace("_", "-")
                 gender = voice_data.get("gender", "")
                 voice = {
