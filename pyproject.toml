@@ -21,7 +21,7 @@ google-cloud-texttospeech = {version = "^2.11.1", optional = true}
 pyttsx3 = {version = "^2.90", optional = true}
 pyaudio = {version = "^0.2.11", optional = true}
 azure-cognitiveservices-speech = "^1.15.0"  # Ensure the version matches what's compatible with your package
-winrt-runtime = "^3.0.1"
+winrt-runtime = "^2.0.1"
 piper_tts = "^1.2.0"
 
 [tool.poetry.extras]
