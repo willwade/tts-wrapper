@@ -19,5 +19,5 @@ class UWPTTS(AbstractTTS):
         ssml = UWPSsml(str(text)).to_ssml()
         return self._client.synth(ssml)
 
-    def get_available_voices(self) -> List[str]:
+    def get_voices(self) -> List[str]:
         return self._client.get_voices()

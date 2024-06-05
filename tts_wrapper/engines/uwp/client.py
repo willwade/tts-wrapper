@@ -5,7 +5,6 @@ from ...exceptions import ModuleNotInstalled
 from winrt.windows.media.speechsynthesis import SpeechSynthesizer
 from winrt.windows.storage.streams import DataReader
 
-
 class UWPClient:
     def __init__(self) -> None:
         print("Initializing UWPClient...")
@@ -15,7 +14,21 @@ class UWPClient:
         if voice:
             self.set_voice(voice, lang)
 
-    async def get_voices(self) -> List[Dict[str, Any]]:
+    def set_voice(self, voice_id: str, lang_id: Optional[str] = None):
+        """
+        Sets the voice for the TTS engine and updates the SSML configuration accordingly.
+
+        @param voice_id: The ID of the voice to be used for synthesis.
+        """
+        selected_voice = next((voice for voice in self._synthesizer.all_voices if voice.id == voice_id), None)
+        if selected_voice:
+            self._synthesizer.voice = selected_voice
+        if lang_id:
+            self._synthesizer.options.speaking_language = lang_id
+
+
+
+    def get_voices(self) -> List[Dict[str, Any]]:
         """Returns a list of available voices with standardized keys."""
         voices = self._synthesizer.all_voices
         standardized_voices = []
@@ -29,13 +42,13 @@ class UWPClient:
             standardized_voices.append(standardized_voice)
         return standardized_voices
 
-    async def synth(self, ssml: str) -> bytes:
-        stream = await self._synthesizer.synthesize_ssml_to_stream_async(ssml)
+    def synth(self, ssml: str) -> bytes:
+        stream = asyncio.run(self._synthesizer.synthesize_ssml_to_stream_async(ssml))
 
         # Read the stream into a byte buffer
         input_stream = stream.get_input_stream_at(0)
         data_reader = DataReader(input_stream)
-        await data_reader.load_async(stream.size)
+        asyncio.run(data_reader.load_async(stream.size))
         
         # Read the buffer in chunks
         byte_array = bytearray()
@@ -54,16 +67,3 @@ class UWPClient:
         # Set the timings on the parent abstracted class
         self.set_timings(markers)
         return bytes(byte_array)
-        
-    def set_voice(self, voice_id: str, lang_id: Optional[str] = None):
-        """
-        Sets the voice for the TTS engine and updates the SSML configuration accordingly.
-
-        @param voice_id: The ID of the voice to be used for synthesis.
-        """
-        selected_voice = next((voice for voice in self._synthesizer.all_voices if voice.id == voice_id), None)
-        if selected_voice:
-            self._synthesizer.voice = selected_voice
-        if lang_id:
-            self._synthesizer.options.speaking_language = lang_id
-
