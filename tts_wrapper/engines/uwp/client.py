@@ -3,19 +3,32 @@ from typing import List, Dict, Any, Optional
 from ...exceptions import ModuleNotInstalled
 
 try:
-    import winrt.windows.media.speechsynthesis as sstts
-    import winrt.windows.storage.streams as streams
+    from winrt.windows.media.speechsynthesis import SpeechSynthesizer
+    from winrt.windows.storage.streams import DataReader
 except ImportError:
     raise ModuleNotInstalled("winrt-runtime")
 
 
 class UWPClient:
     def __init__(self) -> None:
-        self._synthesizer = sstts.SpeechSynthesizer()
+        print("Initializing UWPClient...")
+        self._check_modules()
+        self._synthesizer = SpeechSynthesizer()
         voice = None  # Define the variable "voice"
         lang = None  # Define the variable "lang"
         if voice:
             self.set_voice(voice, lang)
+
+    def _check_modules(self) -> None:
+        """Check if the required modules are installed."""
+        print("Checking for required modules...")
+        try:
+            from winrt.windows.media.speechsynthesis import SpeechSynthesizer
+            from winrt.windows.storage.streams import DataReader
+            print("Required modules are installed.")
+        except ImportError as e:
+            print(f"Module import error: {e}")
+            raise ModuleNotInstalled("Windows Runtime APIs")
 
     async def get_voices(self) -> List[Dict[str, Any]]:
         """Returns a list of available voices with standardized keys."""
@@ -36,7 +49,7 @@ class UWPClient:
 
         # Read the stream into a byte buffer
         input_stream = stream.get_input_stream_at(0)
-        data_reader = streams.DataReader(input_stream)
+        data_reader = DataReader(input_stream)
         await data_reader.load_async(stream.size)
         
         # Read the buffer in chunks
