@@ -1,3 +1,4 @@
+import asyncio
 from typing import List, Dict, Any, Optional
 from ...exceptions import ModuleNotInstalled
 
@@ -25,8 +26,7 @@ class UWPClient:
         except ImportError:
             raise ModuleNotInstalled("winrt-runtime")
 
-
-    def get_voices(self) -> List[Dict[str, Any]]:
+    async def get_voices(self) -> List[Dict[str, Any]]:
         """Returns a list of available voices with standardized keys."""
         voices = self._synthesizer.all_voices
         standardized_voices = []
@@ -40,19 +40,19 @@ class UWPClient:
             standardized_voices.append(standardized_voice)
         return standardized_voices
 
-    def synth(self, ssml: str) -> bytes:
-        stream = self._synthesizer.synthesize_ssml_to_stream_async(ssml).get()
-        
+    async def synth(self, ssml: str) -> bytes:
+        stream = await self._synthesizer.synthesize_ssml_to_stream_async(ssml)
+
         # Read the stream into a byte buffer
         input_stream = stream.get_input_stream_at(0)
         data_reader = streams.DataReader(input_stream)
-        buffer_size = stream.size
-        data_reader.load_async(buffer_size).get()
-        buffer = data_reader.read_buffer(buffer_size)
+        await data_reader.load_async(stream.size)
         
-        # Convert to bytes
-        byte_array = bytearray(buffer.length)
-        data_reader.read_bytes(byte_array)
+        # Read the buffer in chunks
+        byte_array = bytearray()
+        while data_reader.unconsumed_buffer_length > 0:
+            bytes_to_read = min(data_reader.unconsumed_buffer_length, 1024)
+            byte_array.extend(data_reader.read_bytes(bytes_to_read))
         
         # Get word timings
         markers = []
@@ -77,3 +77,4 @@ class UWPClient:
             self._synthesizer.voice = selected_voice
         if lang_id:
             self._synthesizer.options.speaking_language = lang_id
+
