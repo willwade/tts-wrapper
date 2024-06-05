@@ -2,11 +2,8 @@ import asyncio
 from typing import List, Dict, Any, Optional
 from ...exceptions import ModuleNotInstalled
 
-try:
-    from winrt.windows.media.speechsynthesis import SpeechSynthesizer
-    from winrt.windows.storage.streams import DataReader
-except ImportError:
-    raise ModuleNotInstalled("winrt-runtime")
+from winrt.windows.media.speechsynthesis import SpeechSynthesizer
+from winrt.windows.storage.streams import DataReader
 
 
 class UWPClient:
