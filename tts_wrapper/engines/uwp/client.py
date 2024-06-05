@@ -9,23 +9,11 @@ from winrt.windows.storage.streams import DataReader
 class UWPClient:
     def __init__(self) -> None:
         print("Initializing UWPClient...")
-        self._check_modules()
         self._synthesizer = SpeechSynthesizer()
         voice = None  # Define the variable "voice"
         lang = None  # Define the variable "lang"
         if voice:
             self.set_voice(voice, lang)
-
-    def _check_modules(self) -> None:
-        """Check if the required modules are installed."""
-        print("Checking for required modules...")
-        try:
-            from winrt.windows.media.speechsynthesis import SpeechSynthesizer
-            from winrt.windows.storage.streams import DataReader
-            print("Required modules are installed.")
-        except ImportError as e:
-            print(f"Module import error: {e}")
-            raise ModuleNotInstalled("Windows Runtime APIs")
 
     async def get_voices(self) -> List[Dict[str, Any]]:
         """Returns a list of available voices with standardized keys."""
