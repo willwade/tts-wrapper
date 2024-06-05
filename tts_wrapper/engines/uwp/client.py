@@ -11,20 +11,11 @@ except ImportError:
 
 class UWPClient:
     def __init__(self) -> None:
-        self._check_modules()
         self._synthesizer = sstts.SpeechSynthesizer()
         voice = None  # Define the variable "voice"
         lang = None  # Define the variable "lang"
         if voice:
             self.set_voice(voice, lang)
-
-    def _check_modules(self) -> None:
-        """Check if the required modules are installed."""
-        try:
-            import winrt.windows.media.speechsynthesis as sstts
-            import winrt.windows.storage.streams as streams
-        except ImportError:
-            raise ModuleNotInstalled("winrt-runtime")
 
     async def get_voices(self) -> List[Dict[str, Any]]:
         """Returns a list of available voices with standardized keys."""
