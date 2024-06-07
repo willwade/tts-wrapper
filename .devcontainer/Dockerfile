@@ -26,7 +26,7 @@ ENV PYTHONUNBUFFERED=1 \
   \
   # poetry
   # set poetry version
-  POETRY_VERSION=1.1.13 \
+  POETRY_VERSION=1.8.3 \
   # prevents poetry from creating virtualenvs because we already are in a docker container
   POETRY_VIRTUALENVS_CREATE=false \
   # make poetry install to this location
