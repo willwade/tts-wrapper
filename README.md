@@ -38,7 +38,6 @@ _TTS-Wrapper_ simplifies using text-to-speech APIs by providing a unified interf
 - Add more tests and logging code for better debugging and exception handling.
 - Explore the possibilities of using libraries like [OpenTTS](https://github.com/synesthesiam/opentts/) and [Orca](https://github.com/synesthesiam/orca).
 - Verify the functionality of UWP (Universal Windows Platform).
-- Implement and integrate callbacks for handling events like speech start and finish.
 
 ### Using pip
 
