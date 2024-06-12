@@ -7,15 +7,19 @@ import json
 from pathlib import Path
 import os
 
+logger = logging.getLogger(__name__)
+
+
 try:
-    print("Importing piper_tts")
+    logging.debug("Importing piper_tts")
     from piper.voice import PiperVoice
     from piper.download import get_voices, ensure_voice_exists, find_voice, VoiceNotFoundError
     piper_tts = True  # type: ignore
-    print("Imported piper_tts successfully")
+    logging.debug("Imported piper_tts successfully")
 except ImportError as e:
+    PiperVoice = None
     piper_tts = False  # type: ignore
-    print("Piper TTS not installed:", e)
+    logging.debug("Piper TTS not installed:", e)
 
 
 Credentials = Tuple[str]
@@ -25,7 +29,6 @@ FORMATS = {
     "mp3": "mp3",
 }
 
-logger = logging.getLogger(__name__)
 
 
 

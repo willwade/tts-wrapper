@@ -2,8 +2,14 @@ import asyncio
 from typing import List, Dict, Any, Optional
 from ...exceptions import ModuleNotInstalled
 
-from winrt.windows.media.speechsynthesis import SpeechSynthesizer
-from winrt.windows.storage.streams import DataReader
+try:
+    from winrt.windows.media.speechsynthesis import SpeechSynthesizer
+    from winrt.windows.storage.streams import DataReader
+except ImportError:
+    winrt = None 
+    SpeechSynthesizer = None
+    SpeechSynthesizer = None
+    
 
 class UWPClient:
     def __init__(self) -> None:
