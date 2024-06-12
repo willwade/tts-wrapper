@@ -279,16 +279,28 @@ Note only **Polly, Microsoft, Google, UWP, SAPI and Watson** can do this **corre
 
 ```python
 def my_callback(word: str, start_time: float):
-        print(f'Word "{word}" spoken at {start_time} ms')
+    print(f'Word "{word}" spoken at {start_time} ms')
 
-text = "Hello, This is a word timing test"
-ssml_text = tts.ssml.add(text)
-tts.start_playback_with_callbacks(ssml_text, callback=my_callback)
+def on_start():
+    print('Speech started')
+
+def on_end():
+    print('Speech ended')
+
+try:
+    text = "Hello, This is a word timing test"
+    ssml_text = tts.ssml.add(text)
+    tts.connect('onStart', on_start)
+    tts.connect('onEnd', on_end)
+    tts.start_playback_with_callbacks(ssml_text, callback=my_callback)
+except Exception as e:
+    print(f"Error: {e}")
 ```
 
 and it will output
 
 ```bash
+Speech started
 Word "Hello" spoken at 0.05 ms
 Word "," spoken at 0.65 ms
 Word "This" spoken at 0.7125 ms
@@ -297,6 +309,7 @@ Word "a" spoken at 1.0 ms
 Word "word" spoken at 1.0875 ms
 Word "timing" spoken at 1.3625 ms
 Word "test" spoken at 1.7375 ms
+Speech ended
 ```
 
 #### PicoTTS, SAPI & UWP
