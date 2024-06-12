@@ -25,10 +25,11 @@ class AbstractTTS(ABC):
         self.timers = []
         self.properties = {}
         self.callbacks = {
-            'started-utterance': None,
-            'finished-utterance': None,
+            'onStart': None,
+            'onEnd': None,
             'started-word': None
         }
+
 
     @abstractmethod
     def get_voices(self) -> List[Dict[str, Any]]:
@@ -94,11 +95,12 @@ class AbstractTTS(ABC):
             data = self.audio_bytes[self.position:end_position]
             self.position = end_position
             if self.position >= len(self.audio_bytes):
-                self._trigger_callback('finished-utterance', 'utterance', True)
+                self._trigger_callback('onEnd')
                 return (data, pyaudio.paComplete)
             return (data, pyaudio.paContinue)
         else:
             return (None, pyaudio.paContinue)
+
 
     def speak_streamed(self, text: Any, format: Optional[FileFormat] = "wav"):
         try:
@@ -108,7 +110,7 @@ class AbstractTTS(ABC):
         self.audio_bytes = self.apply_fade_in(audio_bytes)
         self.position = 0
         self.playing.set()
-        self._trigger_callback('started-utterance', 'utterance')
+        self._trigger_callback('onStart')
         if not self.stream:
             self.setup_stream()
         try:
@@ -117,6 +119,8 @@ class AbstractTTS(ABC):
         except Exception as e:
             logging.error(f"Failed to play audio: {e}")
             raise
+
+
 
     def apply_fade_in(self, audio_bytes, fade_duration_ms=50, sample_rate=22050):
         num_fade_samples = int(fade_duration_ms * sample_rate / 1000)
@@ -176,6 +180,7 @@ class AbstractTTS(ABC):
     def _trigger_callback(self, event_name: str, *args):
         if event_name in self.callbacks and self.callbacks[event_name] is not None:
             self.callbacks[event_name](*args)
+
 
     def start_playback_with_callbacks(self, ssml_text: bytes, callback=None):
         if callback is None:
