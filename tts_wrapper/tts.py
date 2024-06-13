@@ -5,6 +5,7 @@ import threading
 from threading import Event
 import logging
 import time
+import re
 
 FileFormat = Union[Literal["wav"], Literal["mp3"]]
 
@@ -227,3 +228,16 @@ class AbstractTTS(ABC):
             self._volume = value
         elif property_name == "pitch":
             self._pitch = value
+
+    def _is_ssml(self, text: str) -> bool:
+        """Determine if the input text is SSML."""
+        return bool(re.match(r'^\s*<speak>', text, re.IGNORECASE))
+
+    def _convert_to_ssml(self, text: str) -> str:
+        """Convert plain text to SSML with word markers."""
+        words = text.split()
+        ssml_parts = ["<speak>"]
+        for i, word in enumerate(words):
+            ssml_parts.append(f'<mark name="word{i}"/>{word}')
+        ssml_parts.append("</speak>")
+        return " ".join(ssml_parts)
