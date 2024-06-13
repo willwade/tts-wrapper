@@ -1,4 +1,4 @@
-from typing import List, Dict, Any, Optional
+from typing import Tuple, List, Dict, Any, Optional
 import azure.cognitiveservices.speech as speechsdk
 from tts_wrapper.tts import FileFormat
 
@@ -9,20 +9,28 @@ try:
 except ImportError:
     requests = None  # type: ignore
 
+Credentials = Tuple[str, Optional[str]]
+
 class MicrosoftClient:
     FORMATS = {
         "wav": "Riff24Khz16BitMonoPcm",
         "mp3": "Audio24Khz160KBitRateMonoMp3",
     }
     def __init__(
-        self, credentials: str, region: Optional[str] = None
+        self,
+        credentials: Optional[Credentials] = None,
     ) -> None:
         if speechsdk is None:
             raise ModuleNotInstalled("speechsdk")
 
-        self._credentials = credentials
-        self._region = region or "eastus"
-        self.speech_config = speechsdk.SpeechConfig(subscription=self._credentials, region=self._region)
+
+        if not credentials or not credentials[0]:
+            raise ValueError("subscription_key is required")
+        
+        self._subscription_key = credentials[0]
+        self._subscription_region = credentials[1] or "eastus"
+       
+        self.speech_config = speechsdk.SpeechConfig(subscription=self._subscription_key, region=self._subscription_region)
 
     def get_available_voices(self) -> List[Dict[str, Any]]:
         """Fetches available voices from Microsoft Azure TTS service."""

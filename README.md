@@ -33,7 +33,6 @@ _TTS-Wrapper_ simplifies using text-to-speech APIs by providing a unified interf
 
 ## To-Do
 
-- Fix Google and Microsoft credentials to use a tuple.
 - Improve the implementation of changing rate, volume, etc. (work in progress)
 - Add more tests and logging code for better debugging and exception handling.
 - Explore the possibilities of using libraries like [OpenTTS](https://github.com/synesthesiam/opentts/) and [Orca](https://github.com/synesthesiam/orca).
@@ -128,7 +127,7 @@ tts = PollyTTS(client)
 
 ```python
 from tts_wrapper import GoogleTTS, GoogleClient
-client = GoogleClient(credentials='path/to/creds.json')
+client = GoogleClient(credentials=('path/to/creds.json'))
 
 tts = GoogleTTS(client)
 ```
@@ -137,7 +136,7 @@ tts = GoogleTTS(client)
 
 ```python
 from tts_wrapper import MicrosoftTTS, MicrosoftClient
-client = MicrosoftClient(credentials='subscription_key',region='subscription_region')
+client = MicrosoftClient(credentials=('subscription_key','subscription_region'))
 
 tts = MicrosoftTTS(client)
 ```
