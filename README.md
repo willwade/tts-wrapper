@@ -431,6 +431,12 @@ from .ssml import EngineSSML
 
 ### Getting keys
 
+#### Watson
+
+This is not straightforward
+
+#### Polly
+
 #### Microsoft 
 
 #### Google
@@ -444,6 +450,9 @@ from .ssml import EngineSSML
 
 #### ElevenLabs
 
+1. Login at https://elevenlabs.io/app/speech-synthesis
+2. Go to your profile and click on "Profile + API Key"
+3. Click on Popup and copy "API Key"
 
 ## License
 
