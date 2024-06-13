@@ -19,8 +19,12 @@ class GoogleTTS(AbstractTTS):
     def synth_to_bytes(self, text: Any, format: Optional[FileFormat] = "wav") -> bytes:
         if format not in self.supported_formats():
             raise UnsupportedFileFormat(format, self.__class__.__name__)
-        return self._client.synth(str(text), self._voice, self._lang, format)
+        result = self._client.synth(str(text), self._voice, self._lang, format, include_timepoints=True)
+        timings = [(float(tp['timeSeconds']), tp['markName']) for tp in result.get("timepoints", [])]
+        self.set_timings(timings)
+        return result["audio_content"]
 
+        
     @property
     def ssml(self) -> GoogleSSML:
         return GoogleSSML()
