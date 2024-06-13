@@ -35,8 +35,15 @@ _TTS-Wrapper_ simplifies using text-to-speech APIs by providing a unified interf
 
 - Improve the implementation of changing rate, volume, etc. (work in progress)
 - Add more tests and logging code for better debugging and exception handling.
-- Explore the possibilities of using libraries like [OpenTTS](https://github.com/synesthesiam/opentts/) and [Orca](https://github.com/synesthesiam/orca).
 - Verify the functionality of UWP (Universal Windows Platform).
+- Check MS Azure word timings. It seems a bit behind. 
+- Investigate other audio engines. PyAudio is a pain to install on windows
+- Look at Piper. The speed is wierd. It needs to be feature full
+
+and an aside
+
+- Explore the possibilities of using libraries like [OpenTTS](https://github.com/synesthesiam/opentts/) and [Orca](https://github.com/synesthesiam/orca).
+
 
 ### Using pip
 
