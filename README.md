@@ -426,6 +426,25 @@ from .engine import WitTTS
 from .ssml import EngineSSML
 ```
 
+
+## Tips
+
+### Getting keys
+
+#### Microsoft 
+
+#### Google
+
+1. 
+
+#### Wit.Ai
+
+1. https://wit.ai/apps
+2. Look for `Bearer` token. Its in the Curl example
+
+#### ElevenLabs
+
+
 ## License
 
 This project is licensed under the [MIT License](./LICENSE).
