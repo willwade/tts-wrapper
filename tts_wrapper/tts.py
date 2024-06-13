@@ -221,11 +221,9 @@ class AbstractTTS(ABC):
     def set_property(self, property_name, value):
         self.properties[property_name] = value
 
-        # Custom handling for specific properties if needed
         if property_name == "rate":
-            self.audio_rate = value
+            self._rate = value
         elif property_name == "volume":
             self._volume = value
         elif property_name == "pitch":
             self._pitch = value
-        # Add more custom handling if needed
