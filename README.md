@@ -33,10 +33,9 @@ _TTS-Wrapper_ simplifies using text-to-speech APIs by providing a unified interf
 
 ## To-Do
 
-- Improve the implementation of changing rate, volume, etc. (work in progress)
+- Improve the implementation of changing rate, volume, etc. (work in progress). This is a priority. 
 - Add more tests and logging code for better debugging and exception handling.
 - Verify the functionality of UWP (Universal Windows Platform).
-- Check MS Azure word timings. It seems a bit behind. 
 - Investigate other audio engines. PyAudio is a pain to install on windows
 - Look at Piper. The speed is wierd. It needs to be feature full
 
