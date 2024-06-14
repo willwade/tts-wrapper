@@ -21,6 +21,8 @@ class PollyTTS(AbstractTTS):
     def synth_to_bytes(self, text: Any, format: Optional[FileFormat] = "wav") -> bytes:
         if format not in self.supported_formats():
             raise UnsupportedFileFormat(format, self.__class__.__name__)
+        if not self._is_ssml(str(text)):
+            text = self.ssml.add(str(text))
         word_timings = self._client.get_speech_marks(str(text), self._voice)
         self.set_timings(word_timings)
         return self._client.synth(str(text), self._voice, format)

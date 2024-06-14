@@ -26,6 +26,8 @@ class MicrosoftTTS(AbstractTTS):
         return ["wav", "mp3"]
     
     def speak(self, ssml: str, format: Optional[FileFormat] = "wav"):
+        if not self._is_ssml(str(ssml)):
+            ssml = self.ssml.add(str(ssml))
         format = self._client.FORMATS.get(format, "Riff24Khz16BitMonoPcm")
         self._client.speech_config.set_speech_synthesis_output_format(getattr(speechsdk.SpeechSynthesisOutputFormat, format))
 
