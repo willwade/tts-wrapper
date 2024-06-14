@@ -37,7 +37,7 @@ class ElevenLabsClient:
         if response.status_code == 200:
             return response.content
         else:
-            error_message = f"Failed to synthesize speech: {response.status_code} - {response.reason}"
+            error_message = f"[Elevenlabs.Client.Synth] Failed to synthesize speech: {response.status_code} - {response.reason}"
             try:
                 json_response = response.json()
                 if 'detail' in json_response:
