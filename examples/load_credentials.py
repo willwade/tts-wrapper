@@ -2,6 +2,33 @@ import json
 import os
 import platform
 
+def load_credentials(public_json_file='credentials.json'):
+    """
+    Load credentials from a public JSON file and optionally from a private JSON file,
+    and set them as environment variables.
+    
+    :param public_json_file: Path to the public JSON file containing the credentials.
+    """
+    # Construct the path to the private JSON file
+    private_json_file = public_json_file.replace('.json', '-private.json')
+
+    def set_env_vars_from_json(json_file):
+        with open(json_file, 'r') as file:
+            data = json.load(file)
+            for service, creds in data.items():
+                for key, value in creds.items():
+                    env_var = f"{service.upper()}_{key.upper()}"
+                    os.environ[env_var] = value
+#                     print(f"Set {env_var} to {value}")
+
+    # Check if private credentials file exists
+    if os.path.exists(private_json_file):
+#         print(f"Loading private credentials from {private_json_file}")
+        set_env_vars_from_json(private_json_file)
+    else:
+#         print(f"Loading public credentials from {public_json_file}")
+        set_env_vars_from_json(public_json_file)
+
 def set_env_vars_from_json(json_file):
     with open(json_file, 'r') as file:
         data = json.load(file)
@@ -43,5 +70,8 @@ def set_env_vars_unix(env_vars):
     print("Please restart your terminal or run 'source ~/.bashrc' (or the relevant file) to apply the changes.")
 
 if __name__ == "__main__":
+#     json_file = 'path/to/your/credentials.json'
+#     load_credentials(json_file)
+
     json_file = 'credentials.json'
     set_env_vars_from_json(json_file)

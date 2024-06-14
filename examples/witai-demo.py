@@ -1,6 +1,10 @@
 from tts_wrapper import WitAiTTS, WitAiClient
 import json
 import os 
+import os
+from load_credentials import load_credentials
+# Load credentials
+load_credentials('credentials.json')
 
 def my_callback(word: str, start_time: float):
         print(f'Word "{word}" spoken at {start_time} ms')

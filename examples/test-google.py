@@ -3,6 +3,10 @@ import json
 import time
 from pathlib import Path
 import os
+from load_credentials import load_credentials
+# Load credentials
+load_credentials('credentials.json')
+
 
 client = GoogleClient(credentials=os.getenv('GOOGLE_CREDS_PATH'))
 

@@ -3,6 +3,9 @@ import json
 import time
 from pathlib import Path
 import os
+from load_credentials import load_credentials
+# Load credentials
+load_credentials('credentials.json')
 
 client = ElevenLabsClient(credentials=(os.getenv('ELEVENLABS_API_KEY')))
 tts = ElevenLabsTTS(client)
