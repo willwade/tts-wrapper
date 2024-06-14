@@ -30,6 +30,7 @@ class AbstractTTS(ABC):
             'onEnd': None,
             'started-word': None
         }
+        self.stream_lock = threading.Lock()
 
 
     @abstractmethod
@@ -105,23 +106,30 @@ class AbstractTTS(ABC):
 
     def speak_streamed(self, text: Any, format: Optional[FileFormat] = "wav"):
         try:
+            logging.info("[TTS.speak_streamed] Starting speech synthesis...")
             audio_bytes = self.synth_to_bytes(text, format)
+            if not isinstance(audio_bytes, (bytes, bytearray)):
+                raise ValueError("[TTS.speak_streamed] Synthesized speech is not in bytes format")
+            logging.info(f"[TTS.speak_streamed] Synthesized speech length: {len(audio_bytes)} bytes")
         except Exception as e:
-            logging.error(f"Error synthesizing speech: {e}")
+            logging.error(f"[TTS.speak_streamed] Error synthesizing speech: {e}")
+            return
         self.audio_bytes = self.apply_fade_in(audio_bytes)
         self.position = 0
         self.playing.set()
         self._trigger_callback('onStart')
-        if not self.stream:
-            self.setup_stream()
+        with self.stream_lock:
+            if self.stream:
+                self.stream.stop_stream()
+                self.stream.close()
+                self.stream = None
+            self.setup_stream()        
         try:
             self.play_thread = threading.Thread(target=self._start_stream)
             self.play_thread.start()
         except Exception as e:
-            logging.error(f"Failed to play audio: {e}")
+            logging.error(f"[TTS.speak_streamed] Failed to play audio: {e}")
             raise
-
-
 
     def apply_fade_in(self, audio_bytes, fade_duration_ms=50, sample_rate=22050):
         num_fade_samples = int(fade_duration_ms * sample_rate / 1000)
@@ -137,14 +145,15 @@ class AbstractTTS(ABC):
         return faded_audio_bytes
         
     def _start_stream(self):
-        if self.stream:
-            self.stream.start_stream()
-        while self.stream.is_active() and self.playing.is_set():
-            time.sleep(0.1)
-        if self.stream:
-            self.stream.stop_stream()
-            self.stream.close()
-            self.stream = None
+        with self.stream_lock:
+            if self.stream:
+                self.stream.start_stream()
+            while self.stream.is_active() and self.playing.is_set():
+                time.sleep(0.1)
+            if self.stream:
+                self.stream.stop_stream()
+                self.stream.close()
+                self.stream = None
 
     def pause_audio(self):
         self.playing.clear()
@@ -160,10 +169,11 @@ class AbstractTTS(ABC):
         self.playing.clear()
         if self.play_thread and self.play_thread.is_alive():
             self.play_thread.join()
-        if self.stream:
-            self.stream.stop_stream()
-            self.stream.close()
-            self.stream = None
+        with self.stream_lock:
+            if self.stream:
+                self.stream.stop_stream()
+                self.stream.close()
+                self.stream = None
         for timer in self.timers:
             timer.cancel()
         self.timers.clear()
@@ -201,17 +211,19 @@ class AbstractTTS(ABC):
                 
     def finish(self):
         try:
-            if self.stream and not self.stream.is_stopped():
-                self.stream.stop_stream()
-            if self.stream:
-                self.stream.close()
-            if self.p:
-                self.p.terminate()
+            with self.stream_lock:
+                if self.stream and not self.stream.is_stopped():
+                    self.stream.stop_stream()
+                if self.stream:
+                    self.stream.close()
+                if self.p:
+                    self.p.terminate()
         except Exception as e:
             logging.error(f"Failed to clean up audio resources: {e}")
         finally:
             self.stream = None
             self.p = None
+
 
     def __del__(self):
         self.finish()
