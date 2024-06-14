@@ -1,16 +1,16 @@
-from tts_wrapper import PollyTTS, PollyClient
+from tts_wrapper import ElevenLabsTTS, ElevenLabsClient
 import json
 import time
 from pathlib import Path
-import os 
+import os
 
-client = PollyClient(credentials=(os.getenv('POLLY_REGION'),os.getenv('POLLY_AWS_KEY_ID'), os.getenv('POLLY_AWS_ACCESS_KEY')))
-tts = PollyTTS(client)
+client = ElevenLabsClient(credentials=(os.getenv('ELEVENLABS_API_KEY')))
 
+tts = ElevenLabsTTS(client)
 
 # # pausng
 try:
-    ssml_text = tts.ssml.add(f"This is me speaking with Speak function and google")
+    ssml_text = tts.ssml.add(f"This is me speaking with Speak function and ElevenLabs")
     tts.speak_streamed(ssml_text)
     # Pause after 5 seconds
     time.sleep(0.3)
@@ -26,11 +26,11 @@ try:
     print("Stopping.")
 except Exception as e:
     print(f"Error at pausing: {e}")
-#   
-#         
-# # Demonstrate saving audio to a file
+  
+        
+# Demonstrate saving audio to a file
 try:
-    output_file = Path(f"output_google.mp3")
+    output_file = Path(f"output_elevenlabs.mp3")
     tts.synth(ssml_text, str(output_file), format='mp3')
     # or you could do
     #tts.speak(ssml_text)
@@ -64,25 +64,23 @@ if len(voices) > 1:
     except Exception as e:
         print(f"Error at setting voice: {e}")
     ssml_text_part2 = tts.ssml.add('Continuing with a new voice!')
-    print(ssml_text_part2)
     tts.speak_streamed(ssml_text_part2)
 
 # ## calbacks
-# 
-# def my_callback(word: str, start_time: float):
-#     print(f'Word "{word}" spoken at {start_time} ms')
-# 
-# def on_start():
-#     print('Speech started')
-# 
-# def on_end():
-#     print('Speech ended')
-# 
-# 
-# try:
-#     text = "Hello, This is a word timing test"
-#     tts.connect('onStart', on_start)
-#     tts.connect('onEnd', on_end)
-#     tts.start_playback_with_callbacks(text, callback=my_callback)
-# except Exception as e:
-#     print(f"Error at callbacks: {e}")
+
+def my_callback(word: str, start_time: float):
+    print(f'Word "{word}" spoken at {start_time} ms')
+
+def on_start():
+    print('Speech started')
+
+def on_end():
+    print('Speech ended')
+
+try:
+    text = "Hello, This is a word timing test"
+    tts.connect('onStart', on_start)
+    tts.connect('onEnd', on_end)
+    tts.start_playback_with_callbacks(text, callback=my_callback)
+except Exception as e:
+    print(f"Error at callbacks: {e}")
