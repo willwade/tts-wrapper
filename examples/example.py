@@ -1,57 +1,57 @@
 # if running within the project dir
 # export PYTHONPATH="/Users/willwade/GitHub/tts-wrapper:$PYTHONPATH"
-# python examples/all_engines_example.py
-
-# examples/all_engines_example.py
+# python examples/example.py
 import sys
 import json
 import logging
 from pathlib import Path
-from tts_wrapper import PollyTTS, PollyClient, MicrosoftTTS, MicrosoftClient, WatsonTTS, WatsonClient, GoogleTTS, GoogleClient, ElevenLabsTTS, ElevenLabsClient
+from tts_wrapper import PollyTTS, PollyClient, MicrosoftTTS, MicrosoftClient, WatsonTTS, WatsonClient, GoogleTTS, GoogleClient, ElevenLabsTTS, ElevenLabsClient,  WitAiTTS, WitAiClient
 import signal
 import sys
 import time
+import os
+from load_credentials import load_credentials
+
 
 def signal_handler(signal, frame):
     print('You pressed Ctrl+C!')
     sys.exit(0)
 
 
-def load_settings():
-    try:
-        with open('settings.json', 'r') as f:
-            settings = json.load(f)
-        logging.debug("Settings loaded from file.")
-        return settings
-    except FileNotFoundError:
-        logging.error("Settings file not found. Ensure 'settings.json' is in the correct location.")
-        return {}
-
-def create_tts_client(service, settings):
+def create_tts_client(service):
     if service == "polly":
-        creds = settings.get('Polly', {})
-        client = PollyClient(credentials=(creds.get('region'), creds.get('aws_key_id'), creds.get('aws_access_key')))
+        region = os.getenv('POLLY_REGION')
+        aws_key_id = os.getenv('POLLY_AWS_KEY_ID')
+        aws_access_key = os.getenv('POLLY_AWS_ACCESS_KEY')
+        client = PollyClient(credentials=(region, aws_key_id, aws_access_key))
         tts = PollyTTS(client=client, voice='Joanna')
     elif service == "microsoft":
-        creds = settings.get('Microsoft', {})
-        client = MicrosoftClient(credentials=creds.get('TOKEN'), region=creds.get('region'))
+        token = os.getenv('MICROSOFT_TOKEN')
+        region = os.getenv('MICROSOFT_REGION')
+        client = MicrosoftClient(credentials=(token, region))
         tts = MicrosoftTTS(client=client)
     elif service == "watson":
-        creds = settings.get('Watson', {})
-        client = WatsonClient(credentials=(creds.get('api_key'), creds.get('region'), creds.get('instance_id')))
+        api_key = os.getenv('WATSON_API_KEY')
+        region = os.getenv('WATSON_REGION')
+        instance_id = os.getenv('WATSON_INSTANCE_ID')
+        client = WatsonClient(credentials=(api_key, region, instance_id))
         tts = WatsonTTS(client=client)
     elif service == "google":
-        creds = settings.get('Google', {})
-        client = GoogleClient(credentials=creds.get('creds_path'))
+        creds_path = os.getenv('GOOGLE_CREDS_PATH')
+        client = GoogleClient(credentials=creds_path)
         tts = GoogleTTS(client=client)
     elif service == "elevenlabs":
-        creds = settings.get('ElevenLabs', {})
-        client = ElevenLabsClient(credentials=creds.get('API_KEY'))
+        api_key = os.getenv('ELEVENLABS_API_KEY')
+        client = ElevenLabsClient(credentials=api_key)
         tts = ElevenLabsTTS(client=client)
+    elif service == "witai":
+        api_key = os.getenv('WITAI_TOKEN')
+        client = WitAiClient(credentials=(api_key))
+        tts = WitAiTTS(client=client)
     else:
         raise ValueError("Unsupported TTS service")
     return tts
-
+    
 def test_tts_engine(tts, service_name):
     try:
         text_read = 'Hello, world!'
@@ -73,7 +73,7 @@ def test_tts_engine(tts, service_name):
             print("Stopping.")
             
         except Exception as e:
-            print(f"Error testing {service_name} TTS engine: {e}")
+            print(f"Error testing {service_name} TTS engine at speak_streamed (58-75): {e}")
         
 
     except Exception as e:
@@ -108,12 +108,12 @@ def test_tts_engine(tts, service_name):
 
 def main():
     service = sys.argv[1] if len(sys.argv) > 1 else "all"
-    settings = load_settings()
-
-    services = ["watson", "google", "elevenlabs", "microsoft","polly", ] if service == "all" else [service]
+    # Load credentials
+    load_credentials('credentials.json')
+    services = ["watson", "google", "elevenlabs", "microsoft", "polly", "witai" ] if service == "all" else [service]
     for svc in services:
         print(f"Testing {svc.upper()} TTS engine.")
-        tts = create_tts_client(svc, settings)
+        tts = create_tts_client(svc)
         test_tts_engine(tts, svc)
 
 if __name__ == "__main__":
