@@ -116,7 +116,8 @@ ssml_text = tts.ssml.add('Hello, <break time="500ms"/> world!')
 tts.speak(ssml_text)
 ```
 
-for a full demo see the examples folder. You'll need to fill out the credentials.json
+for a full demo see the examples folder. You'll need to fill out the credentials.json (or credentials-private.json). Use them from cd'ing into the examples folder. 
+Tips on gaining keys are below.
 
 ## Authorization
 Each service uses different methods for authentication:
