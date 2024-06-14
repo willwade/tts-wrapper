@@ -7,11 +7,9 @@ from load_credentials import load_credentials
 # Load credentials
 load_credentials('credentials.json')
 
-
 client = GoogleClient(credentials=os.getenv('GOOGLE_CREDS_PATH'))
 
 tts = GoogleTTS(client)
-
 
 # # pausng
 try:
