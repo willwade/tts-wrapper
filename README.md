@@ -216,9 +216,17 @@ Even if you don't use SSML features that much its wise to use the same syntax - 
 ssml_text = tts.ssml.add('Hello world!')
 ```
 
+### Plain Text
+
+If you want to keep things simple each engine will convert plain text to SSML if its not.
+
+```python
+tts.speak('Hello World!')
+```
+
 ### Speak 
 
-This will use the default audio output of your device to play the audio immediatley
+This will use the default audio output of your device to play the audio immediately
 
 ```python
 tts.speak(ssml_text)
