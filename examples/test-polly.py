@@ -7,7 +7,6 @@ from load_credentials import load_credentials
 # Load credentials
 load_credentials('credentials.json')
 
-
 client = PollyClient(credentials=(os.getenv('POLLY_REGION'),os.getenv('POLLY_AWS_KEY_ID'), os.getenv('POLLY_AWS_ACCESS_KEY')))
 tts = PollyTTS(client)
 
