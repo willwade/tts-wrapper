@@ -116,6 +116,17 @@ ssml_text = tts.ssml.add('Hello, <break time="500ms"/> world!')
 tts.speak(ssml_text)
 ```
 
+You can use SSML or plain text
+
+```python
+from tts_wrapper import PollyClient
+pollyClient = PollyClient(credentials=('aws_key_id', 'aws_secret_access_key'))
+from tts_wrapper import PollyTTS
+
+tts = PollyTTS(pollyClient)
+tts.speak('Hello world')
+```
+
 for a full demo see the examples folder. You'll need to fill out the credentials.json (or credentials-private.json). Use them from cd'ing into the examples folder. 
 Tips on gaining keys are below.
 
