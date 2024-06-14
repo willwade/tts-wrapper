@@ -18,7 +18,6 @@ Credentials = Tuple[str, str, str, str]  # api_key, api_url, region, instance_id
 
 FORMATS = {"wav": "audio/wav", "mp3": "audio/mp3"}
 
-
 class WatsonClient:
     def __init__(self, credentials: Credentials) -> None:
         if IAMAuthenticator is None or TextToSpeechV1 is None:
