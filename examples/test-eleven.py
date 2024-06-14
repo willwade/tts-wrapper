@@ -5,7 +5,6 @@ from pathlib import Path
 import os
 
 client = ElevenLabsClient(credentials=(os.getenv('ELEVENLABS_API_KEY')))
-
 tts = ElevenLabsTTS(client)
 
 # # pausng
