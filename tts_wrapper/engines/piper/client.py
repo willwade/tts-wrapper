@@ -7,8 +7,6 @@ import json
 from pathlib import Path
 import os
 
-logger = logging.getLogger(__name__)
-
 
 try:
     logging.debug("Importing piper_tts")

@@ -23,7 +23,6 @@ class WitAiClient:
         self.token = credentials
         self.base_url = "https://api.wit.ai"
         self.api_version = "20240601"
-        self.logger = logging.getLogger(__name__)
         self.headers = {
             "Authorization": f"Bearer {self.token}"
         }
