@@ -53,6 +53,15 @@ def create_tts_client(service):
     return tts
     
 def test_tts_engine(tts, service_name):
+
+    text_read = 'Hello, world! This is a text of plain text sending'
+    try:
+        print(f"Testing {service_name} TTS engine...in a plain text demo")
+        tts.speak(text_read)            
+    except Exception as e:
+        print(f"Error testing {service_name} TTS engine at speak with plain text: {e}")
+        
+
     try:
         text_read = 'Hello, world!'
         ssml_text = tts.ssml.add(text_read)  # Assuming there's a method to add SSML correctly
