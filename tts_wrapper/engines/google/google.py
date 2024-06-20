@@ -34,3 +34,8 @@ class GoogleTTS(AbstractTTS):
     def get_voices(self) -> List[Dict[str, Any]]:
         """Retrieves a list of available voices from the Google TTS service."""
         return self._client.get_voices()
+
+    def construct_prosody_tag(self, property: str, text:str ) -> str:
+        volume = self.get_property(property)
+        text_with_tag = f'<prosody {property}="{volume}">{text}</prosody>'        
+        return text_with_tag

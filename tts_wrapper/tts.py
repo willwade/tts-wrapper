@@ -24,7 +24,10 @@ class AbstractTTS(ABC):
         self.position = 0  # Position in the byte stream
         self.timings = []
         self.timers = []
-        self.properties = {}
+        self.properties = {
+            'volume' :"",
+            'rate': 0
+        }
         self.callbacks = {
             'onStart': None,
             'onEnd': None,
@@ -73,7 +76,11 @@ class AbstractTTS(ABC):
             p.terminate()
         except Exception as e:
             logging.error(f"Error playing audio: {e}")
-            
+    
+    @abstractmethod
+    def construct_prosody_tag(self, property: str, text:str) -> str:
+        pass
+
     def setup_stream(self, format=pyaudio.paInt16, channels=1):
         try:
             if self.p is None:
@@ -249,6 +256,8 @@ class AbstractTTS(ABC):
         """Convert plain text to SSML with word markers."""
         words = text.split()
         ssml_parts = ["<speak>"]
+
+        ssml_parts.append(ssml_volume)
         for i, word in enumerate(words):
             ssml_parts.append(f'<mark name="word{i}"/>{word}')
         ssml_parts.append("</speak>")
