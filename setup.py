@@ -1,4 +1,5 @@
 import os
+import sys
 import subprocess
 from setuptools import setup, find_packages
 from setuptools.command.install import install
@@ -38,7 +39,8 @@ setup(
         'witai': ['requests>=2.28.0'],
         'sapi': ['pyttsx3>=2.90'],
         'uwp': ['pythonnet>=3.0.1'],
-        'piper': ['piper_tts>=1.2.0']
+        'piper': ['piper_tts>=1.2.0'],
+        'mms': ['ttsmms>=0.7']
     },
     cmdclass={
         'install': CustomInstallCommand,
