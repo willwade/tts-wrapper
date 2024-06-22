@@ -23,6 +23,7 @@ pyaudio = {version = "^0.2.11", optional = false}
 azure-cognitiveservices-speech = {version = "^1.15.0" , optional = true}
 winrt-runtime = { version = "^2.0.1", markers = "sys_platform == 'win32'", optional = true }
 piper-tts = { version = "^1.2.0", optional = true}
+ttsmms = { version = "^0.7", optional = true}
 
 [tool.poetry.extras]
 google = ["google-cloud-texttospeech"]
@@ -34,6 +35,7 @@ witai = ["requests"]
 sapi = ["pyttsx3"]
 uwp = ["winrt_windows.media.speechsynthesis","winrt_windows.storage.streams","winrt_windows.foundationtime"]
 piper =["piper-tts"]
+mms = ["ttsmms"]
 
 [tool.poetry.dev-dependencies]
 pytest = "^6.2.1"
