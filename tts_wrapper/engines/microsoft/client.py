@@ -1,5 +1,4 @@
 from typing import Tuple, List, Dict, Any, Optional
-import azure.cognitiveservices.speech as speechsdk
 from tts_wrapper.tts import FileFormat
 
 from ...exceptions import ModuleNotInstalled
@@ -8,6 +7,12 @@ try:
     import requests
 except ImportError:
     requests = None  # type: ignore
+
+try:
+    import azure.cognitiveservices.speech as speechsdk
+except ImportError:
+    speechsdk = None  # type: ignore
+
 
 Credentials = Tuple[str, Optional[str]]
 
