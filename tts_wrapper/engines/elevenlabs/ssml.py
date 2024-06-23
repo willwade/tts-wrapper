@@ -14,3 +14,6 @@ class ElevenLabsSSMLRoot(BaseSSMLRoot):
     def __str__(self) -> str:
         # Use the overridden __str__ method of ElevenLabsSSMLNode
         return str(self._inner)
+        
+    def clean_children(self):
+        self._inner.clean_children()

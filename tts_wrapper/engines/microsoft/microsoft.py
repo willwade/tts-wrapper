@@ -78,9 +78,7 @@ class MicrosoftTTS(AbstractTTS):
         # Subscribe to synthesis_word_boundary event
         self.synthesizer.synthesis_word_boundary.connect(lambda evt: self.word_timings.append((float(evt.audio_offset / 10000000),evt.text)))
         ssml_string = str(ssml)
-        print("ssml_string", ssml_string)
         result = self.synthesizer.speak_ssml_async(ssml_string).get()  # Use speak_ssml_async for SSML input
-        print("result ", result)
         if result.reason == speechsdk.ResultReason.SynthesizingAudioCompleted:
             # Store word timings
             self.set_timings(self.word_timings)

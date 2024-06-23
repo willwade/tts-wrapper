@@ -262,3 +262,6 @@ class AbstractTTS(ABC):
             ssml_parts.append(f'<mark name="word{i}"/>{word}')
         ssml_parts.append("</speak>")
         return " ".join(ssml_parts)
+
+    def mapped_to_predefined_word(self, volume: str) -> str:
+        pass

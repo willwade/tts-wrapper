@@ -24,6 +24,12 @@ class ElevenLabsTTS(AbstractTTS):
     def get_voices(self) -> List[Dict[str, Any]]:
         return self._client.get_voices()
 
+    def construct_prosody_tag(self, property: str, text:str ) -> str:
+        volume_in_number = self.get_property(property)
+        volume_in_words = self.mapped_to_predefined_word(volume_in_number)
+        text_with_tag = f'<prosody {property}="{volume_in_words}">{text}</prosody>'        
+        return text_with_tag
+
     @property
     def ssml(self) -> ElevenLabsSSMLRoot:
         return ElevenLabsSSMLRoot()
@@ -39,3 +45,17 @@ class ElevenLabsTTS(AbstractTTS):
         #NB: Lang doesnt do much for ElevenLabs
         self._lang = lang_id
  
+    def mapped_to_predefined_word(self, volume: str) -> str:
+        volume_in_float = float(volume)
+        if volume_in_float == 0:
+            return "silent"
+        if 1 <= volume_in_float <= 20:
+            return "x-soft"
+        if 21 <= volume_in_float <= 40:
+            return "soft"
+        if 41 <= volume_in_float <= 60:
+            return "medium"
+        if 61 <= volume_in_float <= 80:
+            return "loud"
+        if 81 <= volume_in_float <= 100:
+            return "x-loud"

@@ -85,14 +85,15 @@ def test_tts_engine(tts, service_name):
             #text_read_2 = "This is louder than before"
 
             #google test
-            tts.set_property("volume","x-soft")
-            text_read_2 = "This is softer than before"
+            tts.set_property("volume","90")
+            text_read_2 = "This is louder than before"
 
             text_with_prosody = tts.construct_prosody_tag("volume", text_read_2)
             time.sleep(0.5)
             ssml_text = tts.ssml.add(text_with_prosody)
+            print("ssml_test: ", ssml_text)
             #print ("Testing setting volume to 90")
-            print ("Testing setting volume to extra soft")
+            print ("Testing setting volume to extra loud")
             tts.speak_streamed(ssml_text)
             # Pause after 5 seconds
             #time.sleep(0.3)
@@ -153,7 +154,7 @@ def main():
         #tts.set_property("volume", "20")
 
         #google test with predefined words or decibels
-        tts.set_property("volume", "soft")
+        tts.set_property("volume", "5")
         test_tts_engine(tts, svc)
 
 if __name__ == "__main__":
