@@ -88,11 +88,11 @@ class MMSClient:
             # Do not unlink the file for debugging purposes
             os.unlink(temp_file.name)
             
-    def get_voices(self) -> List[Dict[str, Any]]:
+    def get_voices(self, ignore_cache: bool = False) -> List[Dict[str, Any]]:
         url = "https://dl.fbaipublicfiles.com/mms/tts/all-tts-languages.html"
         cache_file = os.path.join(tempfile.gettempdir(), "mms_voices_cache.json")
         
-        if os.path.exists(cache_file):
+        if not ignore_cache and os.path.exists(cache_file):
             try:
                 with open(cache_file, 'r') as f:
                     return json.load(f)
@@ -104,7 +104,7 @@ class MMSClient:
             response.raise_for_status()
             lines = response.text.strip().split('\n')
             standardized_voices = []
-            
+
             for line in lines:
                 line = line.strip()
                 if not line.startswith("<p>") or not line.endswith("</p>"):
@@ -132,6 +132,7 @@ class MMSClient:
             raise RuntimeError(f"Failed to fetch voices: {str(e)}")
         except Exception as e:
             raise RuntimeError(f"Error processing voices data: {str(e)}")
+
             
     def __del__(self):
         if hasattr(self, '_using_temp_dir') and self._using_temp_dir and self._model_dir:
