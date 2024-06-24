@@ -4,7 +4,7 @@ import os
 import json
 import numpy as np
 import soundfile as sf
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any, Optional, Union, Tuple
 from ...exceptions import ModuleNotInstalled, UnsupportedFileFormat, ModelNotFound
 
 try:
@@ -14,43 +14,48 @@ except ImportError:
     download = None
 
 class MMSClient:
-    def __init__(self, model_dir: str) -> None:
+    def __init__(self, params: Optional[Union[str, Tuple[Optional[str], str]]] = None) -> None:
         self._using_temp_dir = False
-        self._model_dir = None
-        self._tts = None
         
+        if isinstance(params, tuple):
+            model_dir, lang = params
+            self._model_dir = model_dir if model_dir else os.path.expanduser("~/mms_models")
+        else:
+            self._model_dir = os.path.expanduser("~/mms_models")
+            lang = params if isinstance(params, str) else 'eng'
+
+        self.lang = lang
+
+        if not os.path.exists(self._model_dir):
+            try:
+                os.makedirs(self._model_dir, exist_ok=True)
+            except Exception as e:
+                raise RuntimeError(f"Failed to create model directory {self._model_dir}: {str(e)}")
+
         if TTS is None or download is None:
             raise ModuleNotInstalled("ttsmms")
-        if model_dir is None:
-            self._model_dir = tempfile.mkdtemp(prefix="mms_models_")
-            self._using_temp_dir = True
-        else:
-            self._model_dir = model_dir
-            self._using_temp_dir = False
-        
 
-        self._tts = None
+        self._initialize_tts(self.lang)
 
     def _initialize_tts(self, lang: str):
         try:
-            model_path = os.path.join(self._model_dir)
+            model_path = os.path.join(self._model_dir, lang)
             self._tts = TTS(model_path)
         except Exception as e:
             # If TTS initialization fails, attempt to download the model
             try:
-                download(lang, model_path)
+                download(lang, self._model_dir)
                 new_model_path = os.path.join(self._model_dir, lang)
                 self._tts = TTS(new_model_path)
             except Exception as download_error:
                 raise ModelNotFound(lang, str(download_error))
 
-
     def synth(self, text: str, voice: str, lang: str, format: str) -> Dict[str, Any]:
         if format.lower() != "wav":
             raise UnsupportedFileFormat(format, "MMSClient")
         
-        if self._tts is None or self._tts.language != lang:
-            self._initialize_tts(lang)
+        # Ensure the TTS model is initialized for the correct language
+        self._initialize_tts(lang)
 
         # Use a temporary file for synthesis
         temp_file = tempfile.NamedTemporaryFile(delete=False, suffix=".wav")
@@ -127,7 +132,6 @@ class MMSClient:
             raise RuntimeError(f"Failed to fetch voices: {str(e)}")
         except Exception as e:
             raise RuntimeError(f"Error processing voices data: {str(e)}")
-
             
     def __del__(self):
         if hasattr(self, '_using_temp_dir') and self._using_temp_dir and self._model_dir:

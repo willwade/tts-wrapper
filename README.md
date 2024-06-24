@@ -11,16 +11,21 @@
 _TTS-Wrapper_ simplifies using text-to-speech APIs by providing a unified interface across multiple services, allowing easy integration and manipulation of TTS capabilities.
 
 ## Supported Services
+
 - AWS Polly
 - Google TTS
 - Microsoft Azure TTS
 - IBM Watson
 - ElevenLabs
 - Wit.Ai 
+
+### Experimental (Not fully featured or in a state of WIP)
+
 - PicoTTS
 - SAPI (Microsoft Speech API)
 - UWP (WinRT) Speech system (win 10+)
 - Piper TTS (experimental and Linux Only)
+- MMS ([Massively Multilingual Speech from Meta](https://ai.meta.com/blog/multilingual-model-speech-recognition/)) 
 
 ## Features
 - **Text to Speech**: Convert text into spoken audio.
@@ -203,6 +208,68 @@ tts = PiperTTS(client)
 ```
 
 - **Note:** Piper is experimental and only works on Linux only right now. Please also note SSML is not supported so SSML tags will just be rendered as text.
+
+### MMS
+
+```python
+from tts_wrapper import MMSTTS, MMSClient
+
+
+client = MMSClient((model_dir,lang))
+tts = MMSTTS(client)
+
+```
+
+- model_dir can be None - and it will create one for you in ~/mms_models
+- you can just provide a lang code. See lang codes (and TTS supported) at https://dl.fbaipublicfiles.com/mms/misc/language_coverage_mms.html
+
+eg. 
+
+
+```python
+from tts_wrapper import MMSTTS, MMSClient
+
+
+client = MMSClient((None, 'spa'))
+tts = MMSTTS(client)
+text = "Hola, este es mms hablando en español"
+tts.speak(text)
+
+```
+
+or 
+
+```python
+from tts_wrapper import MMSTTS, MMSClient
+
+
+client = MMSClient(('spa'))
+tts = MMSTTS(client)
+text = "Hola, este es mms hablando en español"
+tts.speak(text)
+
+```
+or 
+
+```python
+
+from tts_wrapper import MMSTTS, MMSClient
+import json
+import time
+from pathlib import Path
+import os
+
+# Initialize the client with custom model_dir and lang parameters
+custom_model_dir = "/path/to/custom_model_dir"
+custom_lang = "spa"
+client_custom = MMSClient((custom_model_dir, custom_lang))
+tts_custom = MMSTTS(client_custom)
+text_custom = "Hola, este es mms hablando en español"
+tts_custom.speak(text_custom)
+```
+
+- **Note:** MMS is WIP. It could break, and aspects like SSML aren't supported. 
+
 
 You then can perform the following methods.
 

@@ -31,3 +31,4 @@ piper-tts==1.2.0; python_version >= "3.10"
 winrt-windows.media.speechsynthesis; sys_platform == 'win32' 
 winrt-windows.storage.streams; sys_platform == 'win32'
 winrt-windows.foundation; sys_platform == 'win32'
+git+https://github.com/willwade/ttsmmsr#egg=ttsmms
