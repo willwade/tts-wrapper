@@ -6,6 +6,7 @@ from threading import Event
 import logging
 import time
 import re
+import wave
 
 FileFormat = Union[Literal["wav"], Literal["mp3"]]
 
@@ -57,9 +58,18 @@ class AbstractTTS(ABC):
         pass
 
     def synth_to_file(self, text: Any, filename: str, format: Optional[FileFormat] = None) -> None:
+        print ("text synth to file: ", text)
         audio_content = self.synth_to_bytes(text, format=format or "wav")
-        with open(filename, "wb") as file:
-            file.write(audio_content)
+        #audio_content = self.apply_fade_in(audio_content)
+        
+        #open file and add wav header before write in the audio content
+        channels = 1
+        sample_width = 2 #8 bit audio      
+        with wave.open(filename, "wb") as file:
+            file.setnchannels(channels)
+            file.setsampwidth(sample_width)
+            file.setframerate(self.audio_rate)
+            file.writeframes(audio_content)
 
     def synth(self, text: str, filename: str, format: Optional[FileFormat] = "wav"):
         self.synth_to_file(text, filename, format)
@@ -125,6 +135,7 @@ class AbstractTTS(ABC):
         self.position = 0
         self.playing.set()
         self._trigger_callback('onStart')
+
         with self.stream_lock:
             if self.stream:
                 self.stream.stop_stream()

@@ -95,18 +95,8 @@ def test_tts_engine(tts, service_name):
             #print ("Testing setting volume to 90")
             print ("Testing setting volume to extra loud")
             tts.speak_streamed(ssml_text)
-            # Pause after 5 seconds
-            #time.sleep(0.3)
-            #tts.pause_audio()
-            #print("Pausing..")
-            # Resume after 3 seconds
-            #time.sleep(0.5)
-            #tts.resume_audio()
-            #print("Resuming")
-            # Stop after 2 seconds
+        
             time.sleep(1)
-            #tts.stop_audio()
-            #print("Stopping.")
             
         except Exception as e:
             print(f"Error testing {service_name} TTS engine at speak_streamed (58-75): {e}")
@@ -116,8 +106,8 @@ def test_tts_engine(tts, service_name):
         print(f"Error testing {service_name} TTS engine: {e}")
         
     # Demonstrate saving audio to a file
-    output_file = Path(f"output_{service_name}.mp3")
-    tts.synth(ssml_text, str(output_file), format='mp3')
+    output_file = Path(f"output_{service_name}.wav")
+    tts.synth(ssml_text, str(output_file), format='wav')
     # or you could do
     #tts.speak(ssml_text)
     print(f"Audio content saved to {output_file}")
