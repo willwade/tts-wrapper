@@ -168,7 +168,7 @@ tts = MicrosoftTTS(client)
 
 ```python
 from tts_wrapper import WatsonTTS, WatsonClient
-client = WatsonClient(credentials=('api_key', 'api_url', 'region', 'instance_id'))
+client = WatsonClient(credentials=('api_key', 'region', 'instance_id'))
 
 tts = WatsonTTS(client)
 ```

@@ -14,7 +14,7 @@ except ImportError:
     IAMAuthenticator = None
     TextToSpeechV1 = None
 
-Credentials = Tuple[str, str, str, str]  # api_key, api_url, region, instance_id
+Credentials = Tuple[str, str, str]  # api_key, region, instance_id 
 
 FORMATS = {"wav": "audio/wav", "mp3": "audio/mp3"}
 
