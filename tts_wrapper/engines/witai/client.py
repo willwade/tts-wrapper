@@ -52,7 +52,7 @@ class WitAiClient:
                     standardized_voices.append({
                         "id": voice["name"],
                         "language_codes": [locale],
-                        "display_name": voice["name"].split("$")[1],
+                        "name": voice["name"].split("$")[1],
                         "gender": voice["gender"],
                         "styles": voice.get("styles", [])
                     })
