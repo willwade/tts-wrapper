@@ -101,6 +101,7 @@ class MMSClient:
 
         try:
             response = requests.get(url)
+            response.encoding = 'utf-8'
             response.raise_for_status()
             lines = response.text.strip().split('\n')
             standardized_voices = []
