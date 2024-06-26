@@ -39,7 +39,7 @@ _TTS-Wrapper_ simplifies using text-to-speech APIs by providing a unified interf
 ## To-Do
 
 - Improve the implementation of changing rate, volume, etc. (work in progress). This is a priority. 
-- Add more tests and logging code for better debugging and exception handling.
+    - Add more tests and logging code for better debugging and exception handling.
 - Verify the functionality of UWP (Universal Windows Platform).
 - Investigate other audio engines. PyAudio is a pain to install on windows
 - Look at Piper. The speed is wierd. It needs to be feature full
@@ -48,8 +48,27 @@ and an aside
 
 - Explore the possibilities of using libraries like [OpenTTS](https://github.com/synesthesiam/opentts/) and [Orca](https://github.com/synesthesiam/orca).
 
-
 ### Using pip
+
+```sh
+pip install tts-wrapper[google, watson, polly, elevenlabs, microsoft, mms]
+```
+
+NB: On Mac you may need to do 
+
+```sh
+pip install tts-wrapper"[google, watson, polly, elevenlabs, microsoft, mms]"
+```
+
+You will need to install `portaudio19-dev` on Linux
+
+If you are *only* getting voices you can use the optional extra `no_playback`. It will skip trying to install pyaudio as you wont need it. eg 
+
+```sh
+pip install tts-wrapper"[no_playback, google, watson, polly, elevenlabs, microsoft, mms]"
+```
+
+### Using pip - detailed
 
 1. Clone the repository:
    ```sh
