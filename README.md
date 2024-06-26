@@ -30,6 +30,7 @@ _TTS-Wrapper_ simplifies using text-to-speech APIs by providing a unified interf
 - **Pause, Resume, and Stop Controls**: Manage audio playback dynamically.
 - **File Output**: Save spoken audio to files in various formats.
 - **Unified Voice handling** Get Voices across all TTS engines with alike keys
+- **Volume, Pitch, and Rate Controls** Control volume, pitch and rate with unified methods
 
 ## To-Do
 
@@ -296,6 +297,53 @@ Use the id - not a name
 ssml_text = tts.ssml.add('Hello, <break time="500ms"/> world!')
 tts.speak(ssml_text)
 ```
+
+### Volume, Rate and Pitch Control
+
+Set volume:
+```python
+tts.set_property("volume", "90")
+text_read = f"The current volume is 90"
+text_with_prosody = tts.construct_prosody_tag(text_read)
+ssml_text = tts.ssml.add(text_with_prosody)
+```
+- Volume is set on a scale of 0 (silent) to 100 (maximum).
+- The default volume is 100 if not explicitly specified.
+
+Set rate:
+```python
+tts.set_property("rate", "slow")
+text_read = f"The current rate is SLOW"
+text_with_prosody = tts.construct_prosody_tag(text_read)
+ssml_text = tts.ssml.add(text_with_prosody)
+```
+Speech Rate:
+- Rate is controlled using predefined options:
+    - x-slow: Very slow speaking speed.
+    - slow: Slow speaking speed.
+    - medium (default): Normal speaking speed.
+    - fast: Fast speaking speed.
+    - x-fast: Very fast speaking speed.
+- If not specified, the speaking rate defaults to medium.
+
+Set pitch:
+```python
+tts.set_property("pitch", "high")
+text_read = f"The current pitch is SLOW"
+text_with_prosody = tts.construct_prosody_tag(text_read)
+ssml_text = tts.ssml.add(text_with_prosody)
+```
+Pitch Control:
+- Pitch is adjusted using predefined options that affect the vocal tone:
+    - x-low: Very deep pitch.
+    - low: Low pitch.
+    - medium (default): Normal pitch.
+    - high: High pitch.
+    - x-high: Very high pitch.
+- If not explicitly set, the pitch defaults to medium.
+
+Use the ```tts.ssml.clear_ssml()``` method to clear all entries from the ssml list
+
 
 ### Using callbacks on word level boundaries
 
