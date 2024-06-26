@@ -19,13 +19,17 @@ Credentials = Tuple[str, str, str]  # api_key, region, instance_id
 FORMATS = {"wav": "audio/wav", "mp3": "audio/mp3"}
 
 class WatsonClient:
-    def __init__(self, credentials: Credentials) -> None:
+    def __init__(self, credentials: Credentials, disableSSLVerification: bool =False) -> None:
         if IAMAuthenticator is None or TextToSpeechV1 is None:
             raise ModuleNotInstalled("ibm-watson")
         api_key, region, instance_id = credentials
         client = TextToSpeechV1(authenticator=IAMAuthenticator(api_key))
         api_url = f"https://api.{region}.text-to-speech.watson.cloud.ibm.com/"
         client.set_service_url(api_url)
+        if disableSSLVerification: 
+            client.set_disable_ssl_verification(True)
+            import urllib3
+            urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
         self._client = client
         # Now websocket part
         response = requests.post(
