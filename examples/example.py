@@ -10,6 +10,7 @@ import signal
 import sys
 import time
 import os
+import types
 from load_credentials import load_credentials
 
 
@@ -61,25 +62,41 @@ def test_tts_engine(tts, service_name):
     except Exception as e:
         print(f"Error testing {service_name} TTS engine at speak with plain text: {e}")
         
-
     try:
         text_read = 'Hello, world!'
-        ssml_text = tts.ssml.add(text_read)  # Assuming there's a method to add SSML correctly
+        print("text_read ", text_read)
+        text_with_prosody = tts.construct_prosody_tag("volume", text_read)
+        print("text with prosody: ", text_with_prosody)    
+        
+        tts.ssml.clean_children()
+        ssml_text = tts.ssml.add(text_with_prosody)  # Assuming there's a method to add SSML correctly
+        
+        print ("ssml_text in example: ", ssml_text)
         try:
-            print(f"Testing {service_name} TTS engine...in a timed play/pause demo")
+            print(f"Testing {service_name} TTS engine...volume control")
             tts.speak_streamed(ssml_text)
-            # Pause after 5 seconds
-            time.sleep(0.3)
-            tts.pause_audio()
-            print("Pausing..")
-            # Resume after 3 seconds
+            print("finished hello world")
+
+            time.sleep(3)
+            tts.ssml.clean_children()
+
+            #microsoft test
+            #tts.set_property("volume","90")
+            #text_read_2 = "This is louder than before"
+
+            #google test
+            tts.set_property("volume","90")
+            text_read_2 = "This is louder than before"
+
+            text_with_prosody = tts.construct_prosody_tag("volume", text_read_2)
             time.sleep(0.5)
-            tts.resume_audio()
-            print("Resuming")
-            # Stop after 2 seconds
+            ssml_text = tts.ssml.add(text_with_prosody)
+            print("ssml_test: ", ssml_text)
+            #print ("Testing setting volume to 90")
+            print ("Testing setting volume to extra loud")
+            tts.speak_streamed(ssml_text)
+        
             time.sleep(1)
-            tts.stop_audio()
-            print("Stopping.")
             
         except Exception as e:
             print(f"Error testing {service_name} TTS engine at speak_streamed (58-75): {e}")
@@ -89,8 +106,8 @@ def test_tts_engine(tts, service_name):
         print(f"Error testing {service_name} TTS engine: {e}")
         
     # Demonstrate saving audio to a file
-    output_file = Path(f"output_{service_name}.mp3")
-    tts.synth(ssml_text, str(output_file), format='mp3')
+    output_file = Path(f"output_{service_name}.wav")
+    tts.synth(ssml_text, str(output_file), format='wav')
     # or you could do
     #tts.speak(ssml_text)
     print(f"Audio content saved to {output_file}")
@@ -118,11 +135,16 @@ def test_tts_engine(tts, service_name):
 def main():
     service = sys.argv[1] if len(sys.argv) > 1 else "all"
     # Load credentials
-    load_credentials('credentials.json')
+    load_credentials('credentials-private.json')
     services = ["watson", "google", "elevenlabs", "microsoft", "polly", "witai" ] if service == "all" else [service]
     for svc in services:
         print(f"Testing {svc.upper()} TTS engine.")
         tts = create_tts_client(svc)
+        #microsoft test with absolute value
+        #tts.set_property("volume", "20")
+
+        #google test with predefined words or decibels
+        tts.set_property("volume", "5")
         test_tts_engine(tts, svc)
 
 if __name__ == "__main__":

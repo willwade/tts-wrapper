@@ -22,7 +22,7 @@ class ElevenLabsClient:
         headers = {
             'Content-Type': 'application/json',
             "xi-api-key": self.api_key,
-            "Accept": "audio/mpeg"
+            "Accept": "audio/wav"
         }
         params = {"output_format": FORMATS[format]}  # Ensuring the format is passed as a query parameter
         data = {

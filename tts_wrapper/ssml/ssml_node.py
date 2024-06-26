@@ -71,3 +71,6 @@ class SSMLNode(AbstractSSMLNode):
         @param new_attrs: Dictionary of attributes to update.
         """
         self._attrs.update(new_attrs)
+    
+    def clean_children(self):
+        self._children = []

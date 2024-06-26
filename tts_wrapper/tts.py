@@ -6,6 +6,7 @@ from threading import Event
 import logging
 import time
 import re
+import wave
 
 FileFormat = Union[Literal["wav"], Literal["mp3"]]
 
@@ -24,7 +25,10 @@ class AbstractTTS(ABC):
         self.position = 0  # Position in the byte stream
         self.timings = []
         self.timers = []
-        self.properties = {}
+        self.properties = {
+            'volume' :"",
+            'rate': 0
+        }
         self.callbacks = {
             'onStart': None,
             'onEnd': None,
@@ -54,9 +58,18 @@ class AbstractTTS(ABC):
         pass
 
     def synth_to_file(self, text: Any, filename: str, format: Optional[FileFormat] = None) -> None:
+        print ("text synth to file: ", text)
         audio_content = self.synth_to_bytes(text, format=format or "wav")
-        with open(filename, "wb") as file:
-            file.write(audio_content)
+        #audio_content = self.apply_fade_in(audio_content)
+        
+        #open file and add wav header before write in the audio content
+        channels = 1
+        sample_width = 2 #8 bit audio      
+        with wave.open(filename, "wb") as file:
+            file.setnchannels(channels)
+            file.setsampwidth(sample_width)
+            file.setframerate(self.audio_rate)
+            file.writeframes(audio_content)
 
     def synth(self, text: str, filename: str, format: Optional[FileFormat] = "wav"):
         self.synth_to_file(text, filename, format)
@@ -73,7 +86,11 @@ class AbstractTTS(ABC):
             p.terminate()
         except Exception as e:
             logging.error(f"Error playing audio: {e}")
-            
+    
+    @abstractmethod
+    def construct_prosody_tag(self, property: str, text:str) -> str:
+        pass
+
     def setup_stream(self, format=pyaudio.paInt16, channels=1):
         try:
             if self.p is None:
@@ -118,6 +135,7 @@ class AbstractTTS(ABC):
         self.position = 0
         self.playing.set()
         self._trigger_callback('onStart')
+
         with self.stream_lock:
             if self.stream:
                 self.stream.stop_stream()
@@ -249,7 +267,12 @@ class AbstractTTS(ABC):
         """Convert plain text to SSML with word markers."""
         words = text.split()
         ssml_parts = ["<speak>"]
+
+        ssml_parts.append(ssml_volume)
         for i, word in enumerate(words):
             ssml_parts.append(f'<mark name="word{i}"/>{word}')
         ssml_parts.append("</speak>")
         return " ".join(ssml_parts)
+
+    def mapped_to_predefined_word(self, volume: str) -> str:
+        pass

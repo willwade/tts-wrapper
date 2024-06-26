@@ -51,3 +51,6 @@ class MicrosoftSSML(BaseSSMLRoot):
             attrs["volume"] = volume
         self._inner.add(SSMLNode("prosody", attrs=attrs, children=[text]))
         return self
+
+    def clean_children(self):
+        self._inner.clean_children()

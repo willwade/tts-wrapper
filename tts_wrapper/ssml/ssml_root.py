@@ -12,3 +12,4 @@ class BaseSSMLRoot(AbstractSSMLNode):
     def add(self, child: Child) -> "AbstractSSMLNode":
         self._inner.add(child)
         return self
+    

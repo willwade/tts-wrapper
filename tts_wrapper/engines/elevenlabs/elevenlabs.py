@@ -2,7 +2,10 @@ from typing import Any, List,Dict, Optional
 from ...exceptions import UnsupportedFileFormat
 from ...tts import AbstractTTS, FileFormat
 from . import ElevenLabsClient, ElevenLabsSSMLRoot
-from ...engines.utils import estimate_word_timings  
+from ...engines.utils import estimate_word_timings
+import numpy as np
+import re
+import io
 
 class ElevenLabsTTS(AbstractTTS):
     def __init__(self, client: ElevenLabsClient, lang: Optional[str] = None, voice: Optional[str] = None):
@@ -18,11 +21,58 @@ class ElevenLabsTTS(AbstractTTS):
             raise ValueError("Voice ID must be set before synthesizing speech.")
         word_timings = estimate_word_timings(str(text))
         self.set_timings(word_timings)
+
         # Get the audio from the ElevenLabs API
-        return self._client.synth(str(text), self._voice, format)
+        generated_audio = self._client.synth(str(text), self._voice, format)
+
+        prosody_text = str(text)
+        if "volume=" in prosody_text:
+            print("volume exist in text")
+            volume = self.get_volume_value(prosody_text)
+            generated_audio = self.adjust_volume_value(generated_audio, volume, format)
+
+        return generated_audio
+        #return self._client.synth(str(text), self._voice, format)
+
+    def adjust_volume_value(self, generated_audio: bytes, volume: float, format: str) -> bytes:
+        print("generated audio length: ", len(generated_audio))
+        
+            #check if generated audio length is odd. If it is, add an empty byte since np.frombuffer is expecting
+            #an even length
+        if len(generated_audio)%2 != 0:
+            generated_audio += b'\x00'
+
+        generated_audio = np.frombuffer(generated_audio, dtype=np.int16)
+
+        # Convert to float32 for processing
+        samples_float = generated_audio.astype(np.float32) / 32768.0  # Normalize to [-1.0, 1.0]
+
+        # Scale the samples with the volume
+        scaled_volume = volume/100
+        scaled_audio = scaled_volume * samples_float
+        
+        # Clip the values to make sure they're in the valid range for paFloat32
+        clipped_audio = np.clip(scaled_audio, -1.0, 1.0)
+        # Convert back to int16
+        output_samples = (clipped_audio * 32768).astype(np.int16)
+        output_bytes = output_samples.tobytes()
+
+        return output_bytes
+
+    def get_volume_value(self, text: str) -> float:
+        pattern = r'volume="(\d+)"'
+        match = re.search(pattern, text)
+        print("match ", match)
+        return float(match.group(1))
+
 
     def get_voices(self) -> List[Dict[str, Any]]:
         return self._client.get_voices()
+
+    def construct_prosody_tag(self, property:str, text:str ) -> str:
+        volume = self.get_property(property)
+        text_with_tag = f'<prosody {property}="{volume}">{text}</prosody>'        
+        return text_with_tag
 
     @property
     def ssml(self) -> ElevenLabsSSMLRoot:

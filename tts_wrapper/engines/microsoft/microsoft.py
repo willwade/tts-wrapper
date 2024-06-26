@@ -60,6 +60,11 @@ class MicrosoftTTS(AbstractTTS):
         self._client.speech_config.speech_synthesis_voice_name = self._voice
         self._client.speech_config.speech_synthesis_language = self._lang
 
+    def construct_prosody_tag(self, property: str, text:str ) -> str:
+        volume = self.get_property(property)
+        text_with_tag = f'<prosody {property}="{volume}">{text}</prosody>'        
+        return text_with_tag
+
     def synth_to_bytes(self, ssml: str, format: Optional[FileFormat] = "wav") -> bytes:
         format = self._client.FORMATS.get(format, "Riff24Khz16BitMonoPcm")
         self._client.speech_config.set_speech_synthesis_output_format(getattr(speechsdk.SpeechSynthesisOutputFormat, format))
