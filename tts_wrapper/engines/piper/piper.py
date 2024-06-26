@@ -38,3 +38,6 @@ class PiperTTS(AbstractTTS):
         super().set_voice(voice_id)
         self._voice = voice_id
         self._lang = lang_id
+
+    def construct_prosody_tag(self, text:str ) -> str:
+        pass

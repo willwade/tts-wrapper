@@ -4,7 +4,7 @@ class PollySSML(BaseSSMLRoot):
     def __init__(self) -> None:
         super().__init__()
     
-    def clean_children(self):
-        self._inner.clean_children()
+    def clear_ssml(self):
+        self._inner.clear_ssml()
 
 #PollySSML = BaseSSMLRoot

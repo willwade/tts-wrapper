@@ -46,3 +46,6 @@ class WatsonTTS(AbstractTTS):
         super().set_voice(voice_id)  # Optionally manage voice at the AbstractTTS level if needed
         self._voice = voice_id
         self._lang = lang_id
+
+    def construct_prosody_tag(self, text:str ) -> str:
+        pass

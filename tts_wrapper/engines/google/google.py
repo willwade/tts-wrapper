@@ -35,10 +35,25 @@ class GoogleTTS(AbstractTTS):
         """Retrieves a list of available voices from the Google TTS service."""
         return self._client.get_voices()
 
-    def construct_prosody_tag(self, property: str, text:str ) -> str:
-        volume_in_number = self.get_property(property)
-        volume_in_words = self.mapped_to_predefined_word(volume_in_number)
-        text_with_tag = f'<prosody {property}="{volume_in_words}">{text}</prosody>'        
+    def construct_prosody_tag(self, text:str ) -> str:
+        properties = []
+        rate = self.get_property("rate")
+        if rate != "":            
+            properties.append(f'rate="{rate}"')
+        
+        pitch = self.get_property("pitch")
+        if pitch != "":
+            properties.append(f'pitch="{pitch}"')
+    
+        volume_in_number = self.get_property("volume")
+        if volume_in_number != "":
+            volume_in_words = self.mapped_to_predefined_word(volume_in_number)
+            properties.append(f'volume="{volume_in_words}"')
+        
+        prosody_content = " ".join(properties)
+        
+        text_with_tag = f'<prosody {prosody_content}>{text}</prosody>'
+        
         return text_with_tag
 
     def mapped_to_predefined_word(self, volume: str) -> str:

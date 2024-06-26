@@ -86,3 +86,113 @@ try:
     tts.start_playback_with_callbacks(text, callback=my_callback)
 except Exception as e:
     print(f"Error at callbacks: {e}")
+
+# volume control test
+print("Volume setting is from 0-100")
+text_read = ""
+try:
+    tts.set_property("volume", "20")
+    print("Setting volume at 20")
+    text_read = f"The current volume is at 20"
+    text_with_prosody = tts.construct_prosody_tag(text_read)
+    ssml_text = tts.ssml.add(text_with_prosody)
+    print("ssml_test: ", ssml_text)
+    tts.speak_streamed(ssml_text)
+    time.sleep(3)
+    
+    #clear ssml so the previous text is not repeated
+    tts.ssml.clear_ssml()
+    tts.set_property("volume", "100")
+    print("Setting volume at 100")
+    text_read = f"The current volume is at 100"
+    text_with_prosody = tts.construct_prosody_tag(text_read)
+    ssml_text = tts.ssml.add(text_with_prosody)
+    print("ssml_test: ", ssml_text)
+    tts.speak_streamed(ssml_text)
+    time.sleep(3)
+
+    tts.ssml.clear_ssml()
+    tts.set_property("volume", "10")
+    print("Setting volume at 10")
+    text_read = f"The current volume is at 10"
+    text_with_prosody = tts.construct_prosody_tag(text_read)        
+    ssml_text = tts.ssml.add(text_with_prosody)
+    tts.speak_streamed(ssml_text)
+    time.sleep(3)
+
+except Exception as e:
+    print(f"Error at setting volume: {e}")
+
+# pitch control test
+print("Pitch control is from x-low, low, medium, high, x-high")
+text_read = ""
+tts.set_property("volume", "70")
+try:
+    tts.ssml.clear_ssml()
+    tts.set_property("pitch", "low")
+    print("Setting pitch at low")
+    text_read = f"The current pitch is LOW"
+    text_with_prosody = tts.construct_prosody_tag(text_read)
+    ssml_text = tts.ssml.add(text_with_prosody)
+    print("ssml_test: ", ssml_text)
+    tts.speak_streamed(ssml_text)
+    time.sleep(5)
+    
+    #clear ssml so the previous text is not repeated
+    tts.ssml.clear_ssml()
+    tts.set_property("pitch", "x-high")
+    print("Setting pitch at EXTRA HIGH")
+    text_read = f"The current pitch is at EXTRA HIGH"
+    text_with_prosody = tts.construct_prosody_tag(text_read)
+    ssml_text = tts.ssml.add(text_with_prosody)
+    print("ssml_test: ", ssml_text)
+    tts.speak_streamed(ssml_text)
+    time.sleep(5)
+
+    tts.ssml.clear_ssml()
+    tts.set_property("pitch", "x-low")
+    print("Setting pitch at EXTRA LOW")
+    text_read = f"The current pitch at EXTRA LOW"
+    text_with_prosody = tts.construct_prosody_tag(text_read)        
+    ssml_text = tts.ssml.add(text_with_prosody)
+    tts.speak_streamed(ssml_text)
+    time.sleep(5)
+except Exception as e:
+    print(f"Error at setting pitch: {e}")   
+
+# rate control test
+print("Rate setting is from x-slow, slow, medium, fast, x-fast")
+text_read = ""
+tts.set_property("volume", "70")
+try:
+    tts.ssml.clear_ssml()
+    tts.set_property("rate", "slow")
+    print("Setting rate at SLOW")
+    text_read = f"The current rate is SLOW"
+    text_with_prosody = tts.construct_prosody_tag(text_read)
+    ssml_text = tts.ssml.add(text_with_prosody)
+    print("ssml_test: ", ssml_text)
+    tts.speak_streamed(ssml_text)
+    time.sleep(5)
+    
+    #clear ssml so the previous text is not repeated
+    tts.ssml.clear_ssml()
+    tts.set_property("rate", "x-fast")
+    print("Setting rate at EXTRA FAST")
+    text_read = f"The current rate is at EXTRA FAST"
+    text_with_prosody = tts.construct_prosody_tag(text_read)
+    ssml_text = tts.ssml.add(text_with_prosody)
+    print("ssml_test: ", ssml_text)
+    tts.speak_streamed(ssml_text)
+    time.sleep(5)
+
+    tts.ssml.clear_ssml()
+    tts.set_property("rate", "x-slow")
+    print("Setting rate at EXTRA SLOW")
+    text_read = f"The current rate at EXTRA SLOW"
+    text_with_prosody = tts.construct_prosody_tag(text_read)        
+    ssml_text = tts.ssml.add(text_with_prosody)
+    tts.speak_streamed(ssml_text)
+    time.sleep(5)
+except Exception as e:
+    print(f"Error at setting pitch: {e}")  

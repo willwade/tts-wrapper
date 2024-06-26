@@ -64,21 +64,17 @@ def test_tts_engine(tts, service_name):
         
     try:
         text_read = 'Hello, world!'
-        print("text_read ", text_read)
-        text_with_prosody = tts.construct_prosody_tag("volume", text_read)
-        print("text with prosody: ", text_with_prosody)    
+        text_with_prosody = tts.construct_prosody_tag(text_read)    
         
-        tts.ssml.clean_children()
+        tts.ssml.clear_ssml()
         ssml_text = tts.ssml.add(text_with_prosody)  # Assuming there's a method to add SSML correctly
-        
-        print ("ssml_text in example: ", ssml_text)
+       
         try:
             print(f"Testing {service_name} TTS engine...volume control")
             tts.speak_streamed(ssml_text)
-            print("finished hello world")
 
             time.sleep(3)
-            tts.ssml.clean_children()
+            tts.ssml.clear_ssml()
 
             #microsoft test
             #tts.set_property("volume","90")
@@ -86,9 +82,11 @@ def test_tts_engine(tts, service_name):
 
             #google test
             tts.set_property("volume","90")
+            tts.set_property("pitch","x-high")
+            
             text_read_2 = "This is louder than before"
 
-            text_with_prosody = tts.construct_prosody_tag("volume", text_read_2)
+            text_with_prosody = tts.construct_prosody_tag(text_read_2)
             time.sleep(0.5)
             ssml_text = tts.ssml.add(text_with_prosody)
             print("ssml_test: ", ssml_text)
@@ -145,6 +143,8 @@ def main():
 
         #google test with predefined words or decibels
         tts.set_property("volume", "5")
+        tts.set_property("rate", "x-slow")
+        tts.set_property("pitch", "x-low")
         test_tts_engine(tts, svc)
 
 if __name__ == "__main__":

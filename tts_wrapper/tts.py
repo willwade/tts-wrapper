@@ -27,7 +27,8 @@ class AbstractTTS(ABC):
         self.timers = []
         self.properties = {
             'volume' :"",
-            'rate': 0
+            'rate': "",
+            'pitch':""
         }
         self.callbacks = {
             'onStart': None,
@@ -88,7 +89,7 @@ class AbstractTTS(ABC):
             logging.error(f"Error playing audio: {e}")
     
     @abstractmethod
-    def construct_prosody_tag(self, property: str, text:str) -> str:
+    def construct_prosody_tag(self, text:str) -> str:
         pass
 
     def setup_stream(self, format=pyaudio.paInt16, channels=1):
