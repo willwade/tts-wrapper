@@ -89,3 +89,37 @@ if len(voices) > 1:
 #     tts.start_playback_with_callbacks(text, callback=my_callback)
 # except Exception as e:
 #     print(f"Error at callbacks: {e}")
+
+# volume control test
+print("Volume setting is from 0-100")
+text_read = ""
+try:
+    tts.set_property("volume", "50")
+    print("Setting volume at 50")
+    text_read = f"The current volume is at 50"
+    text_with_prosody = tts.construct_prosody_tag(text_read)
+    ssml_text = tts.ssml.add(text_with_prosody)
+    tts.speak_streamed(ssml_text)
+    time.sleep(5)
+    
+    #clear ssml so the previous text is not repeated
+    tts.ssml.clear_ssml()
+    tts.set_property("volume", "100")
+    print("Setting volume at 100")
+    text_read = f"The current volume is at 100"
+    text_with_prosody = tts.construct_prosody_tag(text_read)
+    ssml_text = tts.ssml.add(text_with_prosody)
+    tts.speak_streamed(ssml_text)
+    time.sleep(5)
+
+    tts.ssml.clear_ssml()
+    tts.set_property("volume", "10")
+    print("Setting volume at 10")
+    text_read = f"The current volume is at 10"
+    text_with_prosody = tts.construct_prosody_tag(text_read)        
+    ssml_text = tts.ssml.add(text_with_prosody)
+    tts.speak_streamed(ssml_text)
+    time.sleep(5)
+
+except Exception as e:
+    print(f"Error at setting volume: {e}")

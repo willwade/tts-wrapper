@@ -60,9 +60,24 @@ class MicrosoftTTS(AbstractTTS):
         self._client.speech_config.speech_synthesis_voice_name = self._voice
         self._client.speech_config.speech_synthesis_language = self._lang
 
-    def construct_prosody_tag(self, property: str, text:str ) -> str:
-        volume = self.get_property(property)
-        text_with_tag = f'<prosody {property}="{volume}">{text}</prosody>'        
+    def construct_prosody_tag(self, text:str ) -> str:
+        properties = []
+        rate = self.get_property("rate")
+        if rate != "":            
+            properties.append(f'rate="{rate}"')
+        
+        pitch = self.get_property("pitch")
+        if pitch != "":
+            properties.append(f'pitch="{pitch}"')
+    
+        volume = self.get_property("volume")
+        if volume != "":
+            properties.append(f'volume="{volume}"')
+        
+        prosody_content = " ".join(properties)
+        
+        text_with_tag = f'<prosody {prosody_content}>{text}</prosody>'
+        
         return text_with_tag
 
     def synth_to_bytes(self, ssml: str, format: Optional[FileFormat] = "wav") -> bytes:

@@ -5,12 +5,12 @@ from pathlib import Path
 import os
 from load_credentials import load_credentials
 # Load credentials
-load_credentials('credentials.json')
+load_credentials('credentials-private.json')
 
 client = ElevenLabsClient(credentials=(os.getenv('ELEVENLABS_API_KEY')))
 tts = ElevenLabsTTS(client)
 
-# # pausng
+# # pausing
 try:
     ssml_text = tts.ssml.add(f"This is me speaking with Speak function and ElevenLabs")
     tts.speak_streamed(ssml_text)
@@ -29,17 +29,19 @@ try:
 except Exception as e:
     print(f"Error at pausing: {e}")
   
-        
+time.sleep(3)
+
 # Demonstrate saving audio to a file
 try:
-    output_file = Path(f"output_elevenlabs.mp3")
-    tts.synth(ssml_text, str(output_file), format='mp3')
+    output_file = Path(f"output_elevenlabs.wav")
+    tts.synth(ssml_text, str(output_file), format='wav')
     # or you could do
     #tts.speak(ssml_text)
     print(f"Audio content saved to {output_file}")
 except Exception as e:
     print(f"Error at saving: {e}")
-  
+
+time.sleep(3)  
       
 # Change voice and test again if possible
 try:
@@ -68,6 +70,8 @@ if len(voices) > 1:
     ssml_text_part2 = tts.ssml.add('Continuing with a new voice!')
     tts.speak_streamed(ssml_text_part2)
 
+time.sleep(3)
+
 # ## calbacks
 
 def my_callback(word: str, start_time: float):
@@ -86,3 +90,40 @@ try:
     tts.start_playback_with_callbacks(text, callback=my_callback)
 except Exception as e:
     print(f"Error at callbacks: {e}")
+
+time.sleep(3)
+
+# volume control test
+print("Volume setting is from 0-100")
+text_read = ""
+try:
+    tts.set_property("volume", "50")
+    print("Setting volume at 50")
+    text_read = f"The current volume is at 50"
+    text_with_prosody = tts.construct_prosody_tag(text_read)
+    ssml_text = tts.ssml.add(text_with_prosody)
+    tts.speak_streamed(ssml_text)
+    time.sleep(0.5)
+    
+    #clear ssml so the previous text is not repeated
+    tts.ssml.clear_ssml()
+    tts.set_property("volume", "100")
+    print("Setting volume at 100")
+    text_read = f"The current volume is at 100"
+    text_with_prosody = tts.construct_prosody_tag(text_read)
+    ssml_text = tts.ssml.add(text_with_prosody)
+    tts.speak_streamed(ssml_text)
+    time.sleep(0.5)
+
+    tts.ssml.clear_ssml()
+    tts.set_property("volume", "10")
+    print("Setting volume at 10")
+    text_read = f"The current volume is at 10"
+    text_with_prosody = tts.construct_prosody_tag(text_read)        
+    ssml_text = tts.ssml.add(text_with_prosody)
+    print("ssml_test: ", ssml_text)
+    tts.speak_streamed(ssml_text)
+    time.sleep(0.5)
+
+except Exception as e:
+    print(f"Error at setting volume: {e}")

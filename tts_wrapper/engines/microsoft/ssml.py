@@ -52,5 +52,5 @@ class MicrosoftSSML(BaseSSMLRoot):
         self._inner.add(SSMLNode("prosody", attrs=attrs, children=[text]))
         return self
 
-    def clean_children(self):
-        self._inner.clean_children()
+    def clear_ssml(self):
+        self._inner.clear_ssml()

@@ -72,5 +72,5 @@ class SSMLNode(AbstractSSMLNode):
         """
         self._attrs.update(new_attrs)
     
-    def clean_children(self):
+    def clear_ssml(self):
         self._children = []

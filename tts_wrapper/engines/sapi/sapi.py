@@ -17,3 +17,6 @@ class SAPITTS(AbstractTTS):
         if format not in self.supported_formats():
             raise UnsupportedFileFormat(format, self.__class__.__name__)
         return self._client.synth(str(text))
+
+    def construct_prosody_tag(self, text:str ) -> str:
+        pass
