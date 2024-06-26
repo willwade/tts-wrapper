@@ -15,6 +15,9 @@ class MMSTTS(AbstractTTS):
         self._voice = voice or self._lang  # Use lang as voice ID for MMS
         self.audio_rate = 16000
 
+    def construct_prosody_tag(self, text:str ) -> str:
+        pass
+
     def synth_to_bytes(self, text: Any, format: Optional[FileFormat] = "wav") -> bytes:
         if format not in self.supported_formats():
             raise UnsupportedFileFormat(format, self.__class__.__name__)

@@ -68,48 +68,7 @@ If you are *only* getting voices you can use the optional extra `no_playback`. I
 pip install tts-wrapper"[no_playback, google, watson, polly, elevenlabs, microsoft, mms]"
 ```
 
-### Using pip - detailed
 
-1. Clone the repository:
-   ```sh
-   git clone https://github.com/mediatechlab/tts-wrapper.git
-   cd tts-wrapper
-   ```
-
-2. Install the package and system dependencies:
-   ```sh
-   pip install .
-   ```
-
-   To install optional dependencies, use:
-   ```sh
-   pip install .[google, watson, polly, elevenlabs, microsoft]
-   ```
-
-This will install Python dependencies and system dependencies required for this project. Note that system dependencies will only be installed automatically on Linux.
-
-### Using Poetry
-
-1. Clone the repository:
-   ```sh
-   git clone https://github.com/mediatechlab/tts-wrapper.git
-   cd tts-wrapper
-   ```
-
-2. Install Python dependencies:
-   ```sh
-   poetry install
-   ```
-
-3. Install system dependencies (Linux only):
-   ```sh
-   poetry run postinstall
-   ```
-
-4. Run your project:
-   ```sh
-   poetry run python your_project_script.py
-   ```
 
 ## System Dependencies
 
@@ -117,8 +76,7 @@ This project requires the following system dependencies on Linux:
 
 - `portaudio19-dev`
 
-You can install these dependencies using the provided setup script or manually with the appropriate package manager (e.g., `apt-get` for Debian-based systems). The setup script will only run on Linux systems.
-
+You can install these dependencies using the provided setup script or manually with the appropriate package manager (e.g., `apt-get insall portaudio19-dev` for Debian-based systems). The setup script will only run on Linux systems.
 
 ### For PicoTTS on Debian systems:
 
@@ -150,7 +108,7 @@ tts = PollyTTS(pollyClient)
 tts.speak('Hello world')
 ```
 
-for a full demo see the examples folder. You'll need to fill out the credentials.json (or credentials-private.json). Use them from cd'ing into the examples folder. 
+For a full demo see the examples folder. You'll need to fill out the credentials.json (or credentials-private.json). Use them from cd'ing into the examples folder. 
 Tips on gaining keys are below.
 
 ## Authorization
@@ -188,6 +146,15 @@ tts = MicrosoftTTS(client)
 ```python
 from tts_wrapper import WatsonTTS, WatsonClient
 client = WatsonClient(credentials=('api_key', 'region', 'instance_id'))
+
+tts = WatsonTTS(client)
+```
+
+**Note** If you have issues with SSL certification try
+
+```python
+from tts_wrapper import WatsonTTS, WatsonClient
+client = WatsonClient(credentials=('api_key', 'region', 'instance_id'),disableSSLVerification=True)
 
 tts = WatsonTTS(client)
 ```
@@ -422,17 +389,6 @@ Word "test" spoken at 1.7375 ms
 Speech ended
 ```
 
-#### PicoTTS, SAPI & UWP
-
-These clients dont't require authorization since they run offline.
-
-```python
-from tts_wrapper import PicoClient, SAPIClient
-client = PicoClient()
-# or
-client = SAPIClient()
-```
-
 ## Supported File Formats
 
 By default, all engines output audio in the WAV format, but can be configured to output MP3 or other formats where supported.
@@ -441,12 +397,59 @@ By default, all engines output audio in the WAV format, but can be configured to
 tts.synth('<speak>Hello, world!</speak>', 'hello.mp3', format='mp3)
 ```
 
+## Developer's Guide
 
-## Developer's Guide: Adding a New Engine to TTS Wrapper
+### Setting up the Development Environment
+
+#### Using Pipenv
+
+
+1. Clone the repository:
+   ```sh
+   git clone https://github.com/mediatechlab/tts-wrapper.git
+   cd tts-wrapper
+   ```
+
+2. Install the package and system dependencies:
+   ```sh
+   pip install .
+   ```
+
+   To install optional dependencies, use:
+   ```sh
+   pip install .[google, watson, polly, elevenlabs, microsoft]
+   ```
+
+This will install Python dependencies and system dependencies required for this project. Note that system dependencies will only be installed automatically on Linux.
+
+#### Using Poetry
+
+1. Clone the repository:
+   ```sh
+   git clone https://github.com/mediatechlab/tts-wrapper.git
+   cd tts-wrapper
+   ```
+
+2. Install Python dependencies:
+   ```sh
+   poetry install
+   ```
+
+3. Install system dependencies (Linux only):
+   ```sh
+   poetry run postinstall
+   ```
+
+4. Run your project:
+   ```sh
+   poetry run python your_project_script.py
+   ```
+
+### Adding a New Engine to TTS Wrapper
 
 This guide provides a step-by-step approach to adding a new engine to the existing Text-to-Speech (TTS) wrapper system.
 
-### Step 1: Create Engine Directory Structure
+#### Step 1: Create Engine Directory Structure
 
 1. **Create a new folder** for your engine within the `engines` directory. Name this folder according to your engine, such as `witai` for Wit.ai.
 
@@ -471,7 +474,7 @@ This guide provides a step-by-step approach to adding a new engine to the existi
        └── ssml.py
    ```
 
-### Step 2: Implement Client Functionality in `client.py`
+#### Step 2: Implement Client Functionality in `client.py`
 
 Implement authentication and necessary setup for API connection. This file should manage tasks such as sending synthesis requests and fetching available voices.
 
@@ -490,7 +493,7 @@ class TTSClient:
         pass
 ```
 
-### Step 3: Define the TTS Engine in `engine.py`
+#### Step 3: Define the TTS Engine in `engine.py`
 
 This class should inherit from the abstract TTS class and implement required methods such as `get_voices` and `synth_to_bytes`.
 
@@ -510,7 +513,7 @@ class WitTTS(AbstractTTS):
         return self.client.synth(text, {'format': format})
 ```
 
-### Step 4: Implement SSML Handling in `ssml.py`
+#### Step 4: Implement SSML Handling in `ssml.py`
 
 If the engine has specific SSML requirements or supports certain SSML tags differently, implement this logic here.
 
@@ -522,7 +525,7 @@ class EngineSSML(BaseSSMLRoot):
         self.root.add(SSMLNode('break', attrs={'time': time}))
 ```
 
-### Step 5: Update `__init__.py`
+#### Step 5: Update `__init__.py`
 
 Make sure the `__init__.py` file properly imports and exposes the TTS class and any other public classes or functions from your engine.
 
