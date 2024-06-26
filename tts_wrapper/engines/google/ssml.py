@@ -27,5 +27,5 @@ class GoogleSSML(BaseSSMLRoot):
         ssml_parts.append("</speak>")
         return "".join(ssml_parts)
 
-    def clean_children(self):
-        self._inner.clean_children()
+    def clear_ssml(self):
+        self._inner.clear_ssml()

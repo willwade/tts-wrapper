@@ -27,7 +27,6 @@ class ElevenLabsTTS(AbstractTTS):
 
         prosody_text = str(text)
         if "volume=" in prosody_text:
-            print("volume exist in text")
             volume = self.get_volume_value(prosody_text)
             generated_audio = self.adjust_volume_value(generated_audio, volume, format)
 
@@ -35,10 +34,8 @@ class ElevenLabsTTS(AbstractTTS):
         #return self._client.synth(str(text), self._voice, format)
 
     def adjust_volume_value(self, generated_audio: bytes, volume: float, format: str) -> bytes:
-        print("generated audio length: ", len(generated_audio))
-        
-            #check if generated audio length is odd. If it is, add an empty byte since np.frombuffer is expecting
-            #an even length
+        #check if generated audio length is odd. If it is, add an empty byte since np.frombuffer is expecting
+        #an even length
         if len(generated_audio)%2 != 0:
             generated_audio += b'\x00'
 
@@ -62,16 +59,34 @@ class ElevenLabsTTS(AbstractTTS):
     def get_volume_value(self, text: str) -> float:
         pattern = r'volume="(\d+)"'
         match = re.search(pattern, text)
-        print("match ", match)
+        
         return float(match.group(1))
 
 
     def get_voices(self) -> List[Dict[str, Any]]:
         return self._client.get_voices()
 
-    def construct_prosody_tag(self, property:str, text:str ) -> str:
-        volume = self.get_property(property)
-        text_with_tag = f'<prosody {property}="{volume}">{text}</prosody>'        
+    def construct_prosody_tag(self, text:str ) -> str:
+        properties = []
+
+        #commenting this for now as we don't have ways to control rate and pitch without ssml
+        rate = self.get_property("rate")
+        if rate != "":            
+            properties.append(f'rate="{rate}"')
+        #        
+        pitch = self.get_property("pitch")
+        if pitch != "":
+            properties.append(f'pitch="{pitch}"')
+    
+        volume = self.get_property("volume")
+        if volume != "":
+            properties.append(f'volume="{volume}"')
+        
+        prosody_content = " ".join(properties)
+        
+        #text_with_tag = f'<prosody {property}="{volume_in_words}">{text}</prosody>'        
+        text_with_tag = f'<prosody {prosody_content}>{text}</prosody>'
+        
         return text_with_tag
 
     @property

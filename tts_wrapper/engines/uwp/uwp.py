@@ -21,3 +21,6 @@ class UWPTTS(AbstractTTS):
 
     def get_voices(self) -> List[str]:
         return self._client.get_voices()
+
+    def construct_prosody_tag(self, text:str ) -> str:
+        pass
