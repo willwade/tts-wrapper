@@ -48,6 +48,7 @@ class WitAiClient:
             voices = response.json()
             standardized_voices = []
             for locale, voice_list in voices.items():
+                locale = locale.replace('_', '-')
                 for voice in voice_list:
                     standardized_voices.append({
                         "id": voice["name"],
