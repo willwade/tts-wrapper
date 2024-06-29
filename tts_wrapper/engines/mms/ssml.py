@@ -8,3 +8,6 @@ class MMSSSML(BaseSSMLRoot):
     def __str__(self) -> str:
         # MMS doesn't support SSML, so we just return the text content
         return "".join(str(c) for c in self._inner._children)
+
+    def clear_ssml(self):
+        pass

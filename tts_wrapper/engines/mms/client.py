@@ -41,6 +41,7 @@ class MMSClient:
         try:
             model_path = os.path.join(self._model_dir, lang)
             self._tts = TTS(model_path)
+            _tts.speaking_rate = 1.5
         except Exception as e:
             # If TTS initialization fails, attempt to download the model
             try:
