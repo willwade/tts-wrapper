@@ -66,11 +66,10 @@ _TTS-Wrapper_ simplifies using text-to-speech APIs by providing a unified interf
 
 ## To-Do
 
-- Improve the implementation of changing rate, volume, etc. (work in progress). This is a priority. 
-    - Add more tests and logging code for better debugging and exception handling.
-- Verify the functionality of UWP (Universal Windows Platform).
-- Investigate other audio engines. PyAudio is a pain to install on windows
-- Look at Piper. The speed is wierd. It needs to be feature full
+- Add more tests and logging code for better debugging and exception handling. (see tests/ we do have examples/ where we are doing some quick real-world testing but the tests dir is where we should focus efforts)
+- Verify the functionality of UWP (Universal Windows Platform). Not tested. 
+- Investigate other audio engines. PyAudio is a pain to install on Linux 
+- Piper needs a lot of work. Its playing at strange speeds. 
 
 and an aside
 
