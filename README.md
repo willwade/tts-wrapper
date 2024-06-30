@@ -19,6 +19,9 @@ _TTS-Wrapper_ simplifies using text-to-speech APIs by providing a unified interf
 - ElevenLabs
 - Wit.Ai 
 
+
+
+
 ### Experimental (Not fully featured or in a state of WIP)
 
 - PicoTTS
@@ -36,6 +39,31 @@ _TTS-Wrapper_ simplifies using text-to-speech APIs by providing a unified interf
 - **File Output**: Save spoken audio to files in various formats.
 - **Unified Voice handling** Get Voices across all TTS engines with alike keys
 - **Volume, Pitch, and Rate Controls** Control volume, pitch and rate with unified methods
+
+
+## Feature set overview
+
+| Engine     | OS                  | Online/Offline | SSML | Rate/Volume/Pitch | onWord events |
+|------------|---------------------|----------------|------|-------------------|---------------|
+| Polly      | Linux/MacOS/Windows | Online         | Yes  | Yes               | Yes           |
+| Google     | Linux/MacOS/Windows | Online         | Yes  | Yes               | Yes           |
+| Azure      | Linux/MacOS/Windows | Online         | Yes  | Yes               | Yes           |
+| Watson     | Linux/MacOS/Windows | Online         | Yes  | No                | Yes           |
+| ElevenLabs | Linux/MacOS/Windows | Online         | No   | Yes               | No            |
+| Wit.AI     | Linux/MacOS/Windows | Online         | Yes  | No                | No            |
+| MMS        | Linux/MacOS/Windows | Offline        | No   | Yes               | No            |
+| Piper      | Linux               | Offline        | No   | No                | No            |
+| UWP        | Windows             | Offline        | No   | Yes               | No            |
+| SAPI       | Windows             | Offline        | Yes  | Yes               | Yes           |
+| NSS        | MacOS               | Offline        | Yes  | Yes               | Yes           |
+
+**Notes**:
+
+* For SSML no you can send the engine SSML we will just strip it
+* For onWord Events. For Engines where it is a no we have a very bad fallback mechanism which will emit word timings based on estimation. You cant rely on this for accurate use cases. 
+* Piper should be multiplatform. Its just got dependency issues that make this tricky right now
+* MSS has some snags around python versions. We are finding that for some reason you need it to be fixed to 3.11.4 
+
 
 ## To-Do
 
