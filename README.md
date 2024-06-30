@@ -10,6 +10,7 @@
 
 _TTS-Wrapper_ simplifies using text-to-speech APIs by providing a unified interface across multiple services, allowing easy integration and manipulation of TTS capabilities.
 
+
 ## Supported Services
 
 - AWS Polly
@@ -75,32 +76,41 @@ and an aside
 
 - Explore the possibilities of using libraries like [OpenTTS](https://github.com/synesthesiam/opentts/) and [Orca](https://github.com/synesthesiam/orca).
 
+## Install
+
+### System Dependencies
+
+This project requires the following system dependencies on Linux:
+
+```sh
+sudo apt-get insall portaudio19-dev
+```
+
+or MacOS, using [Homebrew](https://brew.sh)
+
+```sh
+brew install portaudio
+```
+
+For PicoTTS on Debian systems:
+
+```sh
+sudo apt-get install libttspico-utils
+```
+
+
 ### Using pip
 
 ```sh
 pip install tts-wrapper[google, watson, polly, elevenlabs, microsoft, mms]
 ```
 
-NB: On Mac you may need to do 
+NB: On MacOS(/zsh) you may need to do 
 
 ```sh
 pip install tts-wrapper"[google, watson, polly, elevenlabs, microsoft, mms]"
 ```
 
-
-## System Dependencies
-
-This project requires the following system dependencies on Linux:
-
-- `portaudio19-dev`
-
-You can install these dependencies using the provided setup script or manually with the appropriate package manager (e.g., `apt-get insall portaudio19-dev` for Debian-based systems macOS use homebrew e.g `brew install portaudio`). The setup script will only run on Linux systems.
-
-### For PicoTTS on Debian systems:
-
-```sh
-sudo apt-get install libttspico-utils
-```
 
 ## Basic Usage
 
