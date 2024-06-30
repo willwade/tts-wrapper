@@ -61,15 +61,6 @@ NB: On Mac you may need to do
 pip install tts-wrapper"[google, watson, polly, elevenlabs, microsoft, mms]"
 ```
 
-You will need to install `portaudio19-dev` on Linux
-
-If you are *only* getting voices you can use the optional extra `no_playback`. It will skip trying to install pyaudio as you wont need it. eg 
-
-```sh
-pip install tts-wrapper"[no_playback, google, watson, polly, elevenlabs, microsoft, mms]"
-```
-
-
 
 ## System Dependencies
 
@@ -77,7 +68,7 @@ This project requires the following system dependencies on Linux:
 
 - `portaudio19-dev`
 
-You can install these dependencies using the provided setup script or manually with the appropriate package manager (e.g., `apt-get insall portaudio19-dev` for Debian-based systems). The setup script will only run on Linux systems.
+You can install these dependencies using the provided setup script or manually with the appropriate package manager (e.g., `apt-get insall portaudio19-dev` for Debian-based systems macOS use homebrew e.g `brew install portaudio`). The setup script will only run on Linux systems.
 
 ### For PicoTTS on Debian systems:
 
