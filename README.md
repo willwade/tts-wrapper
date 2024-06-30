@@ -20,8 +20,6 @@ _TTS-Wrapper_ simplifies using text-to-speech APIs by providing a unified interf
 - Wit.Ai 
 
 
-
-
 ### Experimental (Not fully featured or in a state of WIP)
 
 - PicoTTS
@@ -59,11 +57,12 @@ _TTS-Wrapper_ simplifies using text-to-speech APIs by providing a unified interf
 
 **Notes**:
 
-* For SSML no you can send the engine SSML we will just strip it
+* For methods like speak, speak_streamed etc, these are supported by all engines. The table above is really those features where it can't be matched across the board. 
+* For SSML where it says  'no' you can send the engine SSML we will just strip it
 * For onWord Events. For Engines where it is a no we have a very bad fallback mechanism which will emit word timings based on estimation. You cant rely on this for accurate use cases. 
 * Piper should be multiplatform. Its just got dependency issues that make this tricky right now
-* MSS has some snags around python versions. We are finding that for some reason you need it to be fixed to 3.11.4 
-
+* MMS has some snags around python versions. We are finding that for some reason you need it to be fixed to 3.11.4 
+* For SAPI and NSS - use py3-tts rather than tts-wrapper. We haven't really implemented the cross-over very well for this as I saw no point
 
 ## To-Do
 
