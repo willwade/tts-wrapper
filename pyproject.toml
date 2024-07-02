@@ -14,16 +14,16 @@ keywords = [ "tts", "text-to-speech", "speech synthesis", "polly", "sapi" ]
 
 [tool.poetry.dependencies]
 python = ">=3.9,<3.13"
-requests = { version = "^2.28.0", optional = true }
-boto3 = {version = "^1.24.34", optional = true}
-ibm-watson = {version = "^6.0.0", optional = true}
-google-cloud-texttospeech = {version = "^2.11.1", optional = true}
-pyttsx3 = {version = "^2.90", optional = true}
+requests = { version = "^2.31.0", optional = true }
+boto3 = {version = "^1.34.137", optional = true}
+ibm-watson = {version = "^8.1.0", optional = true}
+google-cloud-texttospeech = {version = "^2.12.0", optional = true}
+py3-tts = {version = "^3.50", optional = true}
 pyaudio = {version = "^0.2.11", optional = false}
 azure-cognitiveservices-speech = {version = "^1.15.0" , optional = true}
 winrt-runtime = { version = "^2.0.1", markers = "sys_platform == 'win32'", optional = true }
 piper-tts = { version = "^1.2.0", optional = true}
-ttsmms = { version = "^0.7", optional = true}
+ttsmms = { git = "https://github.com/willwade/ttsmms", rev = "main", optional = true }
 
 [tool.poetry.extras]
 google = ["google-cloud-texttospeech"]

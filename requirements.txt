@@ -1,7 +1,7 @@
 boto3==1.34.137; python_version >= "3.7"
 botocore==1.34.137; python_version >= "3.7"
 cachetools==5.2.0; python_version >= "3.7" and python_version < "4.0" and (python_version >= "3.7" and python_full_version < "3.0.0" or python_full_version >= "3.6.0" and python_version >= "3.7")
-certifi==2022.6.15; python_version >= "3.7" and python_version < "4"
+certifi==2024.6.2; python_version >= "3.7" and python_version < "4"
 charset-normalizer==2.1.0; python_version >= "3.7" and python_version < "4" and python_full_version >= "3.6.0"
 google-api-core==2.19.1; python_version >= "3.7"
 google-auth==2.31.0; python_version >= "3.7" and python_full_version < "3.0.0" or python_full_version >= "3.6.0" and python_version >= "3.7"
