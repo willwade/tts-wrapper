@@ -3,6 +3,7 @@ from typing import Optional, List, Dict, Any
 from . import WitAiClient, WitAiSSML
 from ...engines.utils import estimate_word_timings  # Import the timing estimation function
 from ...exceptions import UnsupportedFileFormat
+import logging
 
 class WitAiTTS(AbstractTTS):
     def __init__(self, client: WitAiClient, voice: Optional[str] = "Rebecca", lang: Optional[str] = "en-US"):

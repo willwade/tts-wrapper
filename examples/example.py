@@ -102,7 +102,9 @@ def test_tts_engine(tts, service_name):
 
     except Exception as e:
         print(f"Error testing {service_name} TTS engine: {e}")
-        
+
+    tts.ssml.clear_ssml()
+    ssml_text = tts.ssml.add('Lets save to an audio file')  
     # Demonstrate saving audio to a file
     output_file = Path(f"output_{service_name}.wav")
     tts.synth(ssml_text, str(output_file), format='wav')

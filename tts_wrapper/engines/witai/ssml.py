@@ -44,3 +44,6 @@ class WitAiSSML(BaseSSMLRoot):
             attrs["environment"] = environment
         self.add(SSMLNode("sfx", attrs=attrs, children=[text]))
         return self
+            
+    def clear_ssml(self):
+        self._inner.clear_ssml()
