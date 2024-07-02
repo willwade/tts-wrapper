@@ -62,7 +62,6 @@ class ElevenLabsTTS(AbstractTTS):
         
         return float(match.group(1))
 
-
     def get_voices(self) -> List[Dict[str, Any]]:
         return self._client.get_voices()
 
