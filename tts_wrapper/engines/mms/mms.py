@@ -66,32 +66,38 @@ class MMSTTS(AbstractTTS):
 
         if "volume=" in prosody_text:
             volume = self.get_volume_value(prosody_text)
+            print("extracted volume from prosody is ", volume)
             self.audio_bytes = self.adjust_volume_value(self.audio_bytes, volume, format)
 
         return self.audio_bytes
 
     def adjust_volume_value(self, generated_audio: bytes, volume: float, format: str) -> bytes:
-        #check if generated audio length is odd. If it is, add an empty byte since np.frombuffer is expecting
-        #an even length
-        if len(generated_audio)%2 != 0:
+        # Ensure even length
+        if len(generated_audio) % 2 != 0:
             generated_audio += b'\x00'
 
-        generated_audio = np.frombuffer(generated_audio, dtype=np.int16)
+        # Convert to float32 array
+        samples = np.frombuffer(generated_audio, dtype=np.int16).astype(np.float32) / 32768.0
 
-        # Convert to float32 for processing
-        samples_float = generated_audio.astype(np.float32) / 32768.0  # Normalize to [-1.0, 1.0]
+        # Calculate current RMS
+        rms = np.sqrt(np.mean(samples**2))
 
-        # Scale the samples with the volume
-        scaled_volume = volume/100
-        scaled_audio = scaled_volume * samples_float
-        
-        # Clip the values to make sure they're in the valid range for paFloat32
-        clipped_audio = np.clip(scaled_audio, -1.0, 1.0)
+        # Normalize audio to a reference RMS (e.g., -20 dB)
+        target_rms = 10**(-20/20)
+        samples = samples * (target_rms / rms)
+
+        # Apply logarithmic volume scaling
+        scaled_volume = np.exp2(volume / 100) - 1  # This maps 0-100 to a 0 to 1 range logarithmically
+
+        # Apply volume change
+        samples = samples * scaled_volume
+
+        # Soft clipping
+        samples = np.tanh(samples)
+
         # Convert back to int16
-        output_samples = (clipped_audio * 32768).astype(np.int16)
-        output_bytes = output_samples.tobytes()
-
-        return output_bytes
+        output_samples = (samples * 32767).astype(np.int16)
+        return output_samples.tobytes()
 
     def get_volume_value(self, text: str) -> float:
         pattern = r'volume="(\d+)"'
