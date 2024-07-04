@@ -48,7 +48,7 @@ _TTS-Wrapper_ simplifies using text-to-speech APIs by providing a unified interf
 | Google     | Linux/MacOS/Windows | Online         | Yes  | Yes               | Yes           |
 | Azure      | Linux/MacOS/Windows | Online         | Yes  | Yes               | Yes           |
 | Watson     | Linux/MacOS/Windows | Online         | Yes  | No                | Yes           |
-| ElevenLabs | Linux/MacOS/Windows | Online         | No   | Yes               | No            |
+| ElevenLabs | Linux/MacOS/Windows | Online         | No   | Yes               | Yes            |
 | Wit.AI     | Linux/MacOS/Windows | Online         | Yes  | No                | No            |
 | MMS        | Linux/MacOS/Windows | Offline        | No   | Yes               | No            |
 | Piper      | Linux               | Offline        | No   | No                | No            |
@@ -427,11 +427,12 @@ Use the ```tts.ssml.clear_ssml()``` method to clear all entries from the ssml li
 
 ### Using callbacks on word-level boundaries
 
-Note only **Polly, Microsoft, Google, UWP, SAPI and Watson** can do this **correctly**. We can't do this in anything else but we do do a estimated tonings for all other engines (ie elevenlabs, witAi and Piper)
+Note only **Polly, Microsoft, Google, ElevenLabs, UWP, SAPI and Watson** can do this **correctly**. We can't do this in anything else but we do do a estimated tonings for all other engines (ie elevenlabs, witAi and Piper)
 
 ```python
-def my_callback(word: str, start_time: float):
-    print(f'Word "{word}" spoken at {start_time} ms')
+def my_callback(word: str, start_time: float, end_time: float):
+    duration = end_time - start_time
+    print(f"Word: {word}, Duration: {duration:.3f}s")
 
 def on_start():
     print('Speech started')
@@ -453,14 +454,14 @@ and it will output
 
 ```bash
 Speech started
-Word "Hello" spoken at 0.05 ms
-Word "," spoken at 0.65 ms
-Word "This" spoken at 0.7125 ms
-Word "is" spoken at 0.8875 ms
-Word "a" spoken at 1.0 ms
-Word "word" spoken at 1.0875 ms
-Word "timing" spoken at 1.3625 ms
-Word "test" spoken at 1.7375 ms
+Word: Hello, Duration: 0.612s
+Word: , Duration: 0.212s
+Word: This, Duration: 0.364s
+Word: is, Duration: 0.310s
+Word: a, Duration: 0.304s
+Word: word, Duration: 0.412s
+Word: timing, Duration: 0.396s
+Word: test, Duration: 0.424s
 Speech ended
 ```
 
