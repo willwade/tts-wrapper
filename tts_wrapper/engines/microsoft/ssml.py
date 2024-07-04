@@ -19,6 +19,13 @@ class MicrosoftSSML(BaseSSMLRoot):
         ).add(self._inner)
         self._prosody = None
 
+    def encode(self) -> str:
+        return str(self)
+
+    def add(self, text: str) -> str:
+        self._inner.add(text)
+        return str(self)
+        
     def set_voice(self, new_voice: str, new_lang: str):
         """Updates the voice and language for the SSML without reconstructing the SSML nodes."""
         self.voice = new_voice

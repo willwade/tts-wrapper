@@ -1,9 +1,7 @@
-from typing import Any, List, Dict, Optional
-
+from typing import Any, List, Dict, Optional, Tuple
 from ...exceptions import UnsupportedFileFormat
 from ...tts import AbstractTTS, FileFormat
 from . import GoogleClient, GoogleSSML
-
 
 class GoogleTTS(AbstractTTS):
     @classmethod
@@ -11,10 +9,12 @@ class GoogleTTS(AbstractTTS):
         return ["wav", "mp3"]
 
     def __init__(self, client: GoogleClient, lang: Optional[str] = None, voice: Optional[str] = None):
-        super().__init__()  # This ensures that all initialization in AbstractTTS is done
+        super().__init__()
         self._client = client
         self._lang = lang or "en-US"
         self._voice = voice or "en-US-Wavenet-C"
+        self.generated_audio = None
+        self.audio_format = None
 
     def synth_to_bytes(self, text: Any, format: Optional[FileFormat] = "wav") -> bytes:
         if format not in self.supported_formats():
@@ -22,9 +22,33 @@ class GoogleTTS(AbstractTTS):
         if not self._is_ssml(text):
             text = self.ssml.add(text)
         result = self._client.synth(str(text), self._voice, self._lang, format, include_timepoints=True)
-        timings = [(float(tp['timeSeconds']), tp['markName']) for tp in result.get("timepoints", [])]
+        self.generated_audio = result["audio_content"]
+        self.audio_format = format
+        timings = self._process_word_timings(result.get("timepoints", []))
         self.set_timings(timings)
-        return result["audio_content"]
+        return self.generated_audio
+
+    def _process_word_timings(self, timepoints: List[Dict[str, Any]]) -> List[Tuple[float, float, str]]:
+        processed_timings = []
+        audio_duration = self.get_audio_duration()
+        
+        for i, tp in enumerate(timepoints):
+            start_time = float(tp['timeSeconds'])
+            word = tp['markName']
+            
+            if i < len(timepoints) - 1:
+                end_time = float(timepoints[i+1]['timeSeconds'])
+            else:
+                end_time = min(start_time + 0.5, audio_duration)  # Use the lesser of 0.5s or remaining audio duration
+            
+            processed_timings.append((start_time, end_time, word))
+        
+        return processed_timings
+
+    def get_audio_duration(self) -> float:
+        if self.generated_audio and self.audio_format:
+            return self._client.get_audio_duration(self.generated_audio, self.audio_format)
+        return 0.0
 
         
     @property

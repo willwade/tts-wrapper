@@ -14,13 +14,24 @@ class MicrosoftTTS(AbstractTTS):
         super().__init__()
         self._client = client
         self.set_voice(voice or "en-US-JessaNeural", lang or "en-US")
-        self._ssml = MicrosoftSSML(self._lang,self._voice) 
+        self._ssml = MicrosoftSSML(self._lang, self._voice) 
+        
+        # Enable word boundary events
+        self._client.speech_config.set_property(
+            speechsdk.PropertyId.SpeechServiceResponse_RequestWordLevelTimestamps, "true")
+        
         audio_config = speechsdk.audio.AudioOutputConfig(use_default_speaker=True)
         self.synthesizer = speechsdk.SpeechSynthesizer(
             speech_config=self._client.speech_config,
             audio_config=audio_config
         )
 
+    def get_audio_duration(self) -> float:
+        if self.timings:
+            # Return the end time of the last word
+            return self.timings[-1][1]
+        return 0.0
+        
     @classmethod
     def supported_formats(cls) -> List[FileFormat]:
         return ["wav", "mp3"]
@@ -90,10 +101,19 @@ class MicrosoftTTS(AbstractTTS):
         )
         # Reset word timings
         self.word_timings = []
+        
         # Subscribe to synthesis_word_boundary event
-        self.synthesizer.synthesis_word_boundary.connect(lambda evt: self.word_timings.append((float(evt.audio_offset / 10000000),evt.text)))
+        def word_boundary_callback(evt):
+            start_time = float(evt.audio_offset / 10000000)
+            duration = float(evt.duration / 10000000)
+            end_time = start_time + duration
+            self.word_timings.append((start_time, end_time, evt.text))
+        
+        self.synthesizer.synthesis_word_boundary.connect(word_boundary_callback)
+        
         ssml_string = str(ssml)
         result = self.synthesizer.speak_ssml_async(ssml_string).get()  # Use speak_ssml_async for SSML input
+        
         if result.reason == speechsdk.ResultReason.SynthesizingAudioCompleted:
             # Store word timings
             self.set_timings(self.word_timings)
@@ -105,8 +125,14 @@ class MicrosoftTTS(AbstractTTS):
                 logging.error("Error details: {}".format(cancellation_details.error_details))
                 raise Exception(f"Synthesis error: {cancellation_details.error_details}")
         else:
-            raise Exception("Synthesis failed without detailed error message.")
-    
+            raise Exception("Synthesis failed without detailed error message.")    
+
+    def get_audio_duration(self) -> float:
+        if self.timings:
+            return self.timings[-1][1]
+        return 0.0
+
+
     @property
     def ssml(self) -> MicrosoftSSML:
         return self._ssml

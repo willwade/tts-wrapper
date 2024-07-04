@@ -1,3 +1,6 @@
+import struct
+import io
+import wave
 from typing import Tuple, List, Dict, Any
 import requests
 import websocket
@@ -55,6 +58,7 @@ class WatsonClient:
     # The new method. gets timings. Only for websockets. Sadly we need both systems because you cant get voices with websockets
     def synth_with_timings(self, ssml: str, voice: str, format: str) -> bytes:
         audio_data = []
+        self.word_timings = []
 
         def on_message(ws, message):
             if isinstance(message, bytes):
@@ -64,7 +68,7 @@ class WatsonClient:
                 # This is a JSON message with the word timings
                 data = json.loads(message)
                 if 'words' in data:
-                    self.word_timings.extend([(timing[2], timing[0]) for timing in data['words']])
+                    self.word_timings.extend([(float(timing[2]), timing[0]) for timing in data['words']])
 
         def on_open(ws):
             message = {
@@ -93,13 +97,55 @@ class WatsonClient:
             # Wait for the WebSocket thread to finish
             wst.join()
             # Join the audio data parts together to get the complete audio data
-            return b''.join(audio_data)
+            raw_audio = b''.join(audio_data)        
+            if format == "wav":
+                # Ensure the audio data has a proper WAV header
+                with io.BytesIO() as wav_file:
+                    with wave.open(wav_file, 'wb') as wav:
+                        wav.setnchannels(1)  # Mono
+                        wav.setsampwidth(2)  # 16-bit
+                        wav.setframerate(22050)  # Sample rate
+                        wav.writeframes(raw_audio)
+                    return wav_file.getvalue()
+            else:
+                return raw_audio
         except Exception as e:
             logging.error(f"Error in WebSocket thread: {e}")
             return b''
         finally:
             ws.close()
 
+    def get_audio_duration(self, audio_content: bytes, format: str) -> float:
+        if format == "wav":
+            # Parse WAV header to get sample rate and number of samples
+            riff, size, fformat = struct.unpack('<4sI4s', audio_content[:12])
+            if riff != b'RIFF' or fformat != b'WAVE':
+                raise ValueError("Not a WAV file")
+            
+            subchunk1, subchunk1_size = struct.unpack('<4sI', audio_content[12:20])
+            if subchunk1 != b'fmt ':
+                raise ValueError("Not a valid WAV file")
+            
+            aformat, channels, sample_rate, byte_rate, block_align, bits_per_sample = struct.unpack('HHIIHH', audio_content[20:36])
+            
+            subchunk2, subchunk2_size = struct.unpack('<4sI', audio_content[36:44])
+            if subchunk2 != b'data':
+                raise ValueError("Not a valid WAV file")
+            
+            num_samples = subchunk2_size // (channels * (bits_per_sample // 8))
+            duration = num_samples / sample_rate
+            
+            return duration
+        elif format == "mp3":
+            # For MP3, we'd need to use a library like mutagen to get the duration
+            # For simplicity, we'll estimate based on file size and bitrate
+            # Assume a bitrate of 128 kbps
+            bitrate = 128 * 1024
+            duration = len(audio_content) * 8 / bitrate
+            return duration
+        else:
+            raise ValueError(f"Unsupported format: {format}")
+            
     def get_voices(self) -> List[Dict[str, Any]]:
         """Fetches available voices from IBM Watson TTS service."""
         voice_data = self._client.list_voices().get_result()

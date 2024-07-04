@@ -1,11 +1,7 @@
-from typing import Any, List, Optional, Dict
-
-from tts_wrapper.exceptions import UnsupportedFileFormat
-
+from typing import Any, List, Optional, Dict, Tuple
+from ...exceptions import UnsupportedFileFormat
 from ...tts import AbstractTTS, FileFormat
 from . import PollyClient, PollySSML
-import threading
-import time
 
 class PollyTTS(AbstractTTS):
     @classmethod
@@ -13,7 +9,7 @@ class PollyTTS(AbstractTTS):
         return ["wav", "mp3"]
 
     def __init__(self, client: PollyClient, lang: Optional[str] = None, voice: Optional[str] = None):
-        super().__init__()  # This is crucial
+        super().__init__()
         self._client = client
         self.set_voice(voice or "Joanna", lang or "en-US")
         self.audio_rate = 16000
@@ -23,41 +19,47 @@ class PollyTTS(AbstractTTS):
             raise UnsupportedFileFormat(format, self.__class__.__name__)
         if not self._is_ssml(str(text)):
             text = self.ssml.add(str(text))
-        word_timings = self._client.get_speech_marks(str(text), self._voice)
-        self.set_timings(word_timings)
-        return self._client.synth(str(text), self._voice, format)
+        
+        self.generated_audio, word_timings = self._client.synth_with_marks(str(text), self._voice, format)
+        
+        # Process word timings to include end times
+        processed_timings = self._process_word_timings(word_timings)
+        self.set_timings(processed_timings)
+        return self.generated_audio
 
+    def _process_word_timings(self, word_timings: List[Tuple[float, str]]) -> List[Tuple[float, float, str]]:
+        processed_timings = []
+        audio_duration = self.get_audio_duration()
+        
+        for i, (start, word) in enumerate(word_timings):
+            if i < len(word_timings) - 1:
+                end = word_timings[i+1][0]
+            else:
+                end = min(start + 0.5, audio_duration)  # Use the lesser of 0.5s or remaining audio duration
+            processed_timings.append((start, end, word))
+        
+        return processed_timings
+
+    def get_audio_duration(self) -> float:
+        if hasattr(self, 'generated_audio'):
+            return len(self.generated_audio) / 2 / self.audio_rate
+        return 0.0
 
     @property
     def ssml(self) -> PollySSML:
         return PollySSML()
 
     def get_voices(self) -> List[Dict[str, Any]]:
-        """Retrieves a list of available voices from the Polly service."""
         return self._client.get_voices()
                 
     def set_voice(self, voice_id: str, lang_id: str):
-        """
-        Sets the voice for the TTS engine and updates the SSML configuration accordingly.
-
-        @param voice_id: The ID of the voice to be used for synthesis.
-        """
-        super().set_voice(voice_id)  # Optionally manage voice at the AbstractTTS level if needed
+        super().set_voice(voice_id)
         self._voice = voice_id
         self._lang = lang_id
 
     def construct_prosody_tag(self, text:str ) -> str:
         properties = []
         
-        #commenting this for now as currently we don't have ways to control rate and pitch without ssml
-        #rate = self.get_property("rate")
-        #if rate != "":            
-        #    properties.append(f'rate="{rate}"')
-        #
-        #pitch = self.get_property("pitch")
-        #if pitch != "":
-        #    properties.append(f'pitch="{pitch}"')
-    
         volume_in_number = self.get_property("volume")
         if volume_in_number != "":
             volume_in_words = self.mapped_to_predefined_word(volume_in_number)

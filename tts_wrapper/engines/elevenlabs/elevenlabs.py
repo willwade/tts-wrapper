@@ -1,17 +1,15 @@
-from typing import Any, List,Dict, Optional
+from typing import Any, List, Dict, Optional, Tuple
 from ...exceptions import UnsupportedFileFormat
 from ...tts import AbstractTTS, FileFormat
 from . import ElevenLabsClient, ElevenLabsSSMLRoot
-from ...engines.utils import estimate_word_timings
 import numpy as np
 import re
-import io
 
 class ElevenLabsTTS(AbstractTTS):
     def __init__(self, client: ElevenLabsClient, lang: Optional[str] = None, voice: Optional[str] = None):
-        super().__init__()  # This is crucial
+        super().__init__()
         self._client = client
-        self.audio_rate = 22050
+        self.audio_rate = 22050  # Kept at 22050
         self.set_voice(voice or "yoZ06aMxZJJ28mfd3POQ", lang or "en-US")
 
     def synth_to_bytes(self, text: Any, format: Optional[FileFormat] = "wav") -> bytes:
@@ -19,19 +17,26 @@ class ElevenLabsTTS(AbstractTTS):
             raise UnsupportedFileFormat(format, "ElevenLabs API")
         if not self._voice:
             raise ValueError("Voice ID must be set before synthesizing speech.")
-        word_timings = estimate_word_timings(str(text))
-        self.set_timings(word_timings)
 
-        # Get the audio from the ElevenLabs API
-        generated_audio = self._client.synth(str(text), self._voice, format)
+        # Get the audio and word timings from the ElevenLabs API
+        self.generated_audio, word_timings = self._client.synth(str(text), self._voice, format)
+        self.set_timings(word_timings)
 
         prosody_text = str(text)
         if "volume=" in prosody_text:
             volume = self.get_volume_value(prosody_text)
-            generated_audio = self.adjust_volume_value(generated_audio, volume, format)
+            self.generated_audio = self.adjust_volume_value(self.generated_audio, volume, format)
 
-        return generated_audio
-        #return self._client.synth(str(text), self._voice, format)
+        return self.generated_audio
+
+    def get_audio_duration(self) -> float:
+        """
+        Calculate the duration of the audio based on the number of samples and sample rate.
+        """
+        if self.generated_audio is not None:
+            num_samples = len(self.generated_audio) // 2  # Assuming 16-bit audio
+            return num_samples / self.audio_rate
+        return 0.0
 
     def adjust_volume_value(self, generated_audio: bytes, volume: float, format: str) -> bytes:
         #check if generated audio length is odd. If it is, add an empty byte since np.frombuffer is expecting
