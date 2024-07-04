@@ -1,9 +1,9 @@
-from typing import List, Dict, Any, Optional
-from ...tts import FileFormat
 import requests
-from ...exceptions import ModuleNotInstalled
+import json
+import base64
+from typing import List, Dict, Any, Optional, Tuple
+from ...tts import FileFormat
 from ...exceptions import UnsupportedFileFormat
-
 
 FORMATS = {
     "wav": "pcm_22050",
@@ -17,26 +17,29 @@ class ElevenLabsClient:
         self.api_key = credentials
         self.base_url = "https://api.elevenlabs.io"
 
-    def synth(self, text: str, voice_id: str, format: FileFormat) -> bytes:
-        url = f"{self.base_url}/v1/text-to-speech/{voice_id}"
+    def synth(self, text: str, voice_id: str, format: FileFormat) -> Tuple[bytes, List[Tuple[float, float, str]]]:
+        url = f"{self.base_url}/v1/text-to-speech/{voice_id}/stream/with-timestamps"
         headers = {
             'Content-Type': 'application/json',
             "xi-api-key": self.api_key,
-            "Accept": "audio/wav"
         }
-        params = {"output_format": FORMATS[format]}  # Ensuring the format is passed as a query parameter
         data = {
             'text': text,
-            'model_id': 'eleven_monolingual_v1',  # assuming a default model; may need customization
+            'model_id': 'eleven_monolingual_v1',
             'voice_settings': {
-                'stability': 0.5,  # Example settings, adjust as needed
+                'stability': 0.5,
                 'similarity_boost': 0.5
             }
         }
-        response = requests.post(url, headers=headers, json=data, params=params)
-        if response.status_code == 200:
-            return response.content
-        else:
+        params = {
+            'output_format': FORMATS[format],
+            'optimize_streaming_latency': 0,
+            'enable_logging': False
+        }
+        
+        response = requests.post(url, headers=headers, json=data, params=params, stream=True)
+        
+        if response.status_code != 200:
             error_message = f"[Elevenlabs.Client.Synth] Failed to synthesize speech: {response.status_code} - {response.reason}"
             try:
                 json_response = response.json()
@@ -47,10 +50,50 @@ class ElevenLabsClient:
                 else:
                     error_details = json_response.get('error', {}).get('message', 'No error details available.')
                     error_message += f" Details: {error_details}"
-            except ValueError:  # includes simplejson.decoder.JSONDecodeError
+            except ValueError:
                 error_message += " Error details not in JSON format."
             raise Exception(error_message)
 
+        audio_bytes = b""
+        characters = []
+        character_start_times = []
+        character_end_times = []
+
+        for line in response.iter_lines():
+            if line:
+                json_string = line.decode("utf-8")
+                response_dict = json.loads(json_string)
+                audio_bytes += base64.b64decode(response_dict["audio_base64"])
+                
+                if response_dict.get("alignment") is not None:
+                    characters.extend(response_dict["alignment"]["characters"])
+                    character_start_times.extend(response_dict["alignment"]["character_start_times_seconds"])
+                    character_end_times.extend(response_dict["alignment"]["character_end_times_seconds"])
+
+        # Process character timings into word timings
+        word_timings = self._process_word_timings(characters, character_start_times, character_end_times)
+        return audio_bytes, word_timings
+
+    def _process_word_timings(self, characters, start_times, end_times):
+        word_timings = []
+        current_word = ""
+        word_start = 0
+
+        for char, start, end in zip(characters, start_times, end_times):
+            if char.isspace() or char in [',', '.', '!', '?']:  # Include punctuation
+                if current_word:
+                    word_timings.append((word_start, end, current_word))
+                    current_word = ""
+            else:
+                if not current_word:
+                    word_start = start
+                current_word += char
+
+        # Add the last word if there is one
+        if current_word:
+            word_timings.append((word_start, end_times[-1], current_word))
+
+        return word_timings
 
     def get_voices(self):
         url = f"{self.base_url}/v1/voices"

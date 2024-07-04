@@ -1,5 +1,4 @@
-from typing import Any, List, Optional, Dict
-
+from typing import Any, List, Optional, Dict, Tuple
 from ...exceptions import UnsupportedFileFormat
 from ...tts import AbstractTTS, FileFormat
 from . import WatsonClient, WatsonSSML
@@ -15,8 +14,8 @@ class WatsonTTS(AbstractTTS):
         self._client = client
         self._voice = voice or "en-US_LisaV3Voice"
         self.audio_rate = 22050
-        self.word_timings = []
-
+        self.generated_audio = None
+        self.audio_format = None
 
     def synth_to_bytes(self, text: Any, format: Optional[FileFormat] = "wav") -> bytes:
         if format not in self.supported_formats():
@@ -24,10 +23,37 @@ class WatsonTTS(AbstractTTS):
         
         if not self._is_ssml(str(text)):
             text = self.ssml.add(str(text))
-        self.word_timings.clear()
-        audio_data = self._client.synth_with_timings(str(text), self._voice, format)
-        self.set_timings(self._client.word_timings)
-        return audio_data
+        
+        try:
+            self.generated_audio = self._client.synth_with_timings(str(text), self._voice, format)
+            self.audio_format = format
+            
+            processed_timings = self._process_word_timings(self._client.word_timings)
+            self.set_timings(processed_timings)
+            
+            return self.generated_audio
+        except Exception as e:
+            logging.error(f"Error in synth_to_bytes: {e}")
+            raise
+
+    def _process_word_timings(self, word_timings: List[Tuple[float, str]]) -> List[Tuple[float, float, str]]:
+        processed_timings = []
+        audio_duration = self.get_audio_duration()
+        
+        for i, (start_time, word) in enumerate(word_timings):
+            if i < len(word_timings) - 1:
+                end_time = word_timings[i+1][0]
+            else:
+                end_time = min(start_time + 0.5, audio_duration)  # Use the lesser of 0.5s or remaining audio duration
+            
+            processed_timings.append((start_time, end_time, word))
+        
+        return processed_timings
+
+    def get_audio_duration(self) -> float:
+        if self.generated_audio and self.audio_format:
+            return self._client.get_audio_duration(self.generated_audio, self.audio_format)
+        return 0.0
 
     @property
     def ssml(self) -> WatsonSSML:

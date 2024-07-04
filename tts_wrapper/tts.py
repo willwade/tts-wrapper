@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Any, List, Literal, Optional, Union, Dict, Callable
+from typing import Any, List, Literal, Optional, Union, Dict, Callable, Tuple
 import pyaudio
 import threading
 from threading import Event
@@ -9,6 +9,7 @@ import re
 import wave
 
 FileFormat = Union[Literal["wav"], Literal["mp3"]]
+WordTiming = Union[Tuple[float, str], Tuple[float, float, str]]
 
 class AbstractTTS(ABC):
     """Abstract class (ABC) for text-to-speech functionalities, including synthesis and playback."""
@@ -59,7 +60,6 @@ class AbstractTTS(ABC):
         pass
 
     def synth_to_file(self, text: Any, filename: str, format: Optional[FileFormat] = None) -> None:
-        print ("text synth to file: ", text)
         audio_content = self.synth_to_bytes(text, format=format or "wav")
         #audio_content = self.apply_fade_in(audio_content)
         
@@ -197,11 +197,46 @@ class AbstractTTS(ABC):
             timer.cancel()
         self.timers.clear()
 
-    def set_timings(self, timing_data):
-        self.timings = timing_data
+    def set_timings(self, timings: List[WordTiming]):
+        """
+        Set word timings. Accepts both (time, word) and (start_time, end_time, word) formats.
+        Calculates end times for (time, word) format.
+        """
+        self.timings = []
+        total_duration = self.get_audio_duration()  # Implement this method to get total audio duration
 
-    def on_word_callback(self, word):
-        print(f"Word spoken: {word}")
+        for i, timing in enumerate(timings):
+            if len(timing) == 2:
+                start_time, word = timing
+                if i < len(timings) - 1:
+                    end_time = timings[i+1][0] if len(timings[i+1]) == 2 else timings[i+1][1]
+                else:
+                    end_time = total_duration
+                self.timings.append((start_time, end_time, word))
+            elif len(timing) == 3:
+                self.timings.append(timing)
+            else:
+                raise ValueError(f"Invalid timing format: {timing}")
+
+    def get_timings(self) -> List[Tuple[float, float, str]]:
+        """
+        Get word timings in the format (start_time, end_time, word).
+        """
+        return self.timings        
+
+    def get_audio_duration(self) -> float:
+        """
+        Get the total duration of the synthesized audio.
+        This method should be implemented by each concrete TTS class.
+        """
+        if self.timings:
+            return self.timings[-1][1]  # Return the end time of the last word
+        return 0.0
+        
+        
+    def on_word_callback(self, word: str, start_time: float, end_time: float):
+        logging.info(f"Word spoken: {word}, Start: {start_time:.3f}s, End: {end_time:.3f}s")
+
 
     def connect(self, event_name: str, callback: Callable):
         if event_name in self.callbacks:
@@ -211,22 +246,22 @@ class AbstractTTS(ABC):
         if event_name in self.callbacks and self.callbacks[event_name] is not None:
             self.callbacks[event_name](*args)
 
-
-    def start_playback_with_callbacks(self, ssml_text: bytes, callback=None):
+    def start_playback_with_callbacks(self, text: str, callback=None):
         if callback is None:
             callback = self.on_word_callback
 
-        self.speak_streamed(ssml_text)
+        self.speak_streamed(text)
         start_time = time.time()
-        for timing, word in self.timings:
+
+        for start, end, word in self.timings:
             try:
-                delay = timing - (time.time() - start_time)
-                if delay > 0:
-                    timer = threading.Timer(delay, callback, args=(word, timing))
-                    timer.start()
-                    self.timers.append(timer)
+                delay = max(0, start - (time.time() - start_time))
+                timer = threading.Timer(delay, callback, args=(word, start, end))
+                timer.start()
+                self.timers.append(timer)
             except Exception as e:
                 logging.error(f"Error in start_playback_with_callbacks: {e}")
+            
                 
     def finish(self):
         try:

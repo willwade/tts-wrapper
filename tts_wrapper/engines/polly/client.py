@@ -3,6 +3,7 @@ from typing import Optional, Tuple, Dict, List, Any
 from ...engines.utils import process_wav
 from ...exceptions import ModuleNotInstalled
 import json
+import io
 
 try:
     import boto3
@@ -53,8 +54,9 @@ class PollyClient:
         else:
             return raw
 
-    def get_speech_marks(self, ssml: str, voice: str) -> List[Dict[str, Any]]:
-        response = self._client.synthesize_speech(
+    def synth_with_marks(self, ssml: str, voice: str, format: str) -> Tuple[bytes, List[Tuple[float, str]]]:
+        # Get speech marks
+        marks_response = self._client.synthesize_speech(
             Engine="neural",
             OutputFormat='json',
             VoiceId=voice,
@@ -62,11 +64,27 @@ class PollyClient:
             Text=ssml,
             SpeechMarkTypes=['word']
         )
-        speech_marks_str = response['AudioStream'].read().decode('utf-8')
+        
+        speech_marks_str = marks_response['AudioStream'].read().decode('utf-8')
         speech_marks_lines = speech_marks_str.splitlines()
         speech_marks = [json.loads(line) for line in speech_marks_lines]
         word_timings = [(float(mark['time']) / 1000, mark['value']) for mark in speech_marks if mark['type'] == 'word']
-        return word_timings
+
+        # Get audio data
+        audio_response = self._client.synthesize_speech(
+            Engine="neural",
+            OutputFormat=FORMATS[format],
+            VoiceId=voice,
+            TextType="ssml",
+            Text=ssml,
+        )
+        
+        audio_data = audio_response["AudioStream"].read()
+        
+        if format == "wav":
+            audio_data = process_wav(audio_data)
+
+        return audio_data, word_timings
 
 
     def get_voices(self) -> List[Dict[str, Any]]:

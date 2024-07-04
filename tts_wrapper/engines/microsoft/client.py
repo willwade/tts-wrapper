@@ -1,6 +1,7 @@
 from typing import Tuple, List, Dict, Any, Optional
 from tts_wrapper.tts import FileFormat
-
+import io
+import wave
 from ...exceptions import ModuleNotInstalled
 
 try:
@@ -36,6 +37,7 @@ class MicrosoftClient:
         self._subscription_region = credentials[1] or "eastus"
        
         self.speech_config = speechsdk.SpeechConfig(subscription=self._subscription_key, region=self._subscription_region)
+        print(f"MicrosoftClient initialized with region: {self._subscription_region}")
 
     def get_available_voices(self) -> List[Dict[str, Any]]:
         """Fetches available voices from Microsoft Azure TTS service."""
@@ -55,6 +57,5 @@ class MicrosoftClient:
             return standardized_voices
         elif result.reason == speechsdk.ResultReason.Canceled:
             cancellation_details = result.error_details
-            print(f"Speech synthesis canceled; error details: {cancellation_details}")
+            raise Exception(f"Get Voices cancelled; error details: {cancellation_details}")
             return []  # Return an empty list or raise an exception
-
