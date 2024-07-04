@@ -14,6 +14,11 @@ tts = WitAiTTS(client)
 # voices = tts.get_voices()
 # print(voices)
 
+def my_callback(word: str, start_time: float, end_time: float):
+    duration = end_time - start_time
+    print(f"Word: {word}, Duration: {duration:.3f}s")
+
+
 try:
     text = "Hello, This is a word timing test"
     ssml_text = (tts.ssml
@@ -27,3 +32,21 @@ try:
 except Exception as e:
     print(f"Error: {e}")
 
+
+def my_callback(word: str, start_time: float, end_time: float):
+    duration = end_time - start_time
+    print(f"Word: {word}, Duration: {duration:.3f}s")
+
+def on_start():
+    print('Speech started')
+
+def on_end():
+    print('Speech ended')
+
+try:
+    text = "Hello, This is a word timing test"
+    tts.connect('onStart', on_start)
+    tts.connect('onEnd', on_end)
+    tts.start_playback_with_callbacks(text, callback=my_callback)
+except Exception as e:
+    print(f"Error at callbacks: {e}")

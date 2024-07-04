@@ -222,10 +222,8 @@ class AbstractTTS(ABC):
         """
         Get word timings in the format (start_time, end_time, word).
         """
-        return self.timings
-        
+        return self.timings        
 
-    @abstractmethod
     def get_audio_duration(self) -> float:
         """
         Get the total duration of the synthesized audio.

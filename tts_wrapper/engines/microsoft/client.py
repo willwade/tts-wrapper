@@ -59,21 +59,3 @@ class MicrosoftClient:
             cancellation_details = result.error_details
             raise Exception(f"Get Voices cancelled; error details: {cancellation_details}")
             return []  # Return an empty list or raise an exception
-
-    def get_audio_duration(self, audio_content: bytes, format: str) -> float:
-        if format == "wav":
-            with io.BytesIO(audio_content) as wav_file:
-                with wave.open(wav_file, 'rb') as wav:
-                    frames = wav.getnframes()
-                    rate = wav.getframerate()
-                    duration = frames / float(rate)
-                    return duration
-        elif format == "mp3":
-            # For MP3, we'd need to use a library like mutagen to get the duration
-            # For simplicity, we'll estimate based on file size and bitrate
-            # Assume a bitrate of 160 kbps (as per the MP3 format used)
-            bitrate = 160 * 1024
-            duration = len(audio_content) * 8 / bitrate
-            return duration
-        else:
-            raise ValueError(f"Unsupported format: {format}")

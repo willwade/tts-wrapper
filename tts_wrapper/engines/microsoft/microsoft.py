@@ -8,23 +8,21 @@ from . import MicrosoftClient, MicrosoftSSML
 from azure.cognitiveservices.speech import SpeechConfig, SpeechSynthesizer, AudioConfig
 import azure.cognitiveservices.speech as speechsdk
 import logging
+import threading 
 
 class MicrosoftTTS(AbstractTTS):
     def __init__(self, client: MicrosoftClient, lang: Optional[str] = None, voice: Optional[str] = None):
         super().__init__()
         self._client = client
-        self.set_voice(voice or "en-US-JessaNeural", lang or "en-US")
+        self.set_voice(voice or "en-US-JennyNeural", lang or "en-US")
         self._ssml = MicrosoftSSML(self._lang, self._voice) 
         
-        # Enable word boundary events
+        # Ensure we're requesting word boundary information
         self._client.speech_config.set_property(
             speechsdk.PropertyId.SpeechServiceResponse_RequestWordLevelTimestamps, "true")
         
-        audio_config = speechsdk.audio.AudioOutputConfig(use_default_speaker=True)
-        self.synthesizer = speechsdk.SpeechSynthesizer(
-            speech_config=self._client.speech_config,
-            audio_config=audio_config
-        )
+        # We'll create the synthesizer in synth_to_bytes to ensure it has the latest config
+        self.synthesizer = None
 
     def get_audio_duration(self) -> float:
         if self.timings:
@@ -90,49 +88,60 @@ class MicrosoftTTS(AbstractTTS):
         text_with_tag = f'<prosody {prosody_content}>{text}</prosody>'
         
         return text_with_tag
+    
+    def synth_to_bytes(self, text: Any, format: Optional[FileFormat] = "wav") -> bytes:
+        if not self._is_ssml(str(text)):
+            ssml = self.ssml.add(str(text))
+        else:
+            ssml = str(text)
 
-    def synth_to_bytes(self, ssml: str, format: Optional[FileFormat] = "wav") -> bytes:
-        format = self._client.FORMATS.get(format, "Riff24Khz16BitMonoPcm")
-        self._client.speech_config.set_speech_synthesis_output_format(getattr(speechsdk.SpeechSynthesisOutputFormat, format))
-        self.audio_config = None
+        azure_format = self._client.FORMATS.get(format, "Riff24Khz16BitMonoPcm")
+        self._client.speech_config.set_speech_synthesis_output_format(getattr(speechsdk.SpeechSynthesisOutputFormat, azure_format))
+        
+        # Ensure we're requesting word boundary information
+        self._client.speech_config.set_property(
+            speechsdk.PropertyId.SpeechServiceResponse_RequestWordLevelTimestamps, "true")
+        
         self.synthesizer = speechsdk.SpeechSynthesizer(
             speech_config=self._client.speech_config, 
-            audio_config=self.audio_config
+            audio_config=None
         )
-        # Reset word timings
-        self.word_timings = []
         
-        # Subscribe to synthesis_word_boundary event
+        word_timings = []
+
         def word_boundary_callback(evt):
-            start_time = float(evt.audio_offset / 10000000)
-            duration = float(evt.duration / 10000000)
+            start_time = evt.audio_offset / 10000000  # Convert to seconds
+            duration = evt.duration.total_seconds()
             end_time = start_time + duration
-            self.word_timings.append((start_time, end_time, evt.text))
-        
+            word_timings.append((start_time, end_time, evt.text))
+            logging.debug(f"Word: {evt.text}, Start: {start_time:.3f}s, Duration: {duration:.3f}s")
+
         self.synthesizer.synthesis_word_boundary.connect(word_boundary_callback)
         
-        ssml_string = str(ssml)
-        result = self.synthesizer.speak_ssml_async(ssml_string).get()  # Use speak_ssml_async for SSML input
+        result = self.synthesizer.speak_ssml_async(ssml).get()
         
         if result.reason == speechsdk.ResultReason.SynthesizingAudioCompleted:
-            # Store word timings
-            self.set_timings(self.word_timings)
+            self.set_timings(word_timings)
+            logging.info(f"Captured {len(word_timings)} word timings")
             return result.audio_data
         elif result.reason == speechsdk.ResultReason.Canceled:
             cancellation_details = result.cancellation_details
-            logging.error("Speech synthesis canceled: {}".format(cancellation_details.reason))
+            logging.error(f"Speech synthesis canceled: {cancellation_details.reason}")
             if cancellation_details.reason == speechsdk.CancellationReason.Error:
-                logging.error("Error details: {}".format(cancellation_details.error_details))
+                logging.error(f"Error details: {cancellation_details.error_details}")
                 raise Exception(f"Synthesis error: {cancellation_details.error_details}")
         else:
-            raise Exception("Synthesis failed without detailed error message.")    
+            raise Exception("Synthesis failed without detailed error message.")
 
     def get_audio_duration(self) -> float:
         if self.timings:
+            # Return the end time of the last word
             return self.timings[-1][1]
         return 0.0
 
-
+    def _is_ssml(self,ssml):
+        return "<speak" in str(ssml)
+    
     @property
     def ssml(self) -> MicrosoftSSML:
         return self._ssml
