@@ -521,6 +521,10 @@ This will install Python dependencies and system dependencies required for this 
    poetry run python your_project_script.py
    ```
 
+**NOTE**: to get a requirements.txt file for the project use `poetry export --without-hashes --format=requirements.txt > requirements.txt --all-extras` juat be warned that this will include all dependencies including dev ones.
+
+```sh
+
 ### Adding a New Engine to TTS Wrapper
 
 This guide provides a step-by-step approach to adding a new engine to the existing Text-to-Speech (TTS) wrapper system.
