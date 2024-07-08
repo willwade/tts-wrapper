@@ -63,14 +63,19 @@ class AbstractTTS(ABC):
         audio_content = self.synth_to_bytes(text, format=format or "wav")
         #audio_content = self.apply_fade_in(audio_content)
         
-        #open file and add wav header before write in the audio content
-        channels = 1
-        sample_width = 2 #8 bit audio      
-        with wave.open(filename, "wb") as file:
-            file.setnchannels(channels)
-            file.setsampwidth(sample_width)
-            file.setframerate(self.audio_rate)
-            file.writeframes(audio_content)
+        if format == "wav":
+            # Open file and add WAV header before writing the audio content
+            channels = 1
+            sample_width = 2  # 16 bit audio, corrected from 8 bit
+            with wave.open(filename, "wb") as file:
+                file.setnchannels(channels)
+                file.setsampwidth(sample_width)
+                file.setframerate(self.audio_rate)
+                file.writeframes(audio_content)
+        else:
+            # Directly save the audio content for formats other than WAV
+            with open(filename, "wb") as file:
+                file.write(audio_content)
 
     def synth(self, text: str, filename: str, format: Optional[FileFormat] = "wav"):
         self.synth_to_file(text, filename, format)
