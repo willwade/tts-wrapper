@@ -7,7 +7,7 @@ from . import BaseEngineTest
 
 
 def create_client():
-    return GoogleClient(os.environ.get("GOOGLE_SA_PATH"))
+    return GoogleClient(os.environ.get("GOOGLE_CREDS_PATH"))
 
 
 @pytest.mark.parametrize("formats,tts_cls", [(["wav"], GoogleTTS)])

@@ -7,8 +7,9 @@ from . import BaseEngineTest
 
 
 def create_client():
-    MICROSOFT_KEY = os.environ.get("MICROSOFT_KEY")
-    return MicrosoftClient(MICROSOFT_KEY)
+    MICROSOFT_TOKEN = os.environ.get("MICROSOFT_TOKEN")
+    MICROSOFT_REGION = os.environ.get("MICROSOFT_REGION")
+    return MicrosoftClient(credentials=(MICROSOFT_TOKEN, MICROSOFT_REGION))
 
 
 @pytest.mark.parametrize("formats,tts_cls", [(["wav"], MicrosoftTTS)])

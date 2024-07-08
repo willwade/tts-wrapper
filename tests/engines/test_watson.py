@@ -12,6 +12,7 @@ def create_client():
     WATSON_INSTANCE_ID = os.getenv('WATSON_INSTANCE_ID')
     return WatsonClient(credentials=(WATSON_API_KEY, WATSON_REGION, WATSON_INSTANCE_ID))
 
+
 @pytest.mark.parametrize("formats,tts_cls", [(["wav"], WatsonTTS)])
 class TestWatsonOffline(BaseEngineTest):
     pass
