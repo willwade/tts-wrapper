@@ -23,7 +23,7 @@ pyaudio = {version = "^0.2.11", optional = false}
 azure-cognitiveservices-speech = {version = "^1.15.0" , optional = true}
 winrt-runtime = { version = "^2.0.1", markers = "sys_platform == 'win32'", optional = true }
 piper-tts = { version = "^1.2.0", optional = true}
-py3-ttsmms = { version = "^0.8.4", optional = true }
+py3-ttsmms = { version = "^0.8.25", optional = true }
 
 [tool.poetry.extras]
 google = ["google-cloud-texttospeech"]
