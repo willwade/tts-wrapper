@@ -2,7 +2,6 @@ import struct
 import io
 import wave
 from typing import Tuple, List, Dict, Any
-import requests
 import threading
 import json
 import logging
@@ -13,6 +12,7 @@ try:
     from ibm_cloud_sdk_core.authenticators import IAMAuthenticator  # type: ignore
     from ibm_watson import TextToSpeechV1  # type: ignore
     import websocket
+    import requests
 except ImportError:
     IAMAuthenticator = None
     TextToSpeechV1 = None
