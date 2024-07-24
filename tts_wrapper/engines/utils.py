@@ -7,6 +7,7 @@ from io import BytesIO
 import re
 from typing import List, Dict, Tuple
 
+
 def process_wav(raw: bytes) -> bytes:
     bio = BytesIO()
     with wave.open(bio, "wb") as wav:
@@ -61,3 +62,4 @@ def estimate_word_timings(text: str, wpm: int = 150) -> List[Tuple[float, float,
         current_time = end_time
     
     return timings
+

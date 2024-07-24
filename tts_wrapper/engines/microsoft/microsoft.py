@@ -5,7 +5,6 @@ from ...exceptions import UnsupportedFileFormat
 from ...tts import AbstractTTS, FileFormat
 from . import MicrosoftClient, MicrosoftSSML
 from .client import FORMATS
-from ..utils import generate_all
 
 
 try:
