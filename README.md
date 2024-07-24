@@ -104,14 +104,20 @@ sudo apt-get install libttspico-utils
 
 ### Using pip
 
+*Warning: its not on pypi - so right now install using git..* eg
+
 ```sh
-pip install tts-wrapper[google, watson, polly, elevenlabs, microsoft, mms]
+pip install git+https://github.com/willwade/tts-wrapper#egg=tts-wrapper[google,microsoft,sapi,mms,sherpaonnx]
+```
+
+```sh
+pip install tts-wrapper[google, watson, polly, elevenlabs, microsoft, mms, sherpaonnx]
 ```
 
 NB: On MacOS(/zsh) you may need to do 
 
 ```sh
-pip install tts-wrapper"[google, watson, polly, elevenlabs, microsoft, mms]"
+pip install tts-wrapper"[google, watson, polly, elevenlabs, microsoft, mms, sherpaonnx]"
 ```
 
 
