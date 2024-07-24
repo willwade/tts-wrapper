@@ -229,6 +229,7 @@ tts = PiperTTS(client)
 ### Sherpa-ONNX
 
 You can provide blank model path and tokens path - and we will use a default location.. 
+AS NOTED - WE HAVE DESIGNED THIS RIGHT NOW FOR MMS MODELS! We will add others like piper etc to this - Infact I'll drop regular piper support for sherpa-onnx. Its less of a headache..
 
 ```python
 from tts_wrapper import SherpaOnnxClient, SherpaOnnxTTS
