@@ -50,6 +50,7 @@ _TTS-Wrapper_ simplifies using text-to-speech APIs by providing a unified interf
 | Watson     | Linux/MacOS/Windows | Online         | Yes  | No                | Yes           |
 | ElevenLabs | Linux/MacOS/Windows | Online         | No   | Yes               | Yes            |
 | Wit.AI     | Linux/MacOS/Windows | Online         | Yes  | No                | No            |
+| Sherpa-Onnx| Linux/MacOS/Windows | Offline        | No   | No                | No            |
 | MMS        | Linux/MacOS/Windows | Offline        | No   | Yes               | No            |
 | Piper      | Linux               | Offline        | No   | No                | No            |
 | UWP        | Windows             | Offline        | No   | Yes               | No            |
@@ -64,6 +65,7 @@ _TTS-Wrapper_ simplifies using text-to-speech APIs by providing a unified interf
 * Piper should be multiplatform. Its just got dependency issues that make this tricky right now
 * MMS has some snags around python versions. We are finding that for some reason you need it to be fixed to 3.11.4 
 * For SAPI and NSS - use py3-tts rather than tts-wrapper. We haven't really implemented the cross-over very well for this as I saw no point
+* *I recommend using sherpa-onnx over MMS for MMS*. Note sherpa-onnx is right now really designed with MMS models in mind. We download models automatically. But we dont support all the features of eg word events and ssml. Be warned
 
 ## To-Do
 
@@ -223,6 +225,30 @@ tts = PiperTTS(client)
 
 - **Note:** Piper is experimental and only works on Linux only right now. Please also note SSML is not supported so SSML tags will just be rendered as text.
 
+
+### Sherpa-ONNX
+
+You can provide blank model path and tokens path - and we will use a default location.. 
+
+```python
+from tts_wrapper import SherpaOnnxClient, SherpaOnnxTTS
+client = SherpaOnnxClient(model_path=None, tokens_path=None)
+tts = SherpaOnnxTTS(client)
+```
+
+Set a voice like
+
+```python
+# Find voices/langs availables
+voices = tts.get_voices()
+print("Available voices:", voices)
+
+# Set the voice using ISO code
+iso_code = "eng"  # Example ISO code for the voice - also ID in voice details
+tts.set_voice(iso_code)
+```
+and then use speak, speak_streamed etc.. 
+
 ### MMS
 
 ```python
@@ -231,7 +257,6 @@ from tts_wrapper import MMSTTS, MMSClient
 
 client = MMSClient((model_dir,lang))
 tts = MMSTTS(client)
-
 ```
 
 - model_dir can be None - and it will create one for you in ~/mms_models
