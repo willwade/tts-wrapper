@@ -549,7 +549,6 @@ This will install Python dependencies and system dependencies required for this 
 
 **NOTE**: to get a requirements.txt file for the project use `poetry export --without-hashes --format=requirements.txt > requirements.txt --all-extras` juat be warned that this will include all dependencies including dev ones.
 
-```sh
 
 ### Adding a New Engine to TTS Wrapper
 
@@ -560,17 +559,20 @@ This guide provides a step-by-step approach to adding a new engine to the existi
 1. **Create a new folder** for your engine within the `engines` directory. Name this folder according to your engine, such as `witai` for Wit.ai.
 
    Directory structure:
+   
    ```
    engines/witai/
    ```
 
 2. **Create necessary files** within this new folder:
+
    - `__init__.py` - Makes the directory a Python package.
    - `client.py` - Handles all interactions with the TTS API.
    - `engine.py` - Contains the TTS class that integrates with your abstract TTS system.
    - `ssml.py` - Defines any SSML handling specific to this engine.
 
    Final directory setup:
+
    ```
    engines/
    └── witai/
