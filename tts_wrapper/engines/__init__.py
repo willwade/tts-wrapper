@@ -9,5 +9,6 @@ from .elevenlabs import *
 from .uwp import *
 from .witai import *
 from .mms import *
+from .sherpaonnx import *
 if sys.platform == "linux":
     from .piper import *
