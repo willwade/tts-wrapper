@@ -2,7 +2,6 @@ import requests
 import tempfile
 import os
 import json
-import numpy as np
 from typing import List, Dict, Any, Optional, Union, Tuple
 from ...exceptions import ModuleNotInstalled, UnsupportedFileFormat, ModelNotFound
 
