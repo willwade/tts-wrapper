@@ -3,8 +3,12 @@ from ...exceptions import UnsupportedFileFormat
 from ...tts import AbstractTTS, FileFormat
 from . import MMSClient, MMSSSML
 import re
-import numpy as np
 import io
+
+try:
+    import numpy as np
+except ImportError:
+    np = None  # type: ignore
 
 class MMSTTS(AbstractTTS):
     @classmethod

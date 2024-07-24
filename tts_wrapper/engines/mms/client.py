@@ -3,15 +3,19 @@ import tempfile
 import os
 import json
 import numpy as np
-import soundfile as sf
 from typing import List, Dict, Any, Optional, Union, Tuple
 from ...exceptions import ModuleNotInstalled, UnsupportedFileFormat, ModelNotFound
 
 try:
     from ttsmms import TTS, download
+    import numpy as np
+    import soundfile as sf
 except ImportError:
     TTS = None
     download = None
+    np = None  # type: ignore
+    sf = None
+
 
 class MMSClient:
     def __init__(self, params: Optional[Union[str, Tuple[Optional[str], str]]] = None) -> None:

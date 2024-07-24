@@ -37,7 +37,7 @@ witai = ["requests"]
 sapi = ["py3-tts"]
 uwp = ["winrt_windows.media.speechsynthesis","winrt_windows.storage.streams","winrt_windows.foundationtime"]
 piper =["piper-tts"]
-mms = ["py3-ttsmms"]
+mms = ["py3-ttsmms", "numpy"]
 sherpaonnx = ["sherpa-onnx", "requests"]
 
 [tool.poetry.dev-dependencies]
