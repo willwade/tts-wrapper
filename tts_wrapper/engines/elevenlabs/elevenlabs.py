@@ -2,8 +2,13 @@ from typing import Any, List, Dict, Optional, Tuple
 from ...exceptions import UnsupportedFileFormat
 from ...tts import AbstractTTS, FileFormat
 from . import ElevenLabsClient, ElevenLabsSSMLRoot
-import numpy as np
 import re
+
+try:
+    import numpy as np
+except ImportError:
+    np = None  # type: ignore
+
 
 class ElevenLabsTTS(AbstractTTS):
     def __init__(self, client: ElevenLabsClient, lang: Optional[str] = None, voice: Optional[str] = None):
