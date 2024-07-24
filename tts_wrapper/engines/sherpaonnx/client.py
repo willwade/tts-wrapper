@@ -2,11 +2,11 @@
 from typing import Optional, List, Dict, Tuple
 import os
 import json
-import requests
 import logging
 
 try:
     import sherpa_onnx as sherpa_onnx
+    import requests
 except ImportError:
     sherpa_onnx = None  # type: ignore
 
