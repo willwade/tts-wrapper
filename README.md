@@ -28,6 +28,7 @@ _TTS-Wrapper_ simplifies using text-to-speech APIs by providing a unified interf
 - UWP (WinRT) Speech system (win 10+)
 - Piper TTS (experimental and Linux Only)
 - MMS ([Massively Multilingual Speech from Meta](https://ai.meta.com/blog/multilingual-model-speech-recognition/)) 
+- Sherpa-Onnx (focusing on MMS models for now)
 
 ## Features
 - **Text to Speech**: Convert text into spoken audio.
