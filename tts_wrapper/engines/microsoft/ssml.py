@@ -1,6 +1,5 @@
 from ...ssml import BaseSSMLRoot, SSMLNode
 
-
 # Microsoft/ssml.py
 
 class MicrosoftSSML(BaseSSMLRoot):
@@ -61,3 +60,4 @@ class MicrosoftSSML(BaseSSMLRoot):
 
     def clear_ssml(self):
         self._inner.clear_ssml()
+

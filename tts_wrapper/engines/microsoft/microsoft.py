@@ -4,9 +4,16 @@ from typing import Any, List,Dict, Optional
 from ...exceptions import UnsupportedFileFormat
 from ...tts import AbstractTTS, FileFormat
 from . import MicrosoftClient, MicrosoftSSML
+from .client import FORMATS
+from ..utils import generate_all
 
-from azure.cognitiveservices.speech import SpeechConfig, SpeechSynthesizer, AudioConfig
-import azure.cognitiveservices.speech as speechsdk
+
+try:
+    from azure.cognitiveservices.speech import SpeechConfig, SpeechSynthesizer, AudioConfig
+    import azure.cognitiveservices.speech as speechsdk
+except ImportError:
+    speechsdk = None  # type: ignore
+
 import logging
 import threading 
 
@@ -32,12 +39,12 @@ class MicrosoftTTS(AbstractTTS):
         
     @classmethod
     def supported_formats(cls) -> List[FileFormat]:
-        return ["wav", "mp3"]
+        return list(FORMATS.keys())
     
     def speak(self, ssml: str, format: Optional[FileFormat] = "wav"):
         if not self._is_ssml(str(ssml)):
             ssml = self.ssml.add(str(ssml))
-        format = self._client.FORMATS.get(format, "Riff24Khz16BitMonoPcm")
+        format = FORMATS.get(format, "Riff24Khz16BitMonoPcm")
         self._client.speech_config.set_speech_synthesis_output_format(getattr(speechsdk.SpeechSynthesisOutputFormat, format))
 
         result = self.synthesizer.speak_ssml_async(str(ssml)).get()
@@ -90,12 +97,14 @@ class MicrosoftTTS(AbstractTTS):
         return text_with_tag
     
     def synth_to_bytes(self, text: Any, format: Optional[FileFormat] = "wav") -> bytes:
+        if format not in self.supported_formats():
+            raise UnsupportedFileFormat(format, self.__class__.__name__)
         if not self._is_ssml(str(text)):
             ssml = self.ssml.add(str(text))
         else:
             ssml = str(text)
 
-        azure_format = self._client.FORMATS.get(format, "Riff24Khz16BitMonoPcm")
+        azure_format = FORMATS.get(format, "Riff24Khz16BitMonoPcm")
         self._client.speech_config.set_speech_synthesis_output_format(getattr(speechsdk.SpeechSynthesisOutputFormat, azure_format))
         
         # Ensure we're requesting word boundary information

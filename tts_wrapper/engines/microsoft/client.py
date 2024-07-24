@@ -1,3 +1,4 @@
+from ..utils import generate_all
 from typing import Tuple, List, Dict, Any, Optional
 from tts_wrapper.tts import FileFormat
 import io
@@ -17,11 +18,12 @@ except ImportError:
 
 Credentials = Tuple[str, Optional[str]]
 
+FORMATS = {
+    "wav": "Riff24Khz16BitMonoPcm",
+    "mp3": "Audio24Khz160KBitRateMonoMp3",
+}
+
 class MicrosoftClient:
-    FORMATS = {
-        "wav": "Riff24Khz16BitMonoPcm",
-        "mp3": "Audio24Khz160KBitRateMonoMp3",
-    }
     def __init__(
         self,
         credentials: Optional[Credentials] = None,
@@ -59,3 +61,4 @@ class MicrosoftClient:
             cancellation_details = result.error_details
             raise Exception(f"Get Voices cancelled; error details: {cancellation_details}")
             return []  # Return an empty list or raise an exception
+        
