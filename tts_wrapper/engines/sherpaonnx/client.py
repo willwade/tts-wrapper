@@ -14,7 +14,7 @@ class SherpaOnnxClient:
     VOICES_URL = "https://huggingface.co/willwade/mms-tts-multilingual-models-onnx/raw/main/languages-supported.json"
     CACHE_FILE = "languages-supported.json"
 
-    def __init__(self, model_path: Optional[str] = None, tokens_path: Optional[str] = None):
+    def __init__(self, model_path: Optional[str] = None, tokens_path: Optional[str] = None, voice_id: Optional[str] = None):
         self.default_model_path = model_path
         self.default_tokens_path = tokens_path if tokens_path else os.path.join(model_path, 'tokens.txt') if model_path else None
         self._model_dir = os.path.expanduser("~/mms_models")
@@ -24,6 +24,8 @@ class SherpaOnnxClient:
             except Exception as e:
                 raise RuntimeError(f"Failed to create model directory {self._model_dir}: {str(e)}")
         self.voices_cache = self._load_voices_cache()
+        if voice_id:
+            self.set_voice(voice_id)
 
     def _download_voices(self):
         try:
@@ -123,8 +125,14 @@ class SherpaOnnxClient:
                     tokens=self.default_tokens_path,
                     lexicon='',  # Provide default empty string
                     data_dir='',  # Provide default empty string
+                    #dict_dir=''
                 )
+            #provider=args.provider,
+            #debug=args.debug,
+            #num_threads=args.num_threads,
             ),
+            #rule_fsts=args.tts_rule_fsts,
+            #max_num_sentences=args.max_num_sentences,
         )
         logging.info(f"Configured TTS: {tts_config}")
 
@@ -144,6 +152,7 @@ class SherpaOnnxClient:
         model_path, tokens_path = self.check_and_download_model(iso_code)
         self.default_model_path = model_path
         self.default_tokens_path = tokens_path
+
 
     def _convert_audio_to_bytes(self, audio_samples: List[float]) -> bytes:
         import struct
