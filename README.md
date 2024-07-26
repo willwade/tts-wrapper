@@ -528,7 +528,7 @@ tts.synth('<speak>Hello, world!</speak>', 'hello.mp3', format='mp3)
 
 1. Clone the repository:
    ```sh
-   git clone https://github.com/mediatechlab/tts-wrapper.git
+   git clone https://github.com/willwade/tts-wrapper.git
    cd tts-wrapper
    ```
 
@@ -548,7 +548,7 @@ This will install Python dependencies and system dependencies required for this 
 
 1. Clone the repository:
    ```sh
-   git clone https://github.com/mediatechlab/tts-wrapper.git
+   git clone https://github.com/willwade/tts-wrapper.git
    cd tts-wrapper
    ```
 
@@ -562,10 +562,6 @@ This will install Python dependencies and system dependencies required for this 
    poetry run postinstall
    ```
 
-4. Run your project:
-   ```sh
-   poetry run python your_project_script.py
-   ```
 
 **NOTE**: to get a requirements.txt file for the project use `poetry export --without-hashes --format=requirements.txt > requirements.txt --all-extras` juat be warned that this will include all dependencies including dev ones.
 
