@@ -10,6 +10,6 @@ from .uwp import *
 from .witai import *
 from .mms import *
 from .sherpaonnx import *
-from .googletrans import *
+from .googletrans import * 
 if sys.platform == "linux":
     from .piper import *
