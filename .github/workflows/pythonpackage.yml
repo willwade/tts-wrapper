@@ -89,7 +89,9 @@ jobs:
           poetry-version: "1.8.3"
 
       - name: Install dependencies
-        run: poetry install
+        run: |
+          poetry install
+          poetry run postinstall 
 
       - name: Test with pytest
         run: poetry run make tests
