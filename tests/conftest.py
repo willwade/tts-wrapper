@@ -1,6 +1,5 @@
 import os
 from typing import Callable
-from unittest.mock import MagicMock
 
 import filetype  # type: ignore
 import pytest
@@ -12,7 +11,6 @@ TEST_DATA_DIR = os.path.join(SCRIPT_DIR, "data")
 def load_resp_wav():
     with open(os.path.join(TEST_DATA_DIR, "test.wav"), "rb") as f:
         return f.read()
-
 
 class Helpers:
     @staticmethod
@@ -32,16 +30,3 @@ class Helpers:
 def helpers():
     return Helpers
 
-
-@pytest.fixture(scope="module")
-def client():
-    client = MagicMock()
-    client.synth.return_value = load_resp_wav()
-    return client
-
-
-@pytest.fixture()
-def tts(tts_cls, client):
-    if isinstance(client, Callable) and not isinstance(client, MagicMock):
-        client = client()
-    return tts_cls(client=client)

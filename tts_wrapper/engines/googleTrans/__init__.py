@@ -1,4 +1,4 @@
 # __init__.py
-from .client import googleTransClient
-from .ssml import googleTransSSML
-from .googleTrans import googleTransTTS
+from .client import GoogleTransClient
+from .ssml import GoogleTransSSML
+from .googletrans import GoogleTransTTS

@@ -12,7 +12,9 @@ optional_dependencies = {
     "azure_cognitiveservices_speech": ("tts_wrapper", "MicrosoftTTS", "MicrosoftClient"),
     "requests": ("tts_wrapper", "ElevenLabsTTS", "ElevenLabsClient"),  # Used by ElevenLabs and WitAI
     "piper-tts": ("tts_wrapper", "PiperTTS", "PiperClient"),  # Assuming piper-tts needs to be added
-    "py3-ttsmms": ("tts_wrapper", "MMSTTS", "MMSClient"),  # Assuming py3-ttsmms needs to be added
+    "py3-ttsmms": ("tts_wrapper", "MMSTTS", "MMSClient"), 
+    "gTTS": ("tts_wrapper", "googleTransTTS", "googleTransClient"),
+    "sherpa-onnx": ("tts_wrapper", "sherpaOnnxTTS", "sherpaOnnxClient"),
 }
 
 # Flatten the dictionary for pytest.mark.parametrize

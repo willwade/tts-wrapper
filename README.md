@@ -29,7 +29,7 @@ _TTS-Wrapper_ simplifies using text-to-speech APIs by providing a unified interf
 - Piper TTS (experimental and Linux Only)
 - MMS ([Massively Multilingual Speech from Meta](https://ai.meta.com/blog/multilingual-model-speech-recognition/)) 
 - Sherpa-Onnx (focusing on MMS models for now)
-- gTTS (googleTranslation TTS.)
+- gTTS (GoogleTranslation TTS.)
 
 ## Features
 - **Text to Speech**: Convert text into spoken audio.
@@ -115,7 +115,7 @@ pip install git+https://github.com/willwade/tts-wrapper#egg=tts-wrapper[google,m
 or (the newer way we should all use)
 
 ```sh
-pip install tts-wrapper[google,microsoft,sapi,sherpaonnx,googleTrans]@git+https://github.com/willwade/tts-wrapper
+pip install tts-wrapper[google,microsoft,sapi,sherpaonnx,googletrans]@git+https://github.com/willwade/tts-wrapper
 ```
 
 and once I publish this (not yet!)
@@ -242,16 +242,16 @@ tts = PiperTTS(client)
 
 - **Note:** Piper is experimental and only works on Linux only right now. Please also note SSML is not supported so SSML tags will just be rendered as text.
 
-### googleTrans
+### GoogleTrans
 
 Uses the gTTS library. 
 
 ```python
-from tts_wrapper import googleTransClient, googleTransTTS
+from tts_wrapper import GoogleTransClient, GoogleTransTTS
 voice_id = "en-co.uk"  # Example voice ID for UK English
-client = googleTransClient(voice_id)
+client = GoogleTransClient(voice_id)
 # Initialize the TTS engine
-tts = googleTransTTS(client)
+tts = GoogleTransTTS(client)
 ```
 
 ### Sherpa-ONNX

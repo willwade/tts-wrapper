@@ -3,15 +3,15 @@
 from typing import Any, List, Optional, Dict
 from ...exceptions import UnsupportedFileFormat
 from ...tts import AbstractTTS, FileFormat
-from . import googleTransClient, googleTransSSML
+from . import GoogleTransClient, GoogleTransSSML
 import logging
 
-class googleTransTTS(AbstractTTS):
+class GoogleTransTTS(AbstractTTS):
     @classmethod
     def supported_formats(cls) -> List[FileFormat]:
         return ["mp3"]
 
-    def __init__(self, client: googleTransClient):
+    def __init__(self, client: GoogleTransClient):
         super().__init__()
         self.client = client
         self.audio_rate = 24000

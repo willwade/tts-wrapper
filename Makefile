@@ -5,10 +5,12 @@ tests:
 
 all_tests:
 	source .secrets/.env && \
-	export POLLY_REGION POLLY_AWS_ID POLLY_AWS_KEY && \
-	export MICROSOFT_KEY && \
+	export POLLY_REGION POLLY_AWS_KEY_ID POLLY_AWS_ACCESS_KEY && \
+	export MICROSOFT_KEY MICROSOFT_REGION && \
 	export GOOGLE_SA_PATH && \
-	export WATSON_API_KEY WATSON_API_URL && \
+	export WATSON_API_KEY WATSON_API_URL WATSON_INSTANCE_ID && \
+	export ELEVENLABS_API_KEY && \
+	export WITAI_TOKEN && \
 	pytest -s
 
 publish:
