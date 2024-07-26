@@ -29,6 +29,7 @@ _TTS-Wrapper_ simplifies using text-to-speech APIs by providing a unified interf
 - Piper TTS (experimental and Linux Only)
 - MMS ([Massively Multilingual Speech from Meta](https://ai.meta.com/blog/multilingual-model-speech-recognition/)) 
 - Sherpa-Onnx (focusing on MMS models for now)
+- gTTS (googleTranslation TTS.)
 
 ## Features
 - **Text to Speech**: Convert text into spoken audio.
@@ -49,9 +50,10 @@ _TTS-Wrapper_ simplifies using text-to-speech APIs by providing a unified interf
 | Google     | Linux/MacOS/Windows | Online         | Yes  | Yes               | Yes           |
 | Azure      | Linux/MacOS/Windows | Online         | Yes  | Yes               | Yes           |
 | Watson     | Linux/MacOS/Windows | Online         | Yes  | No                | Yes           |
-| ElevenLabs | Linux/MacOS/Windows | Online         | No   | Yes               | Yes            |
+| ElevenLabs | Linux/MacOS/Windows | Online         | No   | Yes               | Yes           |
 | Wit.AI     | Linux/MacOS/Windows | Online         | Yes  | No                | No            |
 | Sherpa-Onnx| Linux/MacOS/Windows | Offline        | No   | No                | No            |
+| gTTS       | Linux/MacOS/Windows | Online         | No   | No                | No            |
 | MMS        | Linux/MacOS/Windows | Offline        | No   | Yes               | No            |
 | Piper      | Linux               | Offline        | No   | No                | No            |
 | UWP        | Windows             | Offline        | No   | Yes               | No            |
@@ -232,6 +234,17 @@ tts = PiperTTS(client)
 
 - **Note:** Piper is experimental and only works on Linux only right now. Please also note SSML is not supported so SSML tags will just be rendered as text.
 
+### googleTrans
+
+Uses the gTTS library. Note you need ffmpeg installed. pip install should try and install this for you. 
+
+```python
+from tts_wrapper import googleTransClient, googleTransTTS
+voice_id = "en-co.uk"  # Example voice ID for UK English
+client = googleTransClient(voice_id)
+# Initialize the TTS engine
+tts = googleTransTTS(client)
+```
 
 ### Sherpa-ONNX
 
