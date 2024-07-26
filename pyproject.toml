@@ -2,15 +2,15 @@
 name = "tts-wrapper"
 version = "0.9.0"
 description = "TTS-Wrapper makes it easier to use text-to-speech APIs by providing a unified and easy-to-use interface."
-authors = ["Giulio Bottari <giuliobottari@gmail.com>"]
+authors = ["Giulio Bottari <giuliobottari@gmail.com>","Will Wade <willwade@gmail.com>"]
 license = "MIT"
 readme = "README.md"
-repository = "https://github.com/mediatechlab/tts-wrapper"
-documentation = "https://github.com/mediatechlab/tts-wrapper"
-keywords = [ "tts", "text-to-speech", "speech synthesis", "polly", "sapi" ]
+repository = "https://github.com/willwade/tts-wrapper"
+documentation = "https://github.com/willwade/tts-wrapper"
+keywords = [ "tts", "text-to-speech", "speech synthesis", "polly", "sapi", "mms", "gTTS", "witai", "elevenlabs" ]
 
 [tool.poetry.urls]
-"Bug Tracker" = "https://github.com/mediatechlab/tts-wrapper/issues"
+"Bug Tracker" = "https://github.com/willwade/tts-wrapper/issues"
 
 [tool.poetry.dependencies]
 python = ">=3.10,<3.13"
