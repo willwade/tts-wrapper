@@ -5680,28 +5680,28 @@ test = ["pytest (>=5)", "pytest-cov", "pytest-mock"]
 
 [[package]]
 name = "sherpa-onnx"
-version = "1.10.18"
+version = "1.10.19"
 description = ""
 optional = true
 python-versions = ">=3.6"
 files = [
-    {file = "sherpa_onnx-1.10.18-cp310-cp310-macosx_11_0_arm64.whl", hash = "sha256:cb60f22eaf7279f516c4b37a6b2985bc7b2eb4cfad4109331a4f93d6fc459fe5"},
-    {file = "sherpa_onnx-1.10.18-cp310-cp310-macosx_11_0_x86_64.whl", hash = "sha256:e47eccd4a3c50ced1c787ae0146bd804bac91cdad600c952d2cc7e254e15f594"},
-    {file = "sherpa_onnx-1.10.18-cp310-cp310-win_amd64.whl", hash = "sha256:cbcdd81b5fdfb2075d8241367712e27cad48a8d83c66b86644df755fa44513c4"},
-    {file = "sherpa_onnx-1.10.18-cp311-cp311-macosx_11_0_arm64.whl", hash = "sha256:1810f919bb3564f714861ceb4f7f8276af7a22191659f82c2615dc9df6afeca3"},
-    {file = "sherpa_onnx-1.10.18-cp311-cp311-macosx_11_0_x86_64.whl", hash = "sha256:24ed4f1e461bf23d1fda62f3ce867714c3d0199cf6ecf4975181fd3d14716e2d"},
-    {file = "sherpa_onnx-1.10.18-cp311-cp311-win_amd64.whl", hash = "sha256:5070707f95f7ce854a2b9b1ee06abf5776615574b6e0e9fa2ac6e20cfe17062d"},
-    {file = "sherpa_onnx-1.10.18-cp312-cp312-macosx_11_0_arm64.whl", hash = "sha256:46a63849024a771bf20b6e582acf6e44de507b1bf3828a645f042573b37bed2f"},
-    {file = "sherpa_onnx-1.10.18-cp312-cp312-macosx_11_0_x86_64.whl", hash = "sha256:ec5c6e077fbfafcba4b91500bb6973485525289152dd9445e7b98fb5c49973cb"},
-    {file = "sherpa_onnx-1.10.18-cp312-cp312-win_amd64.whl", hash = "sha256:b10450c41a4071b2874f8f8b296b3433f80fa3fc71cfb8f81e6f5bb1226ac203"},
-    {file = "sherpa_onnx-1.10.18-cp37-cp37m-macosx_11_0_x86_64.whl", hash = "sha256:27f0a0912db4a112e14201cb5130bff5bedc8b7670ea2d0cc414fa0ff63d3ea6"},
-    {file = "sherpa_onnx-1.10.18-cp37-cp37m-win_amd64.whl", hash = "sha256:fcb72e7a9dc2ab0324a75a5afe60a4db0c9fb5c0430046e01e3c06a9dae84966"},
-    {file = "sherpa_onnx-1.10.18-cp38-cp38-macosx_11_0_arm64.whl", hash = "sha256:f222433ac2a9caa822e42dcc517e58372d2635cc459c399c75e2d11b5e75fcda"},
-    {file = "sherpa_onnx-1.10.18-cp38-cp38-macosx_11_0_x86_64.whl", hash = "sha256:9adc2acb49aeec513c8400fbec0457c8e45cb08479d7cc78bcd398ccdbb80aa5"},
-    {file = "sherpa_onnx-1.10.18-cp38-cp38-win_amd64.whl", hash = "sha256:9871ac935c739a00678d06d3cf3fe5f93b62e72212f1ae7be944184fd5e9e454"},
-    {file = "sherpa_onnx-1.10.18-cp39-cp39-macosx_11_0_arm64.whl", hash = "sha256:0b43667478782a432570fc191488a99af4bb629cfb349a53904c6f2b1be19d7e"},
-    {file = "sherpa_onnx-1.10.18-cp39-cp39-macosx_11_0_x86_64.whl", hash = "sha256:6ea3094030873f32cb65d05b9b623da1e66fab4692e7d9f7f516746387054044"},
-    {file = "sherpa_onnx-1.10.18-cp39-cp39-win_amd64.whl", hash = "sha256:f655f38af34c51176fe3fed26bae5b3826beacef77f846b59c5e5971b204b306"},
+    {file = "sherpa_onnx-1.10.19-cp310-cp310-macosx_11_0_arm64.whl", hash = "sha256:49812c32ba13ec8cdc593ada70fa9da74da8951e4d1fa50f6d7aa96e2e435eb3"},
+    {file = "sherpa_onnx-1.10.19-cp310-cp310-macosx_11_0_x86_64.whl", hash = "sha256:4f10609d59c662f6263bb7453ba3a45988e50a48059e2bfa8e8fb490f13de6c3"},
+    {file = "sherpa_onnx-1.10.19-cp310-cp310-win_amd64.whl", hash = "sha256:7e06695f226b1882a55d1c205aa17d20d67c6326b1764926e4d9634291db569a"},
+    {file = "sherpa_onnx-1.10.19-cp311-cp311-macosx_11_0_arm64.whl", hash = "sha256:802b304a3629ce0f5f37e2219182a23835bb624280ff75e2ec1ec1a0b9d7e8b5"},
+    {file = "sherpa_onnx-1.10.19-cp311-cp311-macosx_11_0_x86_64.whl", hash = "sha256:ee1e2b7bdb99a8f76dfa61d9ba9b02ffeb83605efcca0027041d4ddd23467857"},
+    {file = "sherpa_onnx-1.10.19-cp311-cp311-win_amd64.whl", hash = "sha256:a0569ea2e4c4d8c5aa85c4194651dacf41b12bb4c9432352dca848f313e9be8a"},
+    {file = "sherpa_onnx-1.10.19-cp312-cp312-macosx_11_0_arm64.whl", hash = "sha256:a0dba7a515d2ecc1bc31c25745fc4f9023266587837e8898e88c2ce78a4c156a"},
+    {file = "sherpa_onnx-1.10.19-cp312-cp312-macosx_11_0_x86_64.whl", hash = "sha256:7c6446c7486ad032653bce378a03ce39cd2eadd3c7db69ae6dfcc80eacde065c"},
+    {file = "sherpa_onnx-1.10.19-cp312-cp312-win_amd64.whl", hash = "sha256:38d23aa5eda5325171a9a421c3106eb1e4d1345888c5c693e70371cb5da7cc0d"},
+    {file = "sherpa_onnx-1.10.19-cp37-cp37m-macosx_11_0_x86_64.whl", hash = "sha256:6939ab3ee087509cc68e405b2337035304af6b3850bbae402592ae371594c685"},
+    {file = "sherpa_onnx-1.10.19-cp37-cp37m-win_amd64.whl", hash = "sha256:7a9cdde98e88ed3911f7ca0ef8901d00150cb65513dfe282fc584d3ee1c1185c"},
+    {file = "sherpa_onnx-1.10.19-cp38-cp38-macosx_11_0_arm64.whl", hash = "sha256:b08698aee865fec11fb661167ff38e47d7de1a36c62b887f49d6f4da2fc941eb"},
+    {file = "sherpa_onnx-1.10.19-cp38-cp38-macosx_11_0_x86_64.whl", hash = "sha256:620fc0f8b62748ce87e44e6dcff5bb3b2abdb7203c4afae564454b677f464740"},
+    {file = "sherpa_onnx-1.10.19-cp38-cp38-win_amd64.whl", hash = "sha256:af529a518b36c15660f8b47aa456e8e0b98b957b2416c77f7ea1fae05d834a26"},
+    {file = "sherpa_onnx-1.10.19-cp39-cp39-macosx_11_0_arm64.whl", hash = "sha256:3dae6f2bd0f16576aacbe489a7a6b22287e582407946ffb90f722278da81bf2d"},
+    {file = "sherpa_onnx-1.10.19-cp39-cp39-macosx_11_0_x86_64.whl", hash = "sha256:cd345b5e009d92efff36d591a8bdfbd80864c682e810625585d3ff3538ae2fb2"},
+    {file = "sherpa_onnx-1.10.19-cp39-cp39-win_amd64.whl", hash = "sha256:42d71fc172dfbd38ab0d8152876e09cb4903b9d9e335caf6515198f364f21821"},
 ]
 
 [[package]]
