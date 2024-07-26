@@ -12,6 +12,12 @@ FORMATS = {
 
 class ElevenLabsClient:
     def __init__(self, credentials):
+        try:
+            import requests
+        except ImportError:
+            requests = None  # type: ignore
+            raise ModuleNotInstalled("requests")
+            
         if not credentials:
             raise ValueError("An API key for ElevenLabs must be provided")
         self.api_key = credentials
