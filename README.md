@@ -236,7 +236,7 @@ tts = PiperTTS(client)
 
 ### googleTrans
 
-Uses the gTTS library. Note you need ffmpeg installed. pip install should try and install this for you. 
+Uses the gTTS library. 
 
 ```python
 from tts_wrapper import googleTransClient, googleTransTTS
