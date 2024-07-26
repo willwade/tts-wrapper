@@ -1,12 +1,7 @@
-import requests
 from ...tts import AbstractTTS, FileFormat
 from typing import Any, Dict, Optional, List
 from ...exceptions import UnsupportedFileFormat
-import requests
 import logging
-from ...tts import AbstractTTS, FileFormat
-from typing import Any, Dict, Optional, List
-from ...exceptions import UnsupportedFileFormat
 
 FORMATS = {
     "mp3": "mp3",
@@ -18,6 +13,11 @@ class WitAiClient:
     def __init__(self, credentials: tuple) -> None:
         if not credentials or not credentials[0]:
             raise ValueError("An API token for Wit.ai must be provided")
+        try:
+            import requests
+        except ImportError:
+            requests = None  # type: ignore
+            raise ModuleNotInstalled("requests")
         
         # Assuming credentials is a tuple where the first item is the token
         self.token = credentials
