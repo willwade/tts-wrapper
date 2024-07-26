@@ -1,4 +1,3 @@
-import requests
 import json
 import base64
 from typing import List, Dict, Any, Optional, Tuple
