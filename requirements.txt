@@ -1,3 +1,4 @@
+#NB: PLEASE DONT USE THIS. USE POETRY. WE WILL KEEP THIS UPDATED ONLY FOR DOWNSTREAM PROJECTS WHO NEED TO KNOW
 attrs==23.2.0 ; python_version >= "3.10" and python_version < "3.13"
 audioread==3.0.1 ; python_version >= "3.10" and python_version < "3.13"
 azure-cognitiveservices-speech==1.38.0 ; python_version >= "3.10" and python_version < "3.13"
