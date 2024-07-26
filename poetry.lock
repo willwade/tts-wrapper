@@ -6074,4 +6074,4 @@ witai = ["requests"]
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.10,<3.13"
-content-hash = "a4dc18f7235314e9a329d0dc8c2fbb732172ea593f40135ac3fa7b514932d992"
+content-hash = "73edc080bfdf13ea29f76f4a260aba90b58c36238f5d7c9dd95e20b08592d9e5"
