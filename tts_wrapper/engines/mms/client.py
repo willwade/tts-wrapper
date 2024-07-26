@@ -1,4 +1,3 @@
-import requests
 import tempfile
 import os
 import json
@@ -27,7 +26,6 @@ class MMSClient:
         # Lazy load the TTS and download functions
         self._tts = None
         self._download = None
-
         self._initialize_tts(self.lang)
 
     def _initialize_tts(self, lang: str):
@@ -38,6 +36,12 @@ class MMSClient:
                 self._download = download
             except ImportError:
                 raise ModuleNotInstalled("ttsmms")
+
+            try:
+                import requests
+            except ImportError:
+                requests = None  # type: ignore
+                raise ModuleNotInstalled("requests")
 
         try:
             model_path = os.path.join(self._model_dir, lang)
