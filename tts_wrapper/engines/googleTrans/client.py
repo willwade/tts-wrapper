@@ -8,7 +8,7 @@ import logging
 try:
     from gtts import gTTS
     from gtts.lang import tts_langs
-    import ffmpeg
+    from pydub import AudioSegment
 except ImportError:
     gtts = None  # type: ignore
 
@@ -41,19 +41,14 @@ class googleTransClient:
         if format == 'mp3':
             return mp3_fp.read()
         elif format == 'wav':
+            mp3_fp.seek(0)
+            audio = AudioSegment.from_file(mp3_fp, format="mp3")
             wav_fp = BytesIO()
-            process = (
-                ffmpeg
-                .input('pipe:0')
-                .output('pipe:1', format='wav')
-                .run_async(pipe_stdin=True, pipe_stdout=True, pipe_stderr=True)
-            )
-            wav_data, _ = process.communicate(input=mp3_fp.read())
-            wav_fp.write(wav_data)
+            audio.export(wav_fp, format="wav")
             wav_fp.seek(0)
             return wav_fp.read()
         else:
-            raise UnsupportedFileFormat(format, 'GoogleTransClient')          
+            raise UnsupportedFileFormat(format, 'GoogleTransClient')        
         
     def get_voices(self) -> List[Dict[str, Any]]:
         # Retrieve available languages from gtts
