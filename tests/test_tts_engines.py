@@ -9,7 +9,8 @@ from tts_wrapper import (
     WatsonClient, WatsonTTS,
     ElevenLabsClient, ElevenLabsTTS,
     WitAiClient, WitAiTTS,
-    GoogleTransClient, GoogleTransTTS
+    GoogleTransClient, GoogleTransTTS,
+    SherpaOnnxClient, SherpaOnnxTTS
 )
 
 # Dictionary to hold the TTS clients and their respective setup functions
