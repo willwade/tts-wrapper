@@ -2,48 +2,49 @@ from typing import List, Dict, Any, Tuple
 from ...exceptions import ModuleNotInstalled
 import struct
 
-try:
-    from google.cloud import texttospeech_v1beta1 as texttospeech
-    from google.oauth2 import service_account  # type: ignore
-
-    FORMATS = {
-        "wav": texttospeech.AudioEncoding.LINEAR16,
-        "mp3": texttospeech.AudioEncoding.MP3,
-    }
-except ImportError:
-    texttospeech = None  # type: ignore
-    service_account = None  # type: ignore
-    FORMATS = {}
-
-
 class GoogleClient:
     def __init__(self, credentials: str) -> None:
-        if texttospeech is None or service_account is None:
-            raise ModuleNotInstalled("google-cloud-texttospeech")
-
-        if not credentials:
-            raise ValueError("credentials file is required")
-        
         self._credentials_file = credentials
+        self._client = None
 
-        self._client = texttospeech.TextToSpeechClient(
-            credentials=service_account.Credentials.from_service_account_file(
-                credentials
-            )
-        )
+    def _initialize_client(self):
+        if self._client is None:
+            try:
+                from google.cloud import texttospeech_v1beta1 as texttospeech
+                from google.oauth2 import service_account
+                self.texttospeech = texttospeech
+                self.service_account = service_account
+
+                self.FORMATS = {
+                    "wav": texttospeech.AudioEncoding.LINEAR16,
+                    "mp3": texttospeech.AudioEncoding.MP3,
+                }
+
+                self._client = texttospeech.TextToSpeechClient(
+                    credentials=self.service_account.Credentials.from_service_account_file(
+                        self._credentials_file
+                    )
+                )
+            except ImportError:
+                raise ModuleNotInstalled("google-cloud-texttospeech")
+
+            if not self._credentials_file:
+                raise ValueError("credentials file is required")
 
     def synth(self, ssml: str, voice: str, lang: str, format: str, include_timepoints: bool = False) -> Dict[str, Any]:
-        s_input = texttospeech.SynthesisInput(ssml=ssml)
-        voice_params = texttospeech.VoiceSelectionParams(language_code=lang, name=voice)
-        audio_config = texttospeech.AudioConfig(audio_encoding=FORMATS[format])
+        self._initialize_client()
+
+        s_input = self.texttospeech.SynthesisInput(ssml=ssml)
+        voice_params = self.texttospeech.VoiceSelectionParams(language_code=lang, name=voice)
+        audio_config = self.texttospeech.AudioConfig(audio_encoding=self.FORMATS[format])
 
         if include_timepoints:
-            timepoints = [texttospeech.SynthesizeSpeechRequest.TimepointType.SSML_MARK]
+            timepoints = [self.texttospeech.SynthesizeSpeechRequest.TimepointType.SSML_MARK]
         else:
             timepoints = []
 
         resp = self._client.synthesize_speech(
-            request=texttospeech.SynthesizeSpeechRequest(
+            request=self.texttospeech.SynthesizeSpeechRequest(
                 input=s_input,
                 voice=voice_params,
                 audio_config=audio_config,
@@ -94,6 +95,8 @@ class GoogleClient:
         
     def get_voices(self) -> List[Dict[str, Any]]:
         """Fetches available voices from Google Cloud Text-to-Speech service."""
+        self._initialize_client()
+
         response = self._client.list_voices()
         voices = response.voices  # Assuming this returns a list of voice objects
         standardized_voices = []

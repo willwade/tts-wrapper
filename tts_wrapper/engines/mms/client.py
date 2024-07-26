@@ -5,17 +5,6 @@ import json
 from typing import List, Dict, Any, Optional, Union, Tuple
 from ...exceptions import ModuleNotInstalled, UnsupportedFileFormat, ModelNotFound
 
-try:
-    from ttsmms import TTS, download
-    import numpy as np
-    import soundfile as sf
-except ImportError:
-    TTS = None
-    download = None
-    np = None  # type: ignore
-    sf = None
-
-
 class MMSClient:
     def __init__(self, params: Optional[Union[str, Tuple[Optional[str], str]]] = None) -> None:
         self._using_temp_dir = False
@@ -35,22 +24,31 @@ class MMSClient:
             except Exception as e:
                 raise RuntimeError(f"Failed to create model directory {self._model_dir}: {str(e)}")
 
-        if TTS is None or download is None:
-            raise ModuleNotInstalled("ttsmms")
+        # Lazy load the TTS and download functions
+        self._tts = None
+        self._download = None
 
         self._initialize_tts(self.lang)
 
     def _initialize_tts(self, lang: str):
+        if self._tts is None or self._download is None:
+            try:
+                from ttsmms import TTS, download
+                self._tts = TTS
+                self._download = download
+            except ImportError:
+                raise ModuleNotInstalled("ttsmms")
+
         try:
             model_path = os.path.join(self._model_dir, lang)
-            self._tts = TTS(model_path)
-            _tts.speaking_rate = 1.5
+            self._tts_instance = self._tts(model_path)
+            self._tts_instance.speaking_rate = 1.5
         except Exception as e:
             # If TTS initialization fails, attempt to download the model
             try:
-                download(lang, self._model_dir)
+                self._download(lang, self._model_dir)
                 new_model_path = os.path.join(self._model_dir, lang)
-                self._tts = TTS(new_model_path)
+                self._tts_instance = self._tts(new_model_path)
             except Exception as download_error:
                 raise ModelNotFound(lang, str(download_error))
 
@@ -61,13 +59,17 @@ class MMSClient:
         # Ensure the TTS model is initialized for the correct language
         self._initialize_tts(lang)
 
+        # Lazy load numpy and soundfile
+        import numpy as np
+        import soundfile as sf
+
         # Use a temporary file for synthesis
         temp_file = tempfile.NamedTemporaryFile(delete=False, suffix=".wav")
         temp_file.close()
 
         try:
             # Perform the synthesis
-            self._tts.synthesis(text, wav_path=temp_file.name)
+            self._tts_instance.synthesis(text, wav_path=temp_file.name)
             
             # Read the file using soundfile
             audio_data, sample_rate = sf.read(temp_file.name, dtype='float32')
