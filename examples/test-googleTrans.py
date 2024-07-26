@@ -1,10 +1,10 @@
-from tts_wrapper import googleTransClient, googleTransTTS
+from tts_wrapper import GoogleTransClient, GoogleTransTTS
 import time
 try:
     voice_id = "en-co.uk"  # Example voice ID for UK English
-    client = googleTransClient(voice_id)
+    client = GoogleTransClient(voice_id)
     # Initialize the TTS engine
-    tts = googleTransTTS(client)
+    tts = GoogleTransTTS(client)
 
     # Get available voices
 #     voices = tts.get_voices()

@@ -13,8 +13,8 @@ optional_dependencies = {
     "requests": ("tts_wrapper", "ElevenLabsTTS", "ElevenLabsClient"),  # Used by ElevenLabs and WitAI
     "piper-tts": ("tts_wrapper", "PiperTTS", "PiperClient"),  # Assuming piper-tts needs to be added
     "py3-ttsmms": ("tts_wrapper", "MMSTTS", "MMSClient"), 
-    "gTTS": ("tts_wrapper", "googleTransTTS", "googleTransClient"),
-    "sherpa-onnx": ("tts_wrapper", "sherpaOnnxTTS", "sherpaOnnxClient"),
+    "gTTS": ("tts_wrapper", "GoogleTransTTS", "GoogleTransClient"),
+    "sherpa-onnx": ("tts_wrapper", "SherpaOnnxTTS", "SherpaOnnxClient"),
 }
 
 # Flatten the dictionary for pytest.mark.parametrize
