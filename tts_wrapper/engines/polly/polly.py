@@ -19,13 +19,19 @@ class PollyTTS(AbstractTTS):
             raise UnsupportedFileFormat(format, self.__class__.__name__)
         if not self._is_ssml(str(text)):
             text = self.ssml.add(str(text))
+
+        result = self._client.synth_with_timings(str(text), self._voice, format)
         
-        self.generated_audio, word_timings = self._client.synth_with_marks(str(text), self._voice, format)
-        
-        # Process word timings to include end times
+        if isinstance(result, tuple) and len(result) == 2:
+            self.generated_audio, word_timings = result
+        else:
+            self.generated_audio = result
+            word_timings = []  # or get word timings from somewhere else if available
+
         processed_timings = self._process_word_timings(word_timings)
         self.set_timings(processed_timings)
         return self.generated_audio
+    
 
     def _process_word_timings(self, word_timings: List[Tuple[float, str]]) -> List[Tuple[float, float, str]]:
         processed_timings = []

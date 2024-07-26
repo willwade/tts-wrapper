@@ -5,12 +5,6 @@ from ...exceptions import ModuleNotInstalled
 import json
 import io
 
-try:
-    import boto3
-except ImportError:
-    boto3 = None  # type: ignore
-
-
 Credentials = Tuple[str, str, str]
 
 FORMATS = {
@@ -24,7 +18,10 @@ class PollyClient:
         self,
         credentials: Optional[Credentials] = None,
     ) -> None:
-        if boto3 is None:
+        try:
+            import boto3
+        except ImportError:
+            boto3 = None  # type: ignore
             raise ModuleNotInstalled("boto3")
 
         from boto3.session import Session
@@ -54,7 +51,11 @@ class PollyClient:
         else:
             return raw
 
-    def synth_with_marks(self, ssml: str, voice: str, format: str) -> Tuple[bytes, List[Tuple[float, str]]]:
+    def synth_with_timings(self, ssml: str, voice: str, format: str) -> Tuple[bytes, List[Tuple[float, str]]]:
+            audio_data, word_timings = self._synth_with_marks(ssml, voice, format)
+            return audio_data, word_timings
+
+    def _synth_with_marks(self, ssml: str, voice: str, format: str) -> Tuple[bytes, List[Tuple[float, str]]]:
         # Get speech marks
         marks_response = self._client.synthesize_speech(
             Engine="neural",
