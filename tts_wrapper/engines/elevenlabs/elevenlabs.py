@@ -4,11 +4,6 @@ from ...tts import AbstractTTS, FileFormat
 from . import ElevenLabsClient, ElevenLabsSSMLRoot
 import re
 
-try:
-    import numpy as np
-except ImportError:
-    np = None  # type: ignore
-
 
 class ElevenLabsTTS(AbstractTTS):
     def __init__(self, client: ElevenLabsClient, lang: Optional[str] = None, voice: Optional[str] = None):
@@ -46,6 +41,13 @@ class ElevenLabsTTS(AbstractTTS):
     def adjust_volume_value(self, generated_audio: bytes, volume: float, format: str) -> bytes:
         #check if generated audio length is odd. If it is, add an empty byte since np.frombuffer is expecting
         #an even length
+        
+        if np is None:
+            try:
+                import numpy as np
+            except ImportError:
+                raise ModuleNotInstalled("numpy")
+
         if len(generated_audio)%2 != 0:
             generated_audio += b'\x00'
 
