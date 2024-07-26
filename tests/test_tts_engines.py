@@ -23,7 +23,7 @@ TTS_CLIENTS = {
         "class": PollyTTS
     },
     "google": {
-        "client": lambda: GoogleClient(credentials=os.getenv('GOOGLE_CREDS_PATH')),
+        "client": lambda: GoogleClient(credentials=os.getenv('GOOGLE_SA_PATH')),
         "class": GoogleTTS
     },
     "microsoft": {

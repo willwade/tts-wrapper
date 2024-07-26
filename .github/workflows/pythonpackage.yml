@@ -1,4 +1,4 @@
-name: build
+name: Build
 
 on: [push, pull_request]
 
@@ -7,94 +7,104 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        include:
-          - { os: ubuntu-latest, python: "3.10" }
-          - { os: windows-latest, python: "3.10" }
-          - { os: windows-latest, python: "3.11" }
-          - { os: windows-latest, python: "3.12" }
-          defaults:
-      run:
-        shell: bash
+        os: [ubuntu-latest, windows-latest]
+        python-version: ["3.10", "3.11", "3.12","3.13"]
     steps:
       - name: Checkout repo
         uses: actions/checkout@v2
+
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v2
         with:
           python-version: ${{ matrix.python-version }}
+
+      - name: Install Poetry
+        uses: abatilo/actions-poetry@v2.0.0
+        with:
+          poetry-version: "1.1.11"
+
       - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt -r requirements.dev.txt
+        run: poetry install
+
       - name: Lint with flake8
         run: |
-          pip install flake8
-          # stop the build if there are Python syntax errors or undefined names
-          flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
-          # exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
-          flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+          poetry run flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+          poetry run flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+
       - name: Check with mypy
-        run: mypy $(git ls-files '*.py')
+        run: poetry run mypy $(git ls-files '*.py')
+
       - name: Install PicoTTS on Linux
         if: matrix.os == 'ubuntu-latest'
         run: |
           sudo apt-get update -y
           sudo apt-get install -y libttspico-utils
+
       - name: Full test with pytest
         if: github.event_name == 'push'
         env:
-          POLLY_REGION: ${{ secrets.POLLY_REGION }}
-          POLLY_AWS_ID: ${{ secrets.POLLY_AWS_ID }}
-          POLLY_AWS_KEY: ${{ secrets.POLLY_AWS_KEY }}
-          MICROSOFT_KEY: ${{ secrets.MICROSOFT_KEY }}
-          GOOGLE_SA_PATH: ${{ secrets.GOOGLE_SA_PATH }}
-          GOOGLE_SA_FILE_B64: ${{ secrets.GOOGLE_SA_FILE_B64 }}
           WATSON_API_KEY: ${{ secrets.WATSON_API_KEY }}
           WATSON_API_URL: ${{ secrets.WATSON_API_URL }}
+          WATSON_REGION: ${{ secrets.WATSON_REGION }}
+          WATSON_INSTANCE_ID: ${{ secrets.WATSON_INSTANCE_ID }}
+          MICROSOFT_TOKEN: ${{ secrets.MICROSOFT_TOKEN }}
+          MICROSOFT_REGION: ${{ secrets.MICROSOFT_REGION }}
+          POLLY_REGION: ${{ secrets.POLLY_REGION }}
+          POLLY_AWS_KEY_ID: ${{ secrets.POLLY_AWS_KEY_ID }}
+          POLLY_AWS_ACCESS_KEY: ${{ secrets.POLLY_AWS_ACCESS_KEY }}
+          ELEVENLABS_API_KEY: ${{ secrets.ELEVENLABS_API_KEY }}
+          WITAI_TOKEN: ${{ secrets.WITAI_TOKEN }}
+          GOOGLE_SA_PATH: ${{ secrets.GOOGLE_SA_PATH }}
+          GOOGLE_SA_FILE_B64: ${{ secrets.GOOGLE_SA_FILE_B64 }}
         run: |
           # create intermediary dirs
           mkdir -p $(dirname $GOOGLE_SA_PATH)
           # create Google's json file
           echo $GOOGLE_SA_FILE_B64 | base64 --decode > $GOOGLE_SA_PATH
           # run all tests with coverage
-          pytest --cov=tts_wrapper
+          poetry run pytest --cov=tts_wrapper
+
       - name: Basic tests with pytest
         if: github.event_name == 'pull_request'
-        run: make tests
+        run: poetry run make tests
+
       - name: Upload Coverage to Codecov
-        if: ${{ !env.ACT }} && github.event_name == 'push'
+        if: github.event_name == 'push'
         uses: codecov/codecov-action@v2
 
   poetry:
-    # This job makes sure that we can use poetry to install dependencies.
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repo
         uses: actions/checkout@v2
+
       - name: Set up Python
         uses: actions/setup-python@v2
         with:
           python-version: "3.10"
+
       - name: Install poetry
         uses: abatilo/actions-poetry@v2.0.0
         with:
           poetry-version: "1.1.11"
+
       - name: Install dependencies
-        run: |
-          poetry install
+        run: poetry install
+
       - name: Test with pytest
         run: poetry run make tests
 
   pip-install:
-    # This job makes sure that we can use pip to install the lib from PyPI.
     runs-on: ubuntu-latest
     steps:
       - name: Set up Python
         uses: actions/setup-python@v2
         with:
           python-version: "3.10"
+
       - name: Install the lib
         run: |
-          pip install tts_wrapper[google,watson,microsoft,polly,sapi,mms,witai,elevenlabs]
+          pip install tts_wrapper[google,watson,microsoft,polly,sapi,mms,witai,elevenlabs,sherpaonnx,googletrans]
+
       - name: Test the lib
         run: python -c 'import tts_wrapper'
