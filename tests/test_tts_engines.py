@@ -10,6 +10,7 @@ from tts_wrapper import (
     ElevenLabsClient, ElevenLabsTTS,
     WitAiClient, WitAiTTS,
     GoogleTransClient, GoogleTransTTS,
+    SherpaOnnxClient, SherpaOnnxTTS
 )
 
 # Dictionary to hold the TTS clients and their respective setup functions
@@ -52,6 +53,10 @@ TTS_CLIENTS = {
     "googletrans": {
         "client": lambda: GoogleTransClient('en-co.uk'),
         "class": GoogleTransTTS
+    },
+    "sherpaonnx": {
+        "client": lambda: SherpaOnnxClient(model_path=None, tokens_path=None, voice_id='eng'),
+        "class": SherpaOnnxTTS
     }
 }
 

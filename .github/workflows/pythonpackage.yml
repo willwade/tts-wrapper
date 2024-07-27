@@ -37,7 +37,7 @@ jobs:
       - name: Install six (required for Poetry with Python 3.12)
         if: matrix.python-version == '3.12'
         run: |
-          poetry run pip install six
+          python -m pip install six
 
       - name: Update package index and install dependencies
         run: |
