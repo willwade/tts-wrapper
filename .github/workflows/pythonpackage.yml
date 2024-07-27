@@ -32,7 +32,7 @@ jobs:
       - name: Install six (required for Poetry with Python 3.12)
         if: matrix.python-version == '3.12'
         run: |
-          python -m pip install six
+          poetry run pip install six
 
       - name: Install Poetry
         uses: abatilo/actions-poetry@v2.0.0
@@ -61,10 +61,16 @@ jobs:
           GOOGLE_SA_PATH: ${{ secrets.GOOGLE_SA_PATH }}
           GOOGLE_SA_FILE_B64: ${{ secrets.GOOGLE_SA_FILE_B64 }}
         run: |
-          # create intermediary dirs
-          mkdir -p $(dirname $GOOGLE_SA_PATH)
-          # create Google's json file
-          echo $GOOGLE_SA_FILE_B64 | base64 --decode > $GOOGLE_SA_PATH
+          if [[ "$RUNNER_OS" == "Windows" ]]; then
+            $google_sa_dir = [System.IO.Path]::GetDirectoryName($env:GOOGLE_SA_PATH)
+            if (-not (Test-Path -Path $google_sa_dir)) {
+              New-Item -ItemType Directory -Force -Path $google_sa_dir
+            }
+            [System.Convert]::FromBase64String($env:GOOGLE_SA_FILE_B64) | Set-Content -Path $env:GOOGLE_SA_PATH -AsByteStream
+          else
+            mkdir -p $(dirname "$GOOGLE_SA_PATH")
+            echo "$GOOGLE_SA_FILE_B64" | base64 --decode > "$GOOGLE_SA_PATH"
+          fi
           # run all tests with coverage
           poetry run pytest --cov=tts_wrapper
 
