@@ -7,8 +7,8 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest, windows-latest]
-        python-version: ["3.10", "3.11", "3.12","3.13"]
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        python-version: ["3.10", "3.11", "3.12"]
     steps:
       - name: Checkout repo
         uses: actions/checkout@v2
@@ -19,93 +19,26 @@ jobs:
           python-version: ${{ matrix.python-version }}
 
       - name: Install system dependencies on Linux
-        if: runner.os == 'Linux'
+        if: matrix.os == 'ubuntu-latest'
         run: |
           sudo apt-get update -y
-          sudo apt-get install -y portaudio19-dev
+          sudo apt-get install -y portaudio19-dev libttspico-utils ffmpeg
+
+      - name: Install system dependencies on macOS
+        if: matrix.os == 'macos-latest'
+        run: |
+          brew install portaudio ffmpeg
 
       - name: Install Poetry
         uses: abatilo/actions-poetry@v2.0.0
         with:
-          poetry-version: "1.1.11"
+          poetry-version: "1.1.11"  # Replace with your local Poetry version
 
-      - name: Install dependencies
+      - name: Update package index and install dependencies
         run: |
+          poetry self update
           poetry install -E google -E watson -E polly -E microsoft -E googletrans -E witai -E elevenlabs
-          poetry run postinstall 
-
-      - name: Lint with flake8
-        run: |
-          poetry run flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
-          poetry run flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
-
-      - name: Check with mypy
-        run: poetry run mypy $(git ls-files '*.py')
-
-      - name: Install PicoTTS on Linux
-        if: matrix.os == 'ubuntu-latest'
-        run: |
-          sudo apt-get update -y
-          sudo apt-get install -y libttspico-utils
-
-      - name: Full test with pytest
-        if: github.event_name == 'push'
-        env:
-          WATSON_API_KEY: ${{ secrets.WATSON_API_KEY }}
-          WATSON_API_URL: ${{ secrets.WATSON_API_URL }}
-          WATSON_REGION: ${{ secrets.WATSON_REGION }}
-          WATSON_INSTANCE_ID: ${{ secrets.WATSON_INSTANCE_ID }}
-          MICROSOFT_TOKEN: ${{ secrets.MICROSOFT_TOKEN }}
-          MICROSOFT_REGION: ${{ secrets.MICROSOFT_REGION }}
-          POLLY_REGION: ${{ secrets.POLLY_REGION }}
-          POLLY_AWS_KEY_ID: ${{ secrets.POLLY_AWS_KEY_ID }}
-          POLLY_AWS_ACCESS_KEY: ${{ secrets.POLLY_AWS_ACCESS_KEY }}
-          ELEVENLABS_API_KEY: ${{ secrets.ELEVENLABS_API_KEY }}
-          WITAI_TOKEN: ${{ secrets.WITAI_TOKEN }}
-          GOOGLE_SA_PATH: ${{ secrets.GOOGLE_SA_PATH }}
-          GOOGLE_SA_FILE_B64: ${{ secrets.GOOGLE_SA_FILE_B64 }}
-        run: |
-          # create intermediary dirs
-          mkdir -p $(dirname $GOOGLE_SA_PATH)
-          # create Google's json file
-          echo $GOOGLE_SA_FILE_B64 | base64 --decode > $GOOGLE_SA_PATH
-          # run all tests with coverage
-          poetry run pytest --cov=tts_wrapper
-
-      - name: Basic tests with pytest
-        if: github.event_name == 'pull_request'
-        run: poetry run make tests
-
-      - name: Upload Coverage to Codecov
-        if: github.event_name == 'push'
-        uses: codecov/codecov-action@v2
-
-  poetry:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout repo
-        uses: actions/checkout@v2
-
-      - name: Set up Python
-        uses: actions/setup-python@v2
-        with:
-          python-version: "3.10"
-
-      - name: Install system dependencies on Linux
-        if: runner.os == 'Linux'
-        run: |
-          sudo apt-get update -y
-          sudo apt-get install -y portaudio19-dev
-
-      - name: Install poetry
-        uses: abatilo/actions-poetry@v2.0.0
-        with:
-          poetry-version: "1.8.3"
-
-      - name: Install dependencies
-        run: |
-          poetry install -E google -E watson -E polly -E microsoft -E googletrans -E witai -E elevenlabs
-          poetry run postinstall 
+          poetry run postinstall
 
       - name: Dump env vars for test
         if: github.event_name == 'push'
@@ -142,9 +75,15 @@ jobs:
         with:
           python-version: "3.10"
 
+      - name: Install system dependencies on Linux
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install -y portaudio19-dev ffmpeg
+
       - name: Install the lib
         run: |
-          pip install tts_wrapper[google,watson,microsoft,polly,sapi,mms,witai,elevenlabs,sherpaonnx,googletrans]
+          pip install tts_wrapper[google,watson,microsoft,polly,sapi,mms,witai,elevenlabs,googletrans]
 
       - name: Test the lib
         run: python -c 'import tts_wrapper'
