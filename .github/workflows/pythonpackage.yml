@@ -45,7 +45,7 @@ jobs:
 
       - name: Update package index and install dependencies
         run: |
-          poetry run pip install --upgrade pip setuptools wheel
+          poetry run pip install --upgrade pip setuptools wheel numpy
           poetry install --with dev -E google -E watson -E polly -E microsoft -E googletrans -E witai -E elevenlabs
           poetry run postinstall
 
