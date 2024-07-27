@@ -41,6 +41,7 @@ jobs:
 
       - name: Update package index and install dependencies
         run: |
+          poetry lock
           poetry install -E google -E watson -E polly -E microsoft -E googletrans -E witai -E elevenlabs
           poetry run postinstall
 
