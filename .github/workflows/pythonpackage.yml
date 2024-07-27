@@ -45,8 +45,8 @@ jobs:
           poetry install -E google -E watson -E polly -E microsoft -E googletrans -E witai -E elevenlabs
           poetry run postinstall
 
-      - name: Dump env vars for test
-        if: github.event_name == 'push'
+      - name: Set environment variables and create Google credentials file on Windows
+        if: matrix.os == 'windows-latest'
         env:
           WATSON_API_KEY: ${{ secrets.WATSON_API_KEY }}
           WATSON_API_URL: ${{ secrets.WATSON_API_URL }}
@@ -62,16 +62,33 @@ jobs:
           GOOGLE_SA_PATH: ${{ secrets.GOOGLE_SA_PATH }}
           GOOGLE_SA_FILE_B64: ${{ secrets.GOOGLE_SA_FILE_B64 }}
         run: |
-          if [[ "$RUNNER_OS" == "Windows" ]]; then
-            $google_sa_dir = [System.IO.Path]::GetDirectoryName($env:GOOGLE_SA_PATH)
-            if (-not (Test-Path -Path $google_sa_dir)) {
-              New-Item -ItemType Directory -Force -Path $google_sa_dir
-            }
-            [System.Convert]::FromBase64String($env:GOOGLE_SA_FILE_B64) | Set-Content -Path $env:GOOGLE_SA_PATH -AsByteStream
-          else
-            mkdir -p $(dirname "$GOOGLE_SA_PATH")
-            echo "$GOOGLE_SA_FILE_B64" | base64 --decode > "$GOOGLE_SA_PATH"
-          fi
+          $google_sa_dir = [System.IO.Path]::GetDirectoryName($env:GOOGLE_SA_PATH)
+          if (-not (Test-Path -Path $google_sa_dir)) {
+            New-Item -ItemType Directory -Force -Path $google_sa_dir
+          }
+          [System.Convert]::FromBase64String($env:GOOGLE_SA_FILE_B64) | Set-Content -Path $env:GOOGLE_SA_PATH -AsByteStream
+          # run all tests with coverage
+          poetry run pytest --cov=tts_wrapper
+
+      - name: Set environment variables and create Google credentials file on Unix-based systems
+        if: matrix.os != 'windows-latest'
+        env:
+          WATSON_API_KEY: ${{ secrets.WATSON_API_KEY }}
+          WATSON_API_URL: ${{ secrets.WATSON_API_URL }}
+          WATSON_REGION: ${{ secrets.WATSON_REGION }}
+          WATSON_INSTANCE_ID: ${{ secrets.WATSON_INSTANCE_ID }}
+          MICROSOFT_TOKEN: ${{ secrets.MICROSOFT_TOKEN }}
+          MICROSOFT_REGION: ${{ secrets.MICROSOFT_REGION }}
+          POLLY_REGION: ${{ secrets.POLLY_REGION }}
+          POLLY_AWS_KEY_ID: ${{ secrets.POLLY_AWS_KEY_ID }}
+          POLLY_AWS_ACCESS_KEY: ${{ secrets.POLLY_AWS_ACCESS_KEY }}
+          ELEVENLABS_API_KEY: ${{ secrets.ELEVENLABS_API_KEY }}
+          WITAI_TOKEN: ${{ secrets.WITAI_TOKEN }}
+          GOOGLE_SA_PATH: ${{ secrets.GOOGLE_SA_PATH }}
+          GOOGLE_SA_FILE_B64: ${{ secrets.GOOGLE_SA_FILE_B64 }}
+        run: |
+          mkdir -p $(dirname "$GOOGLE_SA_PATH")
+          echo "$GOOGLE_SA_FILE_B64" | base64 --decode > "$GOOGLE_SA_PATH"
           # run all tests with coverage
           poetry run pytest --cov=tts_wrapper
 
