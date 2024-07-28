@@ -16,9 +16,6 @@ class SherpaOnnxClient:
             sherpa_onnx = None  # type: ignore
             requests = None
 
-        self.sherpa_onnx = sherpa_onnx
-        self.requests = requests
-
         self.default_model_path = model_path
         self.default_tokens_path = tokens_path if tokens_path else os.path.join(model_path, 'tokens.txt') if model_path else None
         self._model_dir = os.path.expanduser("~/mms_models")
@@ -33,8 +30,12 @@ class SherpaOnnxClient:
 
     def _download_voices(self):
         try:
+            try:
+                import requests
+            except ImportError:
+                raise ImportError("Please install requests library to download voices JSON file")
             logging.info(f"Downloading voices JSON file from {self.VOICES_URL}...")
-            response = self.requests.get(self.VOICES_URL)
+            response = requests.get(self.VOICES_URL)
             response.raise_for_status()
             logging.info(f"Response status code: {response.status_code}")
 
@@ -68,7 +69,11 @@ class SherpaOnnxClient:
             raise
 
     def _download_file(self, url, destination):
-        response = self.requests.get(url, stream=True)
+        try:
+            import requests
+        except ImportError:
+            raise ImportError("Please install requests library to download files")
+        response = requests.get(url, stream=True)
         response.raise_for_status()
         with open(destination, 'wb') as f:
             for chunk in response.iter_content(chunk_size=8192):
@@ -121,10 +126,14 @@ class SherpaOnnxClient:
     def synth(self, text: str, sid: int = 0, speed: float = 1.0) -> Tuple[bytes, int]:
         logging.info(f"Using model path: {self.default_model_path}")
         logging.info(f"Using tokens path: {self.default_tokens_path}")
+        try:
+            import sherpa_onnx as sherpa_onnx
+        except ImportError:
+            raise ImportError("Please install sherpa-onnx library to use this function")
         
-        tts_config = self.sherpa_onnx.OfflineTtsConfig(
-            model=self.sherpa_onnx.OfflineTtsModelConfig(
-                vits=self.sherpa_onnx.OfflineTtsVitsModelConfig(
+        tts_config = sherpa_onnx.OfflineTtsConfig(
+            model=sherpa_onnx.OfflineTtsModelConfig(
+                vits=sherpa_onnx.OfflineTtsVitsModelConfig(
                     model=self.default_model_path,
                     tokens=self.default_tokens_path,
                     lexicon='',  # Provide default empty string
@@ -140,7 +149,7 @@ class SherpaOnnxClient:
         )
         logging.info(f"Configured TTS: {tts_config}")
 
-        tts = self.sherpa_onnx.OfflineTts(tts_config)
+        tts = sherpa_onnx.OfflineTts(tts_config)
         audio = tts.generate(text, sid=sid, speed=speed)
 
         if len(audio.samples) == 0:
