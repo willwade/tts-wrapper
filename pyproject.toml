@@ -1,5 +1,5 @@
 [tool.poetry]
-name = "tts-wrapper"
+name = "py3-tts-wrapper"
 version = "0.9.0"
 description = "TTS-Wrapper makes it easier to use text-to-speech APIs by providing a unified and easy-to-use interface."
 authors = ["Giulio Bottari <giuliobottari@gmail.com>","Will Wade <willwade@gmail.com>"]
@@ -8,6 +8,7 @@ readme = "README.md"
 repository = "https://github.com/willwade/tts-wrapper"
 documentation = "https://github.com/willwade/tts-wrapper"
 keywords = [ "tts", "text-to-speech", "speech synthesis", "polly", "sapi", "mms", "gTTS", "witai", "elevenlabs" ]
+packages = [{include = "py3_tts_wrapper"}]
 
 [tool.poetry.urls]
 "Bug Tracker" = "https://github.com/willwade/tts-wrapper/issues"
@@ -59,3 +60,7 @@ build-backend = "poetry.masonry.api"
 
 [tool.poetry.scripts]
 postinstall = "scripts.install_dependencies:main"
+
+[tool.poetry-dynamic-versioning]
+enable = true
+source = "tag"
