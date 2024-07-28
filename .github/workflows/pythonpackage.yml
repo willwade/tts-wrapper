@@ -112,6 +112,15 @@ jobs:
           GOOGLE_SA_FILE_B64: ${{ secrets.GOOGLE_SA_FILE_B64 }}
         run: poetry run make tests
 
+      - name: Build the wheel
+        run: poetry build
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v2
+        with:
+          name: dist-${{ matrix.os }}-${{ matrix.python-version }}
+          path: dist/*
+
   publish:
     runs-on: ubuntu-latest
     needs: build-and-test
@@ -130,12 +139,10 @@ jobs:
         with:
           poetry-version: "1.8.3"
 
-      - name: Install dependencies
-        run: |
-          poetry install --no-root
-
-      - name: Build the package
-        run: poetry build
+      - name: Download build artifacts from all platforms
+        uses: actions/download-artifact@v2
+        with:
+          name: dist-${{ matrix.os }}-${{ matrix.python-version }}
 
       - name: Publish to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
