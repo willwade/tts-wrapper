@@ -1,4 +1,4 @@
-.PHONY: api_tests tests publish act-build cov.xml mypy
+.PHONY: api_tests tests publish act-build cov.xml mypy all_tests
 
 tests:
 	pytest -s -m "not slow"
