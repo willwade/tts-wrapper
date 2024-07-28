@@ -28,6 +28,10 @@ class SherpaOnnxTTS(AbstractTTS):
         self._client.set_voice(voice_id)
 
     def synth_to_bytes(self, text: str, format: Optional[FileFormat] = "wav") -> bytes:
+        text = str(text)
+        if not self._is_ssml(text):
+            text = self.ssml.add(text)
+            text = str(text)
         logging.info(f"Synthesizing text: {text}")
         audio_bytes, sample_rate = self._client.synth(text)
         # I think we need to get length of audio.. 
@@ -36,6 +40,10 @@ class SherpaOnnxTTS(AbstractTTS):
         logging.info(f"Audio bytes length: {len(audio_bytes)}, Sample rate: {sample_rate}")
         self.audio_rate = sample_rate
         return audio_bytes
+
+    @property
+    def ssml(self) -> SherpaOnnxSSML:
+        return SherpaOnnxSSML()
 
     def construct_prosody_tag(self, text: str) -> str:
         # Implement SSML prosody tag construction if needed
