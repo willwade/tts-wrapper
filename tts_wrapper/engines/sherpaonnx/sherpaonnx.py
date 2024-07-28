@@ -3,7 +3,8 @@
 from typing import Any, List, Optional, Dict
 from ...exceptions import UnsupportedFileFormat
 from ...tts import AbstractTTS, FileFormat
-from . import SherpaOnnxClient, SherpaOnnxSSML
+from .client import SherpaOnnxClient  
+from . ssml import SherpaOnnxSSML
 from ...engines.utils import estimate_word_timings  # Import the timing estimation function
 import logging
 
