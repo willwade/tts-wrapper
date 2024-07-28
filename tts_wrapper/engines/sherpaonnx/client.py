@@ -21,7 +21,7 @@ class SherpaOnnxClient:
 
         self.default_model_path = model_path
         self.default_tokens_path = tokens_path if tokens_path else os.path.join(model_path, 'tokens.txt') if model_path else None
-        self._model_dir = os.path.expanduser("~/mms_models")
+        self._model_dir = model_path if model_path else os.path.expanduser("~/mms_models")
         if not os.path.exists(self._model_dir):
             try:
                 os.makedirs(self._model_dir, exist_ok=True)
