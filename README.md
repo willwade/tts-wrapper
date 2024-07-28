@@ -27,7 +27,6 @@ _TTS-Wrapper_ simplifies using text-to-speech APIs by providing a unified interf
 - SAPI (Microsoft Speech API)
 - UWP (WinRT) Speech system (win 10+)
 - Piper TTS (experimental and Linux Only)
-- MMS ([Massively Multilingual Speech from Meta](https://ai.meta.com/blog/multilingual-model-speech-recognition/)) 
 - Sherpa-Onnx (focusing on MMS models for now)
 - gTTS (GoogleTranslation TTS.)
 
@@ -54,7 +53,6 @@ _TTS-Wrapper_ simplifies using text-to-speech APIs by providing a unified interf
 | Wit.AI     | Linux/MacOS/Windows | Online         | Yes  | No                | No            |
 | Sherpa-Onnx| Linux/MacOS/Windows | Offline        | No   | No                | No            |
 | gTTS       | Linux/MacOS/Windows | Online         | No   | No                | No            |
-| MMS        | Linux/MacOS/Windows | Offline        | No   | Yes               | No            |
 | Piper      | Linux               | Offline        | No   | No                | No            |
 | UWP        | Windows             | Offline        | No   | Yes               | No            |
 | SAPI       | Windows             | Offline        | Yes  | Yes               | Yes           |
@@ -277,67 +275,6 @@ iso_code = "eng"  # Example ISO code for the voice - also ID in voice details
 tts.set_voice(iso_code)
 ```
 and then use speak, speak_streamed etc.. 
-
-### MMS
-
-```python
-from tts_wrapper import MMSTTS, MMSClient
-
-
-client = MMSClient((model_dir,lang))
-tts = MMSTTS(client)
-```
-
-- model_dir can be None - and it will create one for you in ~/mms_models
-- you can just provide a lang code. See lang codes (and TTS supported) at https://dl.fbaipublicfiles.com/mms/misc/language_coverage_mms.html
-
-eg. 
-
-
-```python
-from tts_wrapper import MMSTTS, MMSClient
-
-
-client = MMSClient((None, 'spa'))
-tts = MMSTTS(client)
-text = "Hola, este es mms hablando en español"
-tts.speak(text)
-
-```
-
-or 
-
-```python
-from tts_wrapper import MMSTTS, MMSClient
-
-
-client = MMSClient(('spa'))
-tts = MMSTTS(client)
-text = "Hola, este es mms hablando en español"
-tts.speak(text)
-
-```
-or 
-
-```python
-
-from tts_wrapper import MMSTTS, MMSClient
-import json
-import time
-from pathlib import Path
-import os
-
-# Initialize the client with custom model_dir and lang parameters
-custom_model_dir = "/path/to/custom_model_dir"
-custom_lang = "spa"
-client_custom = MMSClient((custom_model_dir, custom_lang))
-tts_custom = MMSTTS(client_custom)
-text_custom = "Hola, este es mms hablando en español"
-tts_custom.speak(text_custom)
-```
-
-- **Note:** MMS is WIP. It could break, and aspects like SSML aren't supported. 
-
 
 You then can perform the following methods.
 
