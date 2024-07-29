@@ -46,6 +46,7 @@ jobs:
         run: |
           pip install --upgrade pip setuptools wheel
           poetry run pip install --upgrade pip setuptools wheel
+          pip install --no-use-pep517 ibm-cloud-sdk-core==3.20.3
           poetry install --with dev 
           poetry install -E google -E watson -E polly -E microsoft -E googletrans -E witai -E elevenlabs
           poetry run postinstall
