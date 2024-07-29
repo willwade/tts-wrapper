@@ -16,7 +16,7 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
-        python-version: ["3.10", "3.11", "3.12"]
+        python-version: ["3.10", "3.11"]
     steps:
       - name: Checkout repo
         uses: actions/checkout@v2
@@ -44,11 +44,6 @@ jobs:
 
       - name: Update package index and install dependencies
         run: |
-          pip install --upgrade pip
-          pip install setuptools==65.5.0 wheel
-          pip install --no-build-isolation ibm-cloud-sdk-core==3.20.3
-          pip install --upgrade setuptools
-          poetry run pip install --upgrade pip setuptools wheel
           poetry install --with dev 
           poetry install -E google -E watson -E polly -E microsoft -E googletrans -E witai -E elevenlabs
           poetry run postinstall
