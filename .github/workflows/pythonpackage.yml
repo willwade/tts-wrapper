@@ -45,7 +45,6 @@ jobs:
       - name: Update package index and install dependencies
         run: |
           poetry install --with dev 
-          pip install setuptools==71.1.0
           poetry install -E google -E watson -E polly -E microsoft -E googletrans -E witai -E elevenlabs
           poetry run postinstall
 
