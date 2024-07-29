@@ -42,27 +42,10 @@ jobs:
         with:
           poetry-version: "1.8.3"
 
-      - name: Handle nasty bug # https://github.com/pypa/setuptools/issues/4519#issuecomment-2255390400
-        run: |
-          pip install --upgrade pip setuptools wheel
-          poetry export -o requirements.txt --without-hashes --all-extras
-          poetry export -f constraints.txt -o constraints.txt --without-hashes
-
-      - name: Install dependencies on Unix-based systems
-        if: matrix.os != 'windows-latest'
-        run: |
-          PIP_CONSTRAINT="$(pwd)/constraints.txt" poetry run pip install -r requirements.txt
-
-      - name: Install dependencies on Windows
-        if: matrix.os == 'windows-latest'
-        run: |
-          $env:PIP_CONSTRAINT = "$(pwd)/constraints.txt"
-          poetry run pip install -r requirements.txt
-          
       - name: Update package index and install dependencies
         run: |
-          # poetry install --with dev 
-          # poetry install -E google -E watson -E polly -E microsoft -E googletrans -E witai -E elevenlabs
+          poetry install --with dev 
+          poetry install -E google -E watson -E polly -E microsoft -E googletrans -E witai -E elevenlabs
           poetry run postinstall
 
       - name: Set environment variables and create Google credentials file on Windows
