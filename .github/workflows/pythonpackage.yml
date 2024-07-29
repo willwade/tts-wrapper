@@ -42,6 +42,11 @@ jobs:
         with:
           poetry-version: "1.8.3"
 
+      - name: Handle nasty bug # https://github.com/pypa/setuptools/issues/4519#issuecomment-2255390400
+        run: |
+          echo "PIP_CONSTRAINT=constraints.txt" >> $GITHUB_ENV
+          poetry run pip install ibm-cloud-sdk-core
+          
       - name: Update package index and install dependencies
         run: |
           poetry install --with dev 
