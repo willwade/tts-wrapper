@@ -44,14 +44,15 @@ jobs:
 
       - name: Handle nasty bug # https://github.com/pypa/setuptools/issues/4519#issuecomment-2255390400
         run: |
-          echo "PIP_CONSTRAINT=constraints.txt" >> $GITHUB_ENV
-          poetry run pip install ibm-cloud-sdk-core
-          
-      - name: Update package index and install dependencies
-        run: |
-          poetry install --with dev 
-          poetry install -E google -E watson -E polly -E microsoft -E googletrans -E witai -E elevenlabs
+          poetry export -o requirements.txt --without-hashes --all-extras
+          poetry export -f constraints.txt -o constraints.txt --without-hashes
+          PIP_CONSTRAINT="$(pwd)/constraints.txt" poetry run pip -r requirements.txt
           poetry run postinstall
+          
+      # - name: Update package index and install dependencies
+      #   run: |
+      #     poetry install --with dev 
+      #     poetry install -E google -E watson -E polly -E microsoft -E googletrans -E witai -E elevenlabs
 
       - name: Set environment variables and create Google credentials file on Windows
         if: matrix.os == 'windows-latest'
