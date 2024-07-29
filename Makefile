@@ -1,7 +1,7 @@
 .PHONY: api_tests tests publish act-build cov.xml mypy all_tests
 
 tests:
-	pytest -s -m "not slow"
+	pytest -s -m "not synthetic"
 
 all_tests:
 	source .secrets/.env && \
@@ -28,7 +28,7 @@ requirements.dev.txt: pyproject.toml requirements.txt
 	poetry export --dev --without-hashes -f requirements.txt -o requirements.dev.txt
 
 cov.xml:
-	pytest --cov-report xml:cov.xml --cov=tts_wrapper -m "not slow"
+	pytest --cov-report xml:cov.xml --cov=tts_wrapper -m "not synthetic"
 
 mypy:
 	mypy $$(git ls-files '*.py')
