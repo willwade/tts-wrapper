@@ -52,7 +52,7 @@ types-boto3 = "^1.0.2"
 pytest-cov = "^3.0.0"
 filetype = "^1.0.13"
 wheel = "^0.43.0"
-setuptools = "70.1.0"
+setuptools = "^71.1.0"
 
 [build-system]
 requires = ["poetry>=0.12"]
@@ -64,3 +64,8 @@ postinstall = "scripts.install_dependencies:main"
 [tool.poetry-dynamic-versioning]
 enable = true
 source = "tag"
+
+[tool.pytest.ini_options]
+markers = [
+    "synthetic: mark a test as synthetic"
+]
