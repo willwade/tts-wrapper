@@ -163,6 +163,7 @@ jobs:
 
       - name: Build the wheel
         run: |
+          pip install wheel 
           python setup.py bdist_wheel
           mkdir -p dist/${{ matrix.os }}-${{ matrix.python-version }}
           mv dist/*.whl dist/${{ matrix.os }}-${{ matrix.python-version }}/
