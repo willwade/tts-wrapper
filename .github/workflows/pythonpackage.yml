@@ -153,10 +153,58 @@ jobs:
         with:
           poetry-version: "1.8.3"
 
-      - name: Download build artifacts from all platforms
+      - name: Download build artifacts for macOS 3.10
         uses: actions/download-artifact@v4
         with:
-          name: dist-*
+          name: dist-macos-latest-3.10
+          path: dist
+
+      - name: Download build artifacts for macOS 3.11
+        uses: actions/download-artifact@v4
+        with:
+          name: dist-macos-latest-3.11
+          path: dist
+
+      - name: Download build artifacts for macOS 3.12
+        uses: actions/download-artifact@v4
+        with:
+          name: dist-macos-latest-3.12
+          path: dist
+
+      - name: Download build artifacts for Ubuntu 3.10
+        uses: actions/download-artifact@v4
+        with:
+          name: dist-ubuntu-latest-3.10
+          path: dist
+
+      - name: Download build artifacts for Ubuntu 3.11
+        uses: actions/download-artifact@v4
+        with:
+          name: dist-ubuntu-latest-3.11
+          path: dist
+
+      - name: Download build artifacts for Ubuntu 3.12
+        uses: actions/download-artifact@v4
+        with:
+          name: dist-ubuntu-latest-3.12
+          path: dist
+
+      - name: Download build artifacts for Windows 3.10
+        uses: actions/download-artifact@v4
+        with:
+          name: dist-windows-latest-3.10
+          path: dist
+
+      - name: Download build artifacts for Windows 3.11
+        uses: actions/download-artifact@v4
+        with:
+          name: dist-windows-latest-3.11
+          path: dist
+
+      - name: Download build artifacts for Windows 3.12
+        uses: actions/download-artifact@v4
+        with:
+          name: dist-windows-latest-3.12
           path: dist
 
       - name: List contents of dist after download
