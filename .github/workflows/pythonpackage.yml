@@ -135,14 +135,14 @@ jobs:
           Add-Content setup.py "    version=version,"
           Add-Content setup.py "    packages=find_packages(),"
           Add-Content setup.py "    install_requires=["
-          poetry export -f requirements.txt --without-hashes --all-extras | % { Add-Content setup.py ("        '$_',") }
+          poetry export -f requirements.txt --without-hashes --all-extras | ForEach-Object { $_ -replace '"', '\"' } | ForEach-Object { Add-Content setup.py ("        `"$_`",") }
           Add-Content setup.py "    ],"
           Add-Content setup.py "    # Add any additional options necessary for building platform-specific wheels"
           Add-Content setup.py ")"
         env:
           PACKAGE_VERSION: ${{ steps.set_version.outputs.version }}
 
-      - name: Generate setup.py on unix/macos
+      - name: Generate setup.py on Unix-based systems
         if: matrix.os != 'windows-latest'
         run: |
           PACKAGE_VERSION=$(poetry version --short)
@@ -154,10 +154,12 @@ jobs:
           echo "    version=version," >> setup.py
           echo "    packages=find_packages()," >> setup.py
           echo "    install_requires=[" >> setup.py
-          poetry export -f requirements.txt --without-hashes --all-extras | sed 's/^/        "/' | sed 's/$/",/' >> setup.py
+          poetry export -f requirements.txt --without-hashes --all-extras | sed 's/^/        "/' | sed 's/$/",/' | sed 's/"/\\"/g' >> setup.py
           echo "    ]," >> setup.py
           echo "    # Add any additional options necessary for building platform-specific wheels" >> setup.py
           echo ")" >> setup.py
+        env:
+          PACKAGE_VERSION: ${{ steps.set_version.outputs.version }}
 
       - name: Build the wheel
         run: |
