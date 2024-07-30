@@ -123,9 +123,45 @@ jobs:
           GOOGLE_SA_FILE_B64: ${{ secrets.GOOGLE_SA_FILE_B64 }}
         run: poetry run make tests
 
+      - name: Generate setup.py on Windows
+        if: matrix.os == 'windows-latest'
+        run: |
+          $PACKAGE_VERSION = (poetry version --short).Trim()
+          Add-Content setup.py "from setuptools import setup, find_packages"
+          Add-Content setup.py "import os"
+          Add-Content setup.py "version = os.getenv('PACKAGE_VERSION', '$PACKAGE_VERSION')"
+          Add-Content setup.py "setup("
+          Add-Content setup.py "    name='py3-tts-wrapper',"
+          Add-Content setup.py "    version=version,"
+          Add-Content setup.py "    packages=find_packages(),"
+          Add-Content setup.py "    install_requires=["
+          poetry export -f requirements.txt --without-hashes --all-extras | % { Add-Content setup.py ("        '$_',") }
+          Add-Content setup.py "    ],"
+          Add-Content setup.py "    # Add any additional options necessary for building platform-specific wheels"
+          Add-Content setup.py ")"
+        env:
+          PACKAGE_VERSION: ${{ steps.set_version.outputs.version }}
+
+      - name: Generate setup.py on unix/macos
+        if: matrix.os != 'windows-latest'
+        run: |
+          PACKAGE_VERSION=$(poetry version --short)
+          echo "from setuptools import setup, find_packages" > setup.py
+          echo "import os" >> setup.py
+          echo "version = os.getenv('PACKAGE_VERSION', '$PACKAGE_VERSION')" >> setup.py
+          echo "setup(" >> setup.py
+          echo "    name='py3-tts-wrapper'," >> setup.py
+          echo "    version=version," >> setup.py
+          echo "    packages=find_packages()," >> setup.py
+          echo "    install_requires=[" >> setup.py
+          poetry export -f requirements.txt --without-hashes --all-extras | sed 's/^/        "/' | sed 's/$/",/' >> setup.py
+          echo "    ]," >> setup.py
+          echo "    # Add any additional options necessary for building platform-specific wheels" >> setup.py
+          echo ")" >> setup.py
+
       - name: Build the wheel
         run: |
-          poetry build
+          python setup.py bdist_wheel
           mkdir -p dist/${{ matrix.os }}-${{ matrix.python-version }}
           mv dist/*.whl dist/${{ matrix.os }}-${{ matrix.python-version }}/
 
