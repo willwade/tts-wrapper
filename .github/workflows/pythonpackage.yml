@@ -129,7 +129,7 @@ jobs:
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: dist
+          name: dist-${{ matrix.os }}-${{ matrix.python-version }}
           path: dist/*
 
   publish:
@@ -153,7 +153,7 @@ jobs:
       - name: Download build artifacts from all platforms
         uses: actions/download-artifact@v2
         with:
-          name: dist
+          name: dist-*
 
       # - name: Run synthetic tests on TTS services
       #   env:
