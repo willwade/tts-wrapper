@@ -124,13 +124,16 @@ jobs:
         run: poetry run make tests
 
       - name: Build the wheel
-        run: poetry build
+        run: |
+          poetry build
+          mkdir -p dist/${{ matrix.os }}-${{ matrix.python-version }}
+          mv dist/*.whl dist/${{ matrix.os }}-${{ matrix.python-version }}/
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
         with:
           name: dist-${{ matrix.os }}-${{ matrix.python-version }}
-          path: dist/*
+          path: dist/${{ matrix.os }}-${{ matrix.python-version }}
 
   publish:
     runs-on: ubuntu-latest
