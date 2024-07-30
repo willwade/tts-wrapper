@@ -26,7 +26,6 @@ _TTS-Wrapper_ simplifies using text-to-speech APIs by providing a unified interf
 - PicoTTS
 - SAPI (Microsoft Speech API)
 - UWP (WinRT) Speech system (win 10+)
-- Piper TTS (experimental and Linux Only)
 - Sherpa-Onnx (focusing on MMS models for now)
 - gTTS (GoogleTranslation TTS.)
 
@@ -53,7 +52,6 @@ _TTS-Wrapper_ simplifies using text-to-speech APIs by providing a unified interf
 | Wit.AI     | Linux/MacOS/Windows | Online         | Yes  | No                | No            |
 | Sherpa-Onnx| Linux/MacOS/Windows | Offline        | No   | No                | No            |
 | gTTS       | Linux/MacOS/Windows | Online         | No   | No                | No            |
-| Piper      | Linux               | Offline        | No   | No                | No            |
 | UWP        | Windows             | Offline        | No   | Yes               | No            |
 | SAPI       | Windows             | Offline        | Yes  | Yes               | Yes           |
 | NSS        | MacOS               | Offline        | Yes  | Yes               | Yes           |
@@ -228,15 +226,6 @@ client = UWPClient()
 tts = UWPTTS(client)
 ```
 
-### Piper
-
-```python
-from tts_wrapper import PiperTTS, PiperClient
-client = PiperClient()
-tts = PiperTTS(client)
-```
-
-- **Note:** Piper is experimental and only works on Linux only right now. Please also note SSML is not supported so SSML tags will just be rendered as text.
 
 ### GoogleTrans
 
