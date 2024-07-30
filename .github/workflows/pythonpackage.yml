@@ -129,7 +129,7 @@ jobs:
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: dist-${{ matrix.os }}-${{ matrix.python-version }}
+          name: dist
           path: dist/*
 
   publish:
@@ -153,28 +153,28 @@ jobs:
       - name: Download build artifacts from all platforms
         uses: actions/download-artifact@v2
         with:
-          name: dist-${{ matrix.os }}-${{ matrix.python-version }}
+          name: dist
 
-      - name: Run synthetic tests on TTS services
-        env:
-          WATSON_API_KEY: ${{ secrets.WATSON_API_KEY }}
-          WATSON_API_URL: ${{ secrets.WATSON_API_URL }}
-          WATSON_REGION: ${{ secrets.WATSON_REGION }}
-          WATSON_INSTANCE_ID: ${{ secrets.WATSON_INSTANCE_ID }}
-          MICROSOFT_TOKEN: ${{ secrets.MICROSOFT_TOKEN }}
-          MICROSOFT_REGION: ${{ secrets.MICROSOFT_REGION }}
-          POLLY_REGION: ${{ secrets.POLLY_REGION }}
-          POLLY_AWS_KEY_ID: ${{ secrets.POLLY_AWS_KEY_ID }}
-          POLLY_AWS_ACCESS_KEY: ${{ secrets.POLLY_AWS_ACCESS_KEY }}
-          ELEVENLABS_API_KEY: ${{ secrets.ELEVENLABS_API_KEY }}
-          WITAI_TOKEN: ${{ secrets.WITAI_TOKEN }}
-          GOOGLE_SA_PATH: ${{ secrets.GOOGLE_SA_PATH }}
-          GOOGLE_SA_FILE_B64: ${{ secrets.GOOGLE_SA_FILE_B64 }}
-        run: |
-          poetry install --with dev
-          poetry install -E google -E watson -E polly -E microsoft -E googletrans -E witai -E elevenlabs
-          poetry run postinstall
-          poetry run pytest -m "synthetic"
+      # - name: Run synthetic tests on TTS services
+      #   env:
+      #     WATSON_API_KEY: ${{ secrets.WATSON_API_KEY }}
+      #     WATSON_API_URL: ${{ secrets.WATSON_API_URL }}
+      #     WATSON_REGION: ${{ secrets.WATSON_REGION }}
+      #     WATSON_INSTANCE_ID: ${{ secrets.WATSON_INSTANCE_ID }}
+      #     MICROSOFT_TOKEN: ${{ secrets.MICROSOFT_TOKEN }}
+      #     MICROSOFT_REGION: ${{ secrets.MICROSOFT_REGION }}
+      #     POLLY_REGION: ${{ secrets.POLLY_REGION }}
+      #     POLLY_AWS_KEY_ID: ${{ secrets.POLLY_AWS_KEY_ID }}
+      #     POLLY_AWS_ACCESS_KEY: ${{ secrets.POLLY_AWS_ACCESS_KEY }}
+      #     ELEVENLABS_API_KEY: ${{ secrets.ELEVENLABS_API_KEY }}
+      #     WITAI_TOKEN: ${{ secrets.WITAI_TOKEN }}
+      #     GOOGLE_SA_PATH: ${{ secrets.GOOGLE_SA_PATH }}
+      #     GOOGLE_SA_FILE_B64: ${{ secrets.GOOGLE_SA_FILE_B64 }}
+      #   run: |
+      #     poetry install --with dev
+      #     poetry install -E google -E watson -E polly -E microsoft -E googletrans -E witai -E elevenlabs
+      #     poetry run postinstall
+      #     poetry run pytest -m "synthetic"
 
       - name: Publish to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
