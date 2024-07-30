@@ -154,7 +154,7 @@ jobs:
           echo "    version=version," >> setup.py
           echo "    packages=find_packages()," >> setup.py
           echo "    install_requires=[" >> setup.py
-          poetry export -f requirements.txt --without-hashes --all-extras | sed 's/^/        "/' | sed 's/$/",/' | sed 's/"/\\"/g' >> setup.py
+          poetry export -f requirements.txt --without-hashes --all-extras | sed 's/"/\\"/g' | sed 's/^/        "/' | sed 's/$/",/' >> setup.py
           echo "    ]," >> setup.py
           echo "    # Add any additional options necessary for building platform-specific wheels" >> setup.py
           echo ")" >> setup.py
