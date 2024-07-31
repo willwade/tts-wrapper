@@ -201,7 +201,9 @@ jobs:
 
       - name: Basic tests with pytest
         if: matrix.os == 'windows-latest'
-        run: make tests
+        run: |
+          pip install pytest
+          make tests
 
       - name: Upload Coverage to Codecov
         if: ${{ !env.ACT }} && github.event_name == 'push'
