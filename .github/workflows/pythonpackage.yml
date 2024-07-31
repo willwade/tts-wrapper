@@ -75,6 +75,7 @@ jobs:
 
   # Test both wheel and from poetry - on a range of platforms and versions
   test:
+    needs: build
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
