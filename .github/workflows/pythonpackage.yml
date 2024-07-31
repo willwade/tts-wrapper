@@ -1,3 +1,4 @@
+
 name: Build, Test, and Publish
 
 on:
@@ -16,6 +17,8 @@ jobs:
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Ensure all tags are fetched
 
       - name: Set up Python 3.11
         uses: actions/setup-python@v5
@@ -57,8 +60,7 @@ jobs:
         with:
           name: dist
           path: dist
-        
-  # Test both wheel and from poetry - on a range of platforms and versions
+
   test:
     needs: build
     runs-on: ${{ matrix.os }}
@@ -85,7 +87,6 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-poetry-
 
-              
       - name: Install system dependencies on Linux
         if: matrix.os == 'ubuntu-latest'
         run: |
@@ -171,49 +172,6 @@ jobs:
           GOOGLE_SA_PATH: ${{ secrets.GOOGLE_SA_PATH }}
           GOOGLE_SA_FILE_B64: ${{ secrets.GOOGLE_SA_FILE_B64 }}
         run: poetry run make tests
-  
-        # Building the wheel is failing. I dont know why
-      # - name: Download build artifacts 
-      #   uses: actions/download-artifact@v4
-      #   with:
-      #     name: dist
-      #     path: dist
-
-      # - name: Debug environment variables
-      #   if: matrix.os == 'windows-latest'
-      #   run: |
-      #     Write-Output "Environment variables:"
-      #     Get-ChildItem env: | Sort-Object Name
-
-      # - name: Debug environment variables
-      #   if: matrix.os != 'windows-latest'
-      #   run: |
-      #     echo "Environment variables:"
-      #     env
-
-      # - name: Install wheel package on Windows
-      #   if: matrix.os == 'windows-latest'
-      #   run: |
-      #     $wheel = Get-ChildItem -Path dist\*.whl | Select-Object -First 1
-      #     Write-Output "Installing $($wheel.Name)"
-      #     python -m pip install --upgrade pip
-      #     pip install $wheel.FullName
-
-      # - name: Install wheel package on Linux/Mac
-      #   if: matrix.os != 'windows-latest'
-      #   run: |
-      #     WHEEL_FILE=$(ls dist/*.whl)
-      #     echo "Installing $WHEEL_FILE"
-      #     pip install "$WHEEL_FILE"  --verbose
-
-      # - name: Basic tests with pytest
-      #   run: |
-      #     pip install pytest
-      #     make tests
-
-      # - name: Upload Coverage to Codecov
-      #   if: ${{ !env.ACT }} && github.event_name == 'push'
-      #   uses: codecov/codecov-action@v2
 
   publish:
     runs-on: ubuntu-latest
@@ -229,27 +187,6 @@ jobs:
 
       - name: List contents of dist after download
         run: ls -R dist
-
-      # - name: Run synthetic tests on TTS services
-      #   env:
-      #     WATSON_API_KEY: ${{ secrets.WATSON_API_KEY }}
-      #     WATSON_API_URL: ${{ secrets.WATSON_API_URL }}
-      #     WATSON_REGION: ${{ secrets.WATSON_REGION }}
-      #     WATSON_INSTANCE_ID: ${{ secrets.WATSON_INSTANCE_ID }}
-      #     MICROSOFT_TOKEN: ${{ secrets.MICROSOFT_TOKEN }}
-      #     MICROSOFT_REGION: ${{ secrets.MICROSOFT_REGION }}
-      #     POLLY_REGION: ${{ secrets.POLLY_REGION }}
-      #     POLLY_AWS_KEY_ID: ${{ secrets.POLLY_AWS_KEY_ID }}
-      #     POLLY_AWS_ACCESS_KEY: ${{ secrets.POLLY_AWS_ACCESS_KEY }}
-      #     ELEVENLABS_API_KEY: ${{ secrets.ELEVENLABS_API_KEY }}
-      #     WITAI_TOKEN: ${{ secrets.WITAI_TOKEN }}
-      #     GOOGLE_SA_PATH: ${{ secrets.GOOGLE_SA_PATH }}
-      #     GOOGLE_SA_FILE_B64: ${{ secrets.GOOGLE_SA_FILE_B64 }}
-      #   run: |
-      #     poetry install --with dev
-      #     poetry install -E google -E watson -E polly -E microsoft -E googletrans -E witai -E elevenlabs
-      #     poetry run postinstall
-      #     poetry run pytest -m "synthetic"
 
       - name: Publish to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
