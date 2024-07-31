@@ -216,7 +216,7 @@ jobs:
         run: |
           WHEEL_FILE=$(ls dist/*.whl)
           echo "Installing $WHEEL_FILE"
-          pip install "$WHEEL_FILE"
+          pip install "$WHEEL_FILE"  --verbose
 
       - name: Basic tests with pytest
         run: |
