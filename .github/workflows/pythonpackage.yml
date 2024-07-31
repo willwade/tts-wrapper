@@ -43,9 +43,31 @@ jobs:
           poetry install -E google -E watson -E polly -E microsoft -E googletrans -E witai -E elevenlabs
           poetry run postinstall
 
+      # - name: Extract version from GitHub ref on *nix
+      #   id: extract_version
+      #   run: |
+      #     REF_NAME=${{ github.ref_name }}
+      #     if [[ $REF_NAME == v* ]]; then
+      #       VERSION=${REF_NAME:1}
+      #     else
+      #       VERSION=$REF_NAME
+      #     fi
+      #     echo "VERSION=$VERSION" >> $GITHUB_ENV
+
+      - name: Extract version from GitHub ref on Windows
+        id: extract_version
+        run: |
+          $refName = "${{ github.ref_name }}"
+          if ($refName.StartsWith("v")) {
+            $version = $refName.Substring(1)
+          } else {
+            $version = $refName
+          }
+          echo "VERSION=$version" | Out-File -FilePath $env:GITHUB_ENV -Append
+
       - name: Generate setup.py on Windows
         run: |
-          $PACKAGE_VERSION = "${{ steps.set_version.outputs.version }}"
+          $PACKAGE_VERSION = "${{ env.VERSION }}"
           $README_CONTENT = Get-Content README.md -Raw
           Add-Content setup.py "from setuptools import setup, find_packages"
           Add-Content setup.py "import os"
@@ -64,7 +86,7 @@ jobs:
           Add-Content setup.py "    # Add any additional options necessary for building platform-specific wheels"
           Add-Content setup.py ")"
         env:
-          PACKAGE_VERSION: ${{ steps.set_version.outputs.version }}
+          PACKAGE_VERSION: ${{ env.VERSION }}
 
 
       # We used to build on all platforms. Just incase we need to do that..
