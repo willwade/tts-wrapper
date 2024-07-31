@@ -46,9 +46,12 @@ jobs:
       - name: Generate setup.py on Windows
         run: |
           $PACKAGE_VERSION = (poetry version --short).Trim()
+          $README_CONTENT = Get-Content README.md -Raw
           Add-Content setup.py "from setuptools import setup, find_packages"
           Add-Content setup.py "import os"
           Add-Content setup.py "version = os.getenv('PACKAGE_VERSION', '$PACKAGE_VERSION')"
+          Add-Content setup.py "with open('README.md', 'r', encoding='utf-8') as fh:"
+          Add-Content setup.py "    long_description = fh.read()"
           Add-Content setup.py "setup("
           Add-Content setup.py "    name='py3-tts-wrapper',"
           Add-Content setup.py "    version=version,"
@@ -56,10 +59,33 @@ jobs:
           Add-Content setup.py "    install_requires=["
           poetry export -f requirements.txt --without-hashes --all-extras | ForEach-Object { $_ -replace '"', '\"' } | ForEach-Object { Add-Content setup.py ("        `"$_`",") }
           Add-Content setup.py "    ],"
+          Add-Content setup.py "    long_description=long_description,"
+          Add-Content setup.py "    long_description_content_type='text/markdown',"
           Add-Content setup.py "    # Add any additional options necessary for building platform-specific wheels"
           Add-Content setup.py ")"
         env:
           PACKAGE_VERSION: ${{ steps.set_version.outputs.version }}
+
+
+      # We used to build on all platforms. Just incase we need to do that..
+      # - name: Generate setup.py on Unix-based systems
+      #   if: matrix.os != 'windows-latest'
+      #   run: |
+      #     PACKAGE_VERSION=$(poetry version --short)
+      #     echo "from setuptools import setup, find_packages" > setup.py
+      #     echo "import os" >> setup.py
+      #     echo "version = os.getenv('PACKAGE_VERSION', '$PACKAGE_VERSION')" >> setup.py
+      #     echo "setup(" >> setup.py
+      #     echo "    name='py3-tts-wrapper'," >> setup.py
+      #     echo "    version=version," >> setup.py
+      #     echo "    packages=find_packages()," >> setup.py
+      #     echo "    install_requires=[" >> setup.py
+      #     poetry export -f requirements.txt --without-hashes --all-extras | sed 's/"/\\"/g' | sed 's/^/        "/' | sed 's/$/",/' >> setup.py
+      #     echo "    ]," >> setup.py
+      #     echo "    # Add any additional options necessary for building platform-specific wheels" >> setup.py
+      #     echo ")" >> setup.py
+      #   env:
+      #     PACKAGE_VERSION: ${{ steps.set_version.outputs.version }}
 
       - name: Build the wheel
         run: |
