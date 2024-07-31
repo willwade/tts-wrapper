@@ -198,6 +198,12 @@ jobs:
           Write-Output "Environment variables:"
           Get-ChildItem env: | Sort-Object Name
 
+      - name: Debug environment variables
+        if: matrix.os != 'windows-latest'
+        run: |
+          echo "Environment variables:"
+          env
+
       - name: Install wheel package on Windows
         if: matrix.os == 'windows-latest'
         run: |
