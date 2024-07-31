@@ -192,6 +192,12 @@ jobs:
           name: dist
           path: dist
 
+      - name: Debug environment variables
+        if: matrix.os == 'windows-latest'
+        run: |
+          Write-Output "Environment variables:"
+          Get-ChildItem env: | Sort-Object Name
+
       - name: Install wheel package on Windows
         if: matrix.os == 'windows-latest'
         run: |
@@ -199,8 +205,14 @@ jobs:
           Write-Output "Installing $($wheel.Name)"
           pip install $wheel.FullName
 
+      - name: Install wheel package on Linux/Mac
+        if: matrix.os != 'windows-latest'
+        run: |
+          WHEEL_FILE=$(ls dist/*.whl)
+          echo "Installing $WHEEL_FILE"
+          pip install "$WHEEL_FILE"
+
       - name: Basic tests with pytest
-        if: matrix.os == 'windows-latest'
         run: |
           pip install pytest
           make tests
