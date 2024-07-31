@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "py3-tts-wrapper"
-version = "0.9.0"
+version = "0.9.7"
 description = "TTS-Wrapper makes it easier to use text-to-speech APIs by providing a unified and easy-to-use interface."
 authors = ["Giulio Bottari <giuliobottari@gmail.com>","Will Wade <willwade@gmail.com>"]
 license = "MIT"
@@ -35,7 +35,7 @@ pydub={ version = "^0.25.1", optional = true }
 google = ["google-cloud-texttospeech"]
 watson = ["ibm-watson", "websocket", "requests"]
 polly = ["boto3"]
-Microsoft = ["azure.cognitiveservices.speech"]
+microsoft = ["azure.cognitiveservices.speech"]
 elevenlabs = ["requests","numpy"]
 witai = ["requests"]
 sapi = ["py3-tts"]
@@ -65,7 +65,6 @@ postinstall = "scripts.install_dependencies:main"
 
 [tool.poetry-dynamic-versioning]
 enable = true
-source = "tag"
 
 [tool.pytest.ini_options]
 markers = [
