@@ -209,6 +209,7 @@ jobs:
         run: |
           $wheel = Get-ChildItem -Path dist\*.whl | Select-Object -First 1
           Write-Output "Installing $($wheel.Name)"
+          python -m pip install --upgrade pip
           pip install $wheel.FullName
 
       - name: Install wheel package on Linux/Mac
