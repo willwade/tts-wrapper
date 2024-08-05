@@ -24,10 +24,11 @@ _TTS-Wrapper_ simplifies using text-to-speech APIs by providing a unified interf
 ### Experimental (Not fully featured or in a state of WIP)
 
 - PicoTTS
-- SAPI (Microsoft Speech API)
 - UWP (WinRT) Speech system (win 10+)
 - Sherpa-Onnx (focusing on MMS models for now)
 - gTTS (GoogleTranslation TTS.)
+- eSpeak/SAPI (Microsoft Speech API)/NSSS
+
 
 ## Features
 - **Text to Speech**: Convert text into spoken audio.
@@ -55,16 +56,13 @@ _TTS-Wrapper_ simplifies using text-to-speech APIs by providing a unified interf
 | UWP        | Windows             | Offline        | No   | Yes               | No            |
 | SAPI       | Windows             | Offline        | Yes  | Yes               | Yes           |
 | NSS        | MacOS               | Offline        | Yes  | Yes               | Yes           |
+| eSpeak     | Linux/MacOS/Windows | Offline        | No   | Yes               | No            |
 
 **Notes**:
 
 * For methods like speak, speak_streamed etc, these are supported by all engines. The table above is really those features where it can't be matched across the board. 
 * For SSML where it says  'no' you can send the engine SSML we will just strip it
 * For onWord Events. For Engines where it is a no we have a very bad fallback mechanism which will emit word timings based on estimation. You cant rely on this for accurate use cases. 
-* Piper should be multiplatform. Its just got dependency issues that make this tricky right now
-* MMS has some snags around python versions. We are finding that for some reason you need it to be fixed to 3.11.4 
-* For SAPI and NSS - use py3-tts rather than tts-wrapper. We haven't really implemented the cross-over very well for this as I saw no point
-* *I recommend using sherpa-onnx over MMS for MMS*. Note sherpa-onnx is right now really designed with MMS models in mind. We download models automatically. But we dont support all the features of eg word events and ssml. Be warned
 
 ## To-Do
 
@@ -225,6 +223,19 @@ from tts_wrapper import UWPTTS, UWPClient
 client = UWPClient()
 tts = UWPTTS(client)
 ```
+
+### SAPI/eSpeak/NSSS
+
+```python
+from tts_wrapper import SAPIClient, SAPITTS
+client = SAPIClient('espeak') # eSpeak
+client = SAPIClient('sapi') #SAPI
+client = SAPIClient('nsss') #NSSS MacOS
+# Initialize the TTS engine
+tts = SAPITTS(client)
+```
+
+**Just note: We cant do word timings in this.**
 
 
 ### GoogleTrans
