@@ -11,139 +11,93 @@ FORMATS = {
 }
 
 class SAPIClient:
-    def __init__(self, driver: Optional[str] = None) -> None:
+    def __init__(self):
         try:
-            import pyttsx3  # type: ignore
+            from comtypes import client
+            from comtypes.gen import SpeechLib
+            engine = client.CreateObject("SAPI.SpVoice")
+            stream = client.CreateObject("SAPI.SpFileStream")
+            self._tts = client.CreateObject('SAPI.SpVoice')
         except ImportError:
-            raise ModuleNotInstalled("pyttsx3")
-            pyttsx3 = None
+            raise ModuleNotInstalled("comtypes is not installed")
 
+    def synth(self, text, filename=None):
+        if filename:
+            # Save speech to file
+            stream = client.CreateObject('SAPI.SpFileStream')
+            stream.Open(filename, SpeechLib.SSFMCreateForWrite)
+            self._tts.AudioOutputStream = stream
+            self._tts.Speak(text)
+            stream.Close()
+        else:
+            # Speak directly
+            self._tts.Speak(text)
 
-        # Determine the default driver based on the platform
-        if driver is None:
-            self._system = platform.system()
-            if self._system == "Windows":
-                driver = "sapi5"
-            elif self._system == "Darwin":
-                driver = "nsss"
-                try:
-                    from pydub import AudioSegment
-                except ImportError:
-                    raise ModuleNotInstalled("pydub")
-            elif self._system == "Linux":
-                driver = "espeak"
-            else:
-                raise ValueError("Unsupported operating system")
+    def synth_with_timings(self, text, voice_id, format='wav'):
+        # Set the voice
+        self.set_voice(voice_id)
 
-        try:
-            self._client = pyttsx3.init(driver)
-            if driver == 'sapi5':
-                default_voice = 'David'
-            elif driver == 'nsss':
-                default_voice = 'com.apple.voice.compact.en-US.Samantha'
-            elif driver == 'espeak':
-                default_voice = 'English (America)'  # You may need to adjust based on available voices
+        # Create a temporary stream to capture audio data and word timings
+        audio_stream = client.CreateObject('SAPI.SpMemoryStream')
+        self._tts.AudioOutputStream = audio_stream
+        word_timings = []
 
-            self.properties = {
-                "rate": 100,
-                "volume": 1.0,
-                "pitch": "medium",
-                "voice": default_voice
-            }
-        except Exception as e:
-            raise RuntimeError(f"Failed to initialize pyttsx3 with driver '{driver}': {e}")
+        def on_word_start(_stream_number, _stream_position, _character_position, length):
+            # Capture the start time and length of each word
+            word_timings.append((_character_position, length))
 
+        # Add event listener for word start
+        self._tts.EventInterests = SpeechLib.SpeechVoiceEvents.SVEWordBoundary
+        self._tts.SetNotifySink(on_word_start)
 
-    def synth(self, text: str) -> bytes:
-        temp_filename = create_temp_filename(".wav")
-        # On a mac its actually a aiff file
-        self._client.save_to_file(text, temp_filename)
-        self._client.runAndWait()
-        
-        if self._system == 'Darwin':
-            try:
-                from pydub import AudioSegment
-            except ImportError:
-                raise ModuleNotInstalled("pydub")
-            aiff_audio = AudioSegment.from_file(temp_filename, format="aiff")
-            aiff_audio.export(temp_filename, format="wav")
+        # Speak the text, capture audio
+        self._tts.Speak(text, SpeechLib.SpeechVoiceSpeakFlags.SVSFlagsAsync)
 
-        with open(temp_filename, "rb") as temp_f:
-            content = temp_f.read()
-        os.remove(temp_filename)
-        return content
+        # Wait for speaking to finish
+        while self._tts.Status.RunningState == SpeechLib.SpeechRunState.SRSEIsSpeaking:
+            pythoncom.PumpWaitingMessages()
 
-    def get_voices(self) -> List[Dict[str, Any]]:
-        """Fetches available voices and returns a standardized list of voice properties."""
-        voices = self._client.getProperty('voices')
+        # Retrieve audio data
+        audio_stream.Seek(0, 0)
+        audio_data = audio_stream.Read(audio_stream.Seek(0, 2))
+
+        return audio_data, word_timings
+
+    def _standardize_gender(self, gender):
+        # Example function to standardize gender; can be customized
+        gender_map = {
+            SpeechLib.SpeechVoiceGender.SVGFemale: 'Female',
+            SpeechLib.SpeechVoiceGender.SVGMale: 'Male',
+            SpeechLib.SpeechVoiceGender.SVGBoth: 'Both',
+            SpeechLib.SpeechVoiceGender.SVGUnknown: 'Unknown'
+        }
+        return gender_map.get(gender, 'unknown')
+
+    def get_voices(self):
+        voices = self._tts.GetVoices()
         standardized_voices = []
 
         for voice in voices:
             voice_data = {
-                'id': voice.id,
-                'name': voice.name,
-                'languages': str(voice.languages).replace('_','-'),
-                'gender': self._standardize_gender(voice.gender),
-                'age': voice.age,
-                'voice_uri': voice.id  # or any other unique identifier available
+                'id': voice.Id,
+                'name': voice.GetDescription(),
+                'languages': str(voice.GetAttribute('Language')).replace('_', '-'),
+                'gender': self._standardize_gender(voice.GetAttribute('Gender')),
+                'age': voice.GetAttribute('Age'),  # Placeholder; actual attribute name may differ
+                'voice_uri': voice.Id
             }
             standardized_voices.append(voice_data)
 
         return standardized_voices
+    
+    def set_voice(self, voice_id):
+        for token in self._tts.GetVoices():
+            if token.Id == voice_id:
+                self._tts.Voice = token
+                break
 
-    def _standardize_gender(self, gender: str) -> str:
-        """Converts gender information to a standardized format."""
-        gender = gender.lower()
-        if "male" in gender:
-            return "Male"
-        elif "female" in gender:
-            return "Female"
-        elif "neutral" in gender or "unknown" in gender:
-            return "Neutral"
-        else:
-            return "Unknown"
+    def set_rate(self, rate):
+        self._tts.Rate = rate
 
-    def set_voice(self, voice_id: str):
-        """Sets the voice based on the provided voice_id."""
-        voices = self.get_voices()
-        matching_voice = next((voice for voice in voices if voice['id'] == voice_id), None)
-
-        if matching_voice:
-            self._client.setProperty('voice', matching_voice['id'])
-        else:
-            raise ValueError(f"Voice with ID '{voice_id}' not found.")
-
-    def get_property(self, property_name):
-        """Get the value of a TTS property."""
-        return self.properties.get(property_name, None)
-
-    def set_property(self, property_name, value):
-        """Set the value of a TTS property."""
-        self.properties[property_name] = value
-
-        if property_name == "rate":
-            self._client.setProperty('rate', self._map_rate(value))
-        elif property_name == "volume":
-            self._client.setProperty('volume', self._map_volume(value))
-        elif property_name == "pitch":
-            # Since pyttsx3 does not support pitch, we keep this for interface consistency.
-            self.properties[property_name] = value
-        elif property_name == "voice":
-            self.set_voice(value)
-
-    def _map_rate(self, rate: str) -> int:
-        """Maps abstract rate settings to pyttsx3-compatible rate values."""
-        rate_mapping = {
-            "x-slow": 50,
-            "slow": 100,
-            "medium": 150,
-            "fast": 200,
-            "x-fast": 250
-        }
-        return rate_mapping.get(rate, 150)
-
-    def _map_volume(self, volume: str) -> float:
-        """Maps volume from 0-100 scale to pyttsx3 0-1 scale."""
-        return float(volume) / 100.0
-
-
+    def set_volume(self, volume):
+        self._tts.Volume = int(volume * 100)

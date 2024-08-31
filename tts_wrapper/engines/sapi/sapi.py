@@ -3,6 +3,8 @@ from ...exceptions import UnsupportedFileFormat
 from ...tts import AbstractTTS, FileFormat
 from . import SAPIClient
 from . ssml import SAPISSML
+from ..utils import process_wav
+import io
 
 class SAPITTS(AbstractTTS):
     @classmethod
@@ -16,73 +18,41 @@ class SAPITTS(AbstractTTS):
     def set_voice(self, voice_id: str, lang_id: Optional[str] = None):
         """Set the TTS voice by ID and optionally set the language ID."""
         self._client.set_voice(voice_id)
-        
 
-    def synth_to_bytes(self, text: Any, format: Optional[Literal['wav', 'mp3']] = None) -> bytes:
-        # Default format to 'wav' if not specified
-        if format is None:
-            format = 'wav'
-        
-        # Ensure the requested format is supported
+    def synth_to_bytes(self, text, format='wav'):
         if format not in self.supported_formats():
             raise UnsupportedFileFormat(format, self.__class__.__name__)
 
-        return self._client.synth(str(text))
+        if not self._is_ssml(str(text)):
+            # Convert plain text to SSML
+            text = f"<speak>{text}</speak>"
 
-        
+        result = self.client.synth_with_timings(str(text), self._voice, format)
+
+        if isinstance(result, tuple) and len(result) == 2:
+            self.generated_audio, word_timings = result
+        else:
+            self.generated_audio = result
+            word_timings = []
+
+        processed_timings = self._process_word_timings(word_timings)
+        self.set_timings(processed_timings)
+        return self.generated_audio
+
+    def _process_word_timings(self, word_timings):
+        # Implement logic to convert word timings to a suitable format
+        processed_timings = []
+        for timing in word_timings:
+            # Process each timing to calculate end times, etc.
+            start_time, length = timing
+            end_time = start_time + length / 1000.0  # Convert length from ms to seconds
+            word = ""  # Placeholder for the actual word (if retrievable)
+            processed_timings.append((start_time, end_time, word))
+        return processed_timings   
+            
     @property
     def ssml(self) -> SAPISSML:
         return SAPISSML()
 
     def get_voices(self):
         return self._client.get_voices()
-
-    def get_property(self, property_name):
-        """Get the value of a TTS property."""
-        return self._client.get_property(property_name)
-
-    def set_property(self, property_name, value):
-        """Set the value of a TTS property."""
-        return self._client.set_property(property_name,value)
-
-
-    def construct_prosody_tag(self, text: str) -> str:
-        """Constructs a prosody tag for consistency."""
-        properties = []
-
-        volume_in_number = self.get_property("volume")
-        if volume_in_number is not None:
-            volume_in_words = self._map_volume_to_predefined_word(volume_in_number)
-            properties.append(f'volume="{volume_in_words}"')
-
-        rate = self.get_property("rate")
-        if rate is not None:
-            properties.append(f'rate="{rate}"')
-
-        # Since pyttsx3 does not support pitch, we just append the pitch for consistency
-        pitch = self.get_property("pitch")
-        if pitch is not None:
-            properties.append(f'pitch="{pitch}"')
-
-        prosody_content = " ".join(properties)
-        text_with_tag = f'<prosody {prosody_content}>{text}</prosody>'
-
-        return text_with_tag
-
-    def _map_volume_to_predefined_word(self, volume: str) -> str:
-        """Maps volume to predefined descriptive terms."""
-        volume_in_float = float(volume)
-        if volume_in_float == 0:
-            return "silent"
-        elif 1 <= volume_in_float <= 20:
-            return "x-soft"
-        elif 21 <= volume_in_float <= 40:
-            return "soft"
-        elif 41 <= volume_in_float <= 60:
-            return "medium"
-        elif 61 <= volume_in_float <= 80:
-            return "loud"
-        elif 81 <= volume_in_float <= 100:
-            return "x-loud"
-        else:
-            return "medium"
