@@ -7,6 +7,11 @@ from .client import SherpaOnnxClient
 from . ssml import SherpaOnnxSSML
 from ...engines.utils import estimate_word_timings  # Import the timing estimation function
 import logging
+import numpy as np
+import threading
+import queue
+import pyaudio
+import time
 
 class SherpaOnnxTTS(AbstractTTS):
     @classmethod
@@ -18,14 +23,14 @@ class SherpaOnnxTTS(AbstractTTS):
         self._client = client
         if voice:
             self.set_voice(voice, lang)
-        self.audio_rate = None
+        self.audio_rate = self._client.sample_rate
 
     def get_voices(self) -> List[Dict[str, Any]]:
         return self._client.get_voices()
 
     def set_voice(self, voice_id: str, lang_id: Optional[str] = None):
-        super().set_voice(voice_id, lang_id)
-        self._client.set_voice(voice_id)
+            self._client.set_voice(voice_id)
+            self.audio_rate = self._client.sample_rate  # Update the audio_rate based on the selected voice
 
     def synth_to_bytes(self, text: str, format: Optional[FileFormat] = "wav") -> bytes:
         text = str(text)
@@ -34,12 +39,116 @@ class SherpaOnnxTTS(AbstractTTS):
             text = str(text)
         logging.info(f"Synthesizing text: {text}")
         audio_bytes, sample_rate = self._client.synth(text)
-        # I think we need to get length of audio.. 
-#         word_timings = estimate_word_timings(str(text))
-#         self.set_timings(word_timings)
         logging.info(f"Audio bytes length: {len(audio_bytes)}, Sample rate: {sample_rate}")
         self.audio_rate = sample_rate
         return audio_bytes
+
+    def speak_streamed(self, text: str, format: Optional[FileFormat] = "wav"):
+        logging.info("[SherpaOnnxTTS.speak_streamed] Starting speech synthesis...")
+
+        # Reset the position and prepare the audio queue
+        self.position = 0
+        self.audio_bytes = b""  # Initialize audio_bytes as empty bytes
+        self._client.audio_queue = queue.Queue()
+
+        # Start generating audio data
+        self._client.synth_streaming(text)
+
+        # Buffer enough data before starting playback
+        while self._client.audio_queue.empty():
+            time.sleep(0.1)
+
+        # Start playback in a separate thread
+        self.play_thread = threading.Thread(target=self._start_stream)
+        self.play_thread.start()
+
+        # Wait for playback to finish
+        self.play_thread.join()
+        logging.info("Playback finished.")
+
+    def _start_stream(self):
+        self.setup_stream(output_file='output.wav') 
+        logging.info("Stream started, entering active loop.")
+        self.playing.set()
+
+        while self.stream.is_active():
+            logging.info("Stream is active, waiting for audio data...")
+            time.sleep(0.1)  # This should allow the stream to process callbacks
+
+        self.stop_audio()
+        logging.info("Stream playback completed.")
+
+    def setup_stream(self, format=pyaudio.paInt16, channels=1, output_file=None):
+        if self.audio_rate is None:
+            raise ValueError("Audio rate is not set. Cannot set up the stream.")
+        if self.p is None:
+            self.p = pyaudio.PyAudio()
+        if self.stream is not None:
+            self.stream.stop_stream()
+            self.stream.close()
+            self.stream = None
+        
+        self.output_file = output_file
+
+        logging.info(f"Setting up stream with format={format}, channels={channels}, rate={self.audio_rate}")
+
+        self.stream = self.p.open(format=format,
+                                channels=channels,
+                                rate=self.audio_rate,
+                                output=True,
+                                frames_per_buffer=1024,  # Adjust this as needed
+                                stream_callback=self.callback)
+        
+        if self.output_file:
+            try:
+                import wave
+            except ImportError:
+                logging.error("Wave module not available. Cannot write audio to file.")
+                self.output_file = None
+            self.wave_file = wave.open(self.output_file, 'wb')
+            self.wave_file.setnchannels(channels)
+            self.wave_file.setsampwidth(self.p.get_sample_size(format))
+            self.wave_file.setframerate(self.audio_rate)
+
+    def stop_audio(self):
+        self.playing.clear()
+        
+        # Check if we are trying to join the current thread
+        if threading.current_thread() is not self.play_thread:
+            if self.play_thread and self.play_thread.is_alive():
+                self.play_thread.join()
+        
+        with self.stream_lock:
+            if self.stream:
+                self.stream.stop_stream()
+                self.stream.close()
+                self.stream = None
+                
+        for timer in self.timers:
+            timer.cancel()
+        self.timers.clear()
+
+    def callback(self, in_data, frame_count, time_info, status):
+        try:
+            samples = self._client.audio_queue.get_nowait()
+        except queue.Empty:
+            logging.info("Queue empty, returning silence.")
+            return (b'\x00' * frame_count * 2, pyaudio.paContinue)
+
+        if samples is None:
+            logging.info("No more samples, completing stream.")
+            return (None, pyaudio.paComplete)
+
+        audio_bytes = self._convert_samples_to_bytes(samples)
+        logging.info(f"Providing {len(audio_bytes)} bytes to stream.")
+        if self.output_file:
+            logging.info(f"Writing {len(audio_bytes)} bytes to file.")
+            self.wave_file.writeframes(audio_bytes)
+        return (audio_bytes, pyaudio.paContinue)
+
+    def _convert_samples_to_bytes(self, samples: np.ndarray) -> bytes:
+        # Convert numpy float32 array to 16-bit PCM bytes
+        return (samples * 32767).astype(np.int16).tobytes()
 
     @property
     def ssml(self) -> SherpaOnnxSSML:
@@ -48,3 +157,4 @@ class SherpaOnnxTTS(AbstractTTS):
     def construct_prosody_tag(self, text: str) -> str:
         # Implement SSML prosody tag construction if needed
         return text
+    
