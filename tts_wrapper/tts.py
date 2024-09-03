@@ -83,7 +83,13 @@ class AbstractTTS(ABC):
     def speak(self, text: Any, format: Optional[FileFormat] = "wav") -> bytes:
         try:
             audio_bytes = self.synth_to_bytes(text, format)
-            audio_data = np.frombuffer(audio_bytes, dtype='int16')
+            #strip header. sounddevice does not support wav header
+            if format == "wav":
+                audio_bytes = audio_bytes[44:]  # Strip the 44-byte WAV header
+            # Debug: Print the first few bytes to inspect the data
+            logging.info(f"First 20 bytes of audio data: {audio_bytes[:20]}")
+            audio_data = np.frombuffer(audio_bytes, dtype=np.int16)
+            logging.info(f"Audio data length: {len(audio_data)} samples")
             sd.play(audio_data, samplerate=self.audio_rate)
             sd.wait()
         except Exception as e:
@@ -109,6 +115,8 @@ class AbstractTTS(ABC):
             raise
 
     def callback(self, outdata, frames, time, status):
+        if status:
+            logging.warning(f"Sounddevice status: {status}")
         if self.playing:
             end_position = self.position + frames * 2
             data = self.audio_bytes[self.position:end_position]
