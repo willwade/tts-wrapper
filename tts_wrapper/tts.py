@@ -93,7 +93,7 @@ class AbstractTTS(ABC):
     def construct_prosody_tag(self, text:str) -> str:
         pass
 
-    def setup_stream(self, samplerate=24000, channels=1, dtype='int16'):
+    def setup_stream(self, samplerate=22050, channels=1, dtype='int16'):
         try:
             if self.stream is not None:
                 self.stream.close()
