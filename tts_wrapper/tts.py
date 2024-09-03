@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import Any, List, Literal, Optional, Union, Dict, Callable, Tuple
-import pyaudio
+import sounddevice as sd
+import numpy as np
 import threading
 from threading import Event
 import logging
@@ -17,7 +18,6 @@ class AbstractTTS(ABC):
     def __init__(self):
         self.voice_id = None
         self.audio_object = None
-        self.p = pyaudio.PyAudio()
         self.stream = None
         self.audio_rate = 22050
         self.audio_bytes = None
@@ -27,9 +27,9 @@ class AbstractTTS(ABC):
         self.timings = []
         self.timers = []
         self.properties = {
-            'volume' :"",
+            'volume': "",
             'rate': "",
-            'pitch':""
+            'pitch': ""
         }
         self.callbacks = {
             'onStart': None,
@@ -83,13 +83,9 @@ class AbstractTTS(ABC):
     def speak(self, text: Any, format: Optional[FileFormat] = "wav") -> bytes:
         try:
             audio_bytes = self.synth_to_bytes(text, format)
-            audio_bytes = self.apply_fade_in(audio_bytes)
-            p = pyaudio.PyAudio()
-            stream = p.open(format=pyaudio.paInt16, channels=1, rate=self.audio_rate, output=True)
-            stream.write(audio_bytes)
-            stream.stop_stream()
-            stream.close()
-            p.terminate()
+            audio_data = np.frombuffer(audio_bytes, dtype='int16')
+            sd.play(audio_data, samplerate=self.audio_rate)
+            sd.wait()
         except Exception as e:
             logging.error(f"Error playing audio: {e}")
     
@@ -97,34 +93,32 @@ class AbstractTTS(ABC):
     def construct_prosody_tag(self, text:str) -> str:
         pass
 
-    def setup_stream(self, format=pyaudio.paInt16, channels=1):
+    def setup_stream(self, samplerate=22050, channels=1, dtype='int16'):
         try:
-            if self.p is None:
-                self.p = pyaudio.PyAudio()
             if self.stream is not None:
-                self.stream.stop_stream()
                 self.stream.close()
-                self.stream = None
-            self.stream = self.p.open(format=format,
-                                      channels=channels,
-                                      rate=self.audio_rate,
-                                      output=True,
-                                      stream_callback=self.callback)
+            self.stream = sd.OutputStream(
+                samplerate=samplerate,
+                channels=channels,
+                dtype=dtype,
+                callback=self.callback
+            )
+            self.stream.start()
         except Exception as e:
             logging.error(f"Failed to setup audio stream: {e}")
             raise
 
-    def callback(self, in_data, frame_count, time_info, status):
+    def callback(self, outdata, frames, time, status):
         if self.playing:
-            end_position = self.position + frame_count * 2
+            end_position = self.position + frames * 2
             data = self.audio_bytes[self.position:end_position]
             self.position = end_position
             if self.position >= len(self.audio_bytes):
                 self._trigger_callback('onEnd')
-                return (data, pyaudio.paComplete)
-            return (data, pyaudio.paContinue)
+                self.playing.clear()
+            outdata[:] = np.frombuffer(data, dtype='int16').reshape(outdata.shape)
         else:
-            return (None, pyaudio.paContinue)
+            outdata.fill(0)
 
 
     def speak_streamed(self, text: Any, format: Optional[FileFormat] = "wav"):
@@ -144,10 +138,9 @@ class AbstractTTS(ABC):
 
         with self.stream_lock:
             if self.stream:
-                self.stream.stop_stream()
                 self.stream.close()
-                self.stream = None
-            self.setup_stream()        
+            self.setup_stream()
+            
         try:
             self.play_thread = threading.Thread(target=self._start_stream)
             self.play_thread.start()
@@ -271,18 +264,13 @@ class AbstractTTS(ABC):
     def finish(self):
         try:
             with self.stream_lock:
-                if self.stream and not self.stream.is_stopped():
-                    self.stream.stop_stream()
                 if self.stream:
+                    self.stream.stop()
                     self.stream.close()
-                if self.p:
-                    self.p.terminate()
         except Exception as e:
             logging.error(f"Failed to clean up audio resources: {e}")
         finally:
             self.stream = None
-            self.p = None
-
 
     def __del__(self):
         self.finish()
