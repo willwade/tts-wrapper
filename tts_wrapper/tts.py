@@ -86,6 +86,15 @@ class AbstractTTS(ABC):
             #strip header. sounddevice does not support wav header
             if format == "wav":
                 audio_bytes = audio_bytes[44:]  # Strip the 44-byte WAV header
+            
+            # Not doing this yet - I feel this needs more thought and adds another non optional dependency
+            # elif format == "mp3":
+            #     # Convert MP3 bytes to WAV using pydub
+            #     mp3_fp = BytesIO(audio_bytes)
+            #     audio = AudioSegment.from_file(mp3_fp, format="mp3")
+            #     audio = audio.set_frame_rate(self.audio_rate).set_sample_width(2)
+            #     audio_data = np.array(audio.get_array_of_samples(), dtype=np.int16)
+     
             # Debug: Print the first few bytes to inspect the data
             logging.info(f"First 20 bytes of audio data: {audio_bytes[:20]}")
             audio_data = np.frombuffer(audio_bytes, dtype=np.int16)
