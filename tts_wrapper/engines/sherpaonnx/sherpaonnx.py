@@ -24,6 +24,28 @@ class SherpaOnnxTTS(AbstractTTS):
         if voice:
             self.set_voice(voice, lang)
         self.audio_rate = self._client.sample_rate
+        self.audio_buffer = queue.Queue()
+        self.playback_finished = threading.Event()
+        self.audio_started = False
+        self.audio_stopped = False
+        self.audio_killed = False
+
+    # Audio playback callback, called continuously to stream audio from the buffer
+    def play_audio_callback(self, outdata, frames, time, status):
+        if self.audio_killed or (self.audio_started and self.audio_buffer.empty() and self.audio_stopped):
+            self.playback_finished.set()
+            return
+
+        if self.audio_buffer.empty():
+            outdata.fill(0)
+            return
+
+        data = self.audio_buffer.get()
+        if len(data) < frames:
+            outdata[:len(data)] = data[:, None]
+            outdata[len(data):] = 0
+        else:
+            outdata[:] = data[:frames, None]
 
     def get_voices(self) -> List[Dict[str, Any]]:
         return self._client.get_voices()
@@ -43,28 +65,62 @@ class SherpaOnnxTTS(AbstractTTS):
         self.audio_rate = sample_rate
         return audio_bytes
 
-    def speak_streamed(self, text: str, format: Optional[FileFormat] = "wav"):
+    def play_audio(self):
+        try:
+            with sd.OutputStream(
+                samplerate=self.audio_rate,
+                channels=1,
+                callback=self.play_audio_callback,
+                blocksize=1024,
+                dtype="float32"
+            ):
+                self.playback_finished.wait()
+
+        except Exception as e:
+            logging.error(f"Error during audio playback: {e}")
+            self.audio_killed = True
+
+    # Main function to generate audio and stream it while playing
+    def speak_streamed(self, text):
         logging.info("[SherpaOnnxTTS.speak_streamed] Starting speech synthesis...")
+        
+        # Reset flags
+        self.audio_started = False
+        self.audio_stopped = False
+        self.playback_finished.clear()
 
-        # Reset the position and prepare the audio queue
-        self.position = 0
-        self.audio_bytes = b""  # Initialize audio_bytes as empty bytes
-        self._client.audio_queue = queue.Queue()
+        # Start audio playback in a separate thread
+        playback_thread = threading.Thread(target=self.play_audio)
+        playback_thread.start()
 
-        # Start generating audio data
-        self._client.synth_streaming(text)
+        # Simulate audio generation in chunks from the text
+        for chunk_idx, (progress, samples) in enumerate(self.generate_audio_chunks(text)):
+            logging.info(f"Generated audio chunk with progress {progress}, samples shape: {samples.shape}")
+            
+            # Add audio samples to the buffer
+            self.audio_buffer.put(samples)
 
-        # Buffer enough data before starting playback
-        while self._client.audio_queue.empty():
-            time.sleep(0.1)
+            if not self.audio_started:
+                logging.info("Starting audio playback...")
+                self.audio_started = True
 
-        # Start playback in a separate thread
-        self.play_thread = threading.Thread(target=self._start_stream)
-        self.play_thread.start()
+        # Signal that audio generation is complete
+        self.audio_stopped = True
 
         # Wait for playback to finish
-        self.play_thread.join()
+        playback_thread.join()
         logging.info("Playback finished.")
+
+    # Simulated function to generate audio chunks (replace this with actual TTS model)
+    def generate_audio_chunks(self, text):
+        # Simulate generating audio chunks based on text
+        total_samples = 16000 * 3  # Simulate 3 seconds of audio at 16000 Hz
+        chunk_size = 1024
+        for i in range(0, total_samples, chunk_size):
+            progress = i / total_samples
+            samples = np.random.randn(chunk_size).astype(np.float32)  # Random audio data (replace with real data)
+            yield progress, samples
+
 
     def _start_stream(self):
         self.setup_stream(output_file='output.wav') 
