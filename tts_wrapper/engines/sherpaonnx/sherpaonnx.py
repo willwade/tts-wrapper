@@ -71,7 +71,7 @@ class SherpaOnnxTTS(AbstractTTS):
                 samplerate=self.audio_rate,
                 channels=1,
                 callback=self.play_audio_callback,
-                blocksize=1024,
+                blocksize=4096,
                 dtype="float32"
             ):
                 self.playback_finished.wait()
@@ -111,16 +111,18 @@ class SherpaOnnxTTS(AbstractTTS):
         playback_thread.join()
         logging.info("Playback finished.")
 
-    # Simulated function to generate audio chunks (replace this with actual TTS model)
-    def generate_audio_chunks(self, text):
-        # Simulate generating audio chunks based on text
-        total_samples = 16000 * 3  # Simulate 3 seconds of audio at 16000 Hz
-        chunk_size = 1024
-        for i in range(0, total_samples, chunk_size):
-            progress = i / total_samples
-            samples = np.random.randn(chunk_size).astype(np.float32)  # Random audio data (replace with real data)
-            yield progress, samples
 
+    def generate_audio_chunks(self, text):
+        total_samples = 0
+        for samples in self._client.generate_stream(text):
+            # Ensure the samples are in float32 format
+            if samples.dtype != np.float32:
+                samples = samples.astype(np.float32)
+
+            logging.info(f"Audio chunk max value: {np.max(samples)}, min value: {np.min(samples)}")
+            total_samples += len(samples)
+            progress = total_samples / (self.audio_rate * 3)  # Simulate progress
+            yield progress, samples
 
     def _start_stream(self):
         self.setup_stream(output_file='output.wav') 

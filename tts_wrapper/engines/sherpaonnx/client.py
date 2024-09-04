@@ -3,6 +3,7 @@ from typing import Optional, List, Dict, Tuple
 import os
 import json
 import logging
+import threading
 try:
     import numpy as np
 except ImportError:
@@ -181,14 +182,30 @@ class SherpaOnnxClient:
             self.sample_rate = self.tts.sample_rate
 
 
+    def generate_stream(self, text: str, sid: int = 0, speed: float = 1.0):
+        """Generate audio progressively and yield each chunk."""
+        self._init_onnx()  # Ensure the ONNX model is loaded
+        self.audio_queue = queue.Queue()  # Reset the queue for the new streaming session
+        logging.info(f"Starting streaming synthesis for text: {text}")
+        
+        # Start generating audio and filling the queue
+        threading.Thread(target=self._stream_audio_to_queue, args=(text, sid, speed)).start()
+
+        # Yield audio chunks as they are produced
+        while True:
+            samples = self.audio_queue.get()
+            if samples is None:  # End of stream signal
+                break
+            yield samples
+
+    def _stream_audio_to_queue(self, text: str, sid: int = 0, speed: float = 1.0):
+        """Internal method to generate audio and place chunks in the queue."""
+        self.tts.generate(text, sid=sid, speed=speed, callback=self.generated_audio_callback)
+        self.audio_queue.put(None)  # Signal the end of audio generation
+
     def generated_audio_callback(self, samples: np.ndarray, progress: float):
-        """Callback function to handle generated audio chunks."""
-        logging.info(f"Generated audio chunk with progress {progress}, samples shape: {samples.shape}")
-        if np.any(samples):  # Check if any non-zero samples are generated
-            logging.info("Audio chunk contains non-zero samples.")
-        else:
-            logging.warning("Audio chunk is all zeros!")
-        self.audio_queue.put(samples)  # Put the generated audio chunk into the queue
+        """Callback function to handle audio generation."""
+        self.audio_queue.put(samples)  # Place generated samples into the queue
         return 1  # Continue generating
 
     def synth_streaming(self, text: str, sid: int = 0, speed: float = 1.0):
