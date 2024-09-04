@@ -42,23 +42,25 @@ class SherpaOnnxTTS(AbstractTTS):
             outdata.fill(0)
             return
 
-        data = self.audio_buffer.get()
-        logging.info(f"Get audio data to play : {data}")
-        if len(data) < frames:
-            logging.info(f"Audio chunk {len(data)} is shorter than frame: {frames}")
-            outdata[:len(data)] = data[:, None]
-            outdata[len(data):] = 0
-        elif len(data) == frames:
-            outdata = data
-        else:
-            outdata[:] = data[:frames, None]
-            # Insert leftover into the queue at the beginning
-            leftover = data[frames:]
-            self.audio_buffer.put(leftover)
+        n = 0
+        while n < frames and not self.audio_buffer.empty():
+            remaining = frames - n
+            k = self.audio_buffer.queue[0].shape[0]
 
-        #else:
-        #    outdata[:] = data[:frames, None]
-        
+            if remaining <= k:
+                outdata[n:, 0] = self.audio_buffer.queue[0][:remaining]
+                self.audio_buffer.queue[0] = self.audio_buffer.queue[0][remaining:]
+                n = frames
+                if self.audio_buffer.queue[0].shape[0] == 0:
+                    self.audio_buffer.get()
+
+                break
+
+            outdata[n : n + k, 0] = self.audio_buffer.get()
+            n += k
+
+        if n < frames:
+            outdata[n:, 0] = 0        
 
     def get_voices(self) -> List[Dict[str, Any]]:
         return self._client.get_voices()
@@ -85,7 +87,7 @@ class SherpaOnnxTTS(AbstractTTS):
                 samplerate=self.audio_rate,
                 channels=1,
                 callback=self.play_audio_callback,
-                blocksize=1024,
+                blocksize=4096,
                 #blocksize=16384,
                 dtype="float32"
             ):
