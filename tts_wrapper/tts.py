@@ -83,7 +83,10 @@ class AbstractTTS(ABC):
     def speak(self, text: Any, format: Optional[FileFormat] = "wav") -> bytes:
         try:
             audio_bytes = self.synth_to_bytes(text, format)
-            audio_bytes = self.apply_fade_in(audio_bytes)
+            # Check if this data has a WAV header (first 4 bytes should be 'RIFF')
+            if audio_bytes[:4] == b'RIFF':
+                logging.info("[TTS.speak_streamed] Detected WAV header, stripping header.")
+                audio_bytes = audio_bytes[44:]  # Strip the 44-byte WAV header
             p = pyaudio.PyAudio()
             stream = p.open(format=pyaudio.paInt16, channels=1, rate=self.audio_rate, output=True)
             stream.write(audio_bytes)
@@ -116,7 +119,11 @@ class AbstractTTS(ABC):
 
     def callback(self, in_data, frame_count, time_info, status):
         if self.playing:
-            end_position = self.position + frame_count * 2
+            if self.audio_bytes is None:
+                logging.error("Audio bytes are not set.")
+                return (None, pyaudio.paAbort)
+            #end_position = self.position + frame_count * 2
+            end_position = min(self.position + frame_count * 2, len(self.audio_bytes))
             data = self.audio_bytes[self.position:end_position]
             self.position = end_position
             if self.position >= len(self.audio_bytes):
@@ -131,13 +138,17 @@ class AbstractTTS(ABC):
         try:
             logging.info("[TTS.speak_streamed] Starting speech synthesis...")
             audio_bytes = self.synth_to_bytes(text, format)
+            if audio_bytes[:4] == b'RIFF':
+                logging.info("[TTS.speak_streamed] Detected WAV header, stripping header.")
+                audio_bytes = audio_bytes[44:]  # Strip the 44-byte WAV header
             if not isinstance(audio_bytes, (bytes, bytearray)):
                 raise ValueError("[TTS.speak_streamed] Synthesized speech is not in bytes format")
             logging.info(f"[TTS.speak_streamed] Synthesized speech length: {len(audio_bytes)} bytes")
         except Exception as e:
             logging.error(f"[TTS.speak_streamed] Error synthesizing speech: {e}")
             return
-        self.audio_bytes = self.apply_fade_in(audio_bytes)
+        self.audio_bytes = audio_bytes
+        #self.audio_bytes = self.apply_fade_in(audio_bytes)
         self.position = 0
         self.playing.set()
         self._trigger_callback('onStart')
