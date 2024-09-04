@@ -189,11 +189,13 @@ class SherpaOnnxClient:
         logging.info(f"Starting streaming synthesis for text: {text}")
         
         # Start generating audio and filling the queue
-        threading.Thread(target=self._stream_audio_to_queue, args=(text, sid, speed)).start()
+        threading.Thread(target=self._stream_audio_to_queue, args=(text, sid, speed)).start()        
 
         # Yield audio chunks as they are produced
         while True:
+            logging.info("While true, process the samples")
             samples = self.audio_queue.get()
+            logging.info(f"SAMPLE {samples}")
             if samples is None:  # End of stream signal
                 break
             yield samples
@@ -206,6 +208,7 @@ class SherpaOnnxClient:
     def generated_audio_callback(self, samples: np.ndarray, progress: float):
         """Callback function to handle audio generation."""
         self.audio_queue.put(samples)  # Place generated samples into the queue
+        logging.info(f"Queue in generate_stream: {self.audio_queue.qsize()}")
         return 1  # Continue generating
 
     def synth_streaming(self, text: str, sid: int = 0, speed: float = 1.0):

@@ -31,8 +31,10 @@ class SherpaOnnxTTS(AbstractTTS):
         self.audio_killed = False
 
     # Audio playback callback, called continuously to stream audio from the buffer
-    def play_audio_callback(self, outdata, frames, time, status):
+    def play_audio_callback(self, outdata: np.ndarray, frames: int, time, status: sd.CallbackFlags):
+        
         if self.audio_killed or (self.audio_started and self.audio_buffer.empty() and self.audio_stopped):
+            logging.error("AUDIO KILLED OR STOPPED OR BUFFER EMPTY")
             self.playback_finished.set()
             return
 
@@ -41,11 +43,22 @@ class SherpaOnnxTTS(AbstractTTS):
             return
 
         data = self.audio_buffer.get()
+        logging.info(f"Get audio data to play : {data}")
         if len(data) < frames:
+            logging.info(f"Audio chunk {len(data)} is shorter than frame: {frames}")
             outdata[:len(data)] = data[:, None]
             outdata[len(data):] = 0
+        elif len(data) == frames:
+            outdata = data
         else:
             outdata[:] = data[:frames, None]
+            # Insert leftover into the queue at the beginning
+            leftover = data[frames:]
+            self.audio_buffer.put(leftover)
+
+        #else:
+        #    outdata[:] = data[:frames, None]
+        
 
     def get_voices(self) -> List[Dict[str, Any]]:
         return self._client.get_voices()
@@ -67,11 +80,13 @@ class SherpaOnnxTTS(AbstractTTS):
 
     def play_audio(self):
         try:
+            logging.info("STARTING PLAY AUDIO")
             with sd.OutputStream(
                 samplerate=self.audio_rate,
                 channels=1,
                 callback=self.play_audio_callback,
-                blocksize=4096,
+                blocksize=1024,
+                #blocksize=16384,
                 dtype="float32"
             ):
                 self.playback_finished.wait()
@@ -99,6 +114,8 @@ class SherpaOnnxTTS(AbstractTTS):
             
             # Add audio samples to the buffer
             self.audio_buffer.put(samples)
+            logging.info("Finished with 1 audio chunk, put into queue")
+
 
             if not self.audio_started:
                 logging.info("Starting audio playback...")
@@ -123,88 +140,6 @@ class SherpaOnnxTTS(AbstractTTS):
             total_samples += len(samples)
             progress = total_samples / (self.audio_rate * 3)  # Simulate progress
             yield progress, samples
-
-    def _start_stream(self):
-        self.setup_stream(output_file='output.wav') 
-        logging.info("Stream started, entering active loop.")
-        self.playing.set()
-
-        while self.stream.active:
-            logging.info("Stream is active, waiting for audio data...")
-            time.sleep(0.1)  # This should allow the stream to process callbacks
-
-        self.stop_audio()
-        logging.info("Stream playback completed.")
-
-    def setup_stream(self, channels=1, output_file=None):
-        if self.audio_rate is None:
-            raise ValueError("Audio rate is not set. Cannot set up the stream.")
-        
-        if self.stream is not None:
-            self.stream.stop()
-            self.stream.close()
-            self.stream = None
-
-        self.output_file = output_file
-
-        logging.info(f"Setting up stream with channels={channels}, rate={self.audio_rate}")
-
-        # Initialize sounddevice OutputStream
-        self.stream = sd.OutputStream(
-            samplerate=self.audio_rate,
-            channels=channels,
-            blocksize=1024,  # Corresponds to frames_per_buffer
-            callback=self.callback
-        )
-        
-        if self.output_file:
-            try:
-                import wave
-            except ImportError:
-                logging.error("Wave module not available. Cannot write audio to file.")
-                self.output_file = None
-            else:
-                self.wave_file = wave.open(self.output_file, 'wb')
-                self.wave_file.setnchannels(channels)
-                self.wave_file.setsampwidth(2)  # 16-bit PCM corresponds to 2 bytes
-                self.wave_file.setframerate(self.audio_rate)
-
-    def stop_audio(self):
-        self.playing.clear()
-        
-        # Check if we are trying to join the current thread
-        if threading.current_thread() is not self.play_thread:
-            if self.play_thread and self.play_thread.is_alive():
-                self.play_thread.join()
-        
-        with self.stream_lock:
-            if self.stream:
-                self.stream.stop()
-                self.stream.close()
-                self.stream = None
-                
-        for timer in self.timers:
-            timer.cancel()
-        self.timers.clear()
-
-    def callback(self, outdata, frames, time, status):
-        try:
-            samples = self._client.audio_queue.get_nowait()
-        except queue.Empty:
-            logging.info("Queue empty, returning silence.")
-            return (b'\x00' * frame_count * 2, pyaudio.paContinue)
-
-        if samples is None:
-            logging.info("No more samples, completing stream.")
-            return (None, pyaudio.paComplete)
-
-        audio_bytes = self._convert_samples_to_bytes(samples)
-        logging.info(f"Providing {len(audio_bytes)} bytes to stream.")
-        if self.output_file:
-            logging.info(f"Writing {len(audio_bytes)} bytes to file.")
-            self.wave_file.writeframes(audio_bytes)
-        outdata[:] = samples
-        return
 
     def _convert_samples_to_bytes(self, samples: np.ndarray) -> bytes:
         # Convert numpy float32 array to 16-bit PCM bytes
