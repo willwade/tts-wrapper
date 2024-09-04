@@ -2,7 +2,6 @@
 from typing import List, Dict, Any
 from ...exceptions import UnsupportedFileFormat
 from io import BytesIO
-import wave
 import logging
 
 try:
@@ -30,25 +29,14 @@ class GoogleTransClient:
     def set_voice(self, voice_id: str):
         self.lang, self.tld = self._parse_voice_id(voice_id)
     
-    def synth(self, text: str, format: str) -> bytes:
+    def synth(self, text: str) -> bytes:
+        """
+        Synthesizes text to MP3 audio bytes.
+        """
         tts = gTTS(text, lang=self.lang, tld=self.tld)
-
         mp3_fp = BytesIO()
-        for chunk in tts.stream():
-            mp3_fp.write(chunk)
-        mp3_fp.seek(0)
-
-        if format == 'mp3':
-            return mp3_fp.read()
-        elif format == 'wav':
-            mp3_fp.seek(0)
-            audio = AudioSegment.from_file(mp3_fp, format="mp3")
-            wav_fp = BytesIO()
-            audio.export(wav_fp, format="wav")
-            wav_fp.seek(0)
-            return wav_fp.read()
-        else:
-            raise UnsupportedFileFormat(format, 'GoogleTransClient')        
+        tts.write_to_fp(mp3_fp)
+        return mp3_fp.getvalue()     
         
     def get_voices(self) -> List[Dict[str, Any]]:
         # Retrieve available languages from gtts

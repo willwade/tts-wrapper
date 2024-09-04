@@ -31,6 +31,7 @@ sherpa-onnx ={ version = "^1.10.17", optional = true }
 gTTS={ version = "^2.5.2", optional = true }
 pydub={ version = "^0.25.1", optional = true }
 
+soundfile = "^0.12.1"
 [tool.poetry.extras]
 google = ["google-cloud-texttospeech"]
 watson = ["ibm-watson", "websocket", "requests"]
