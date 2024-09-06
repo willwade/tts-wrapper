@@ -80,17 +80,17 @@ uvloop = ["uvloop (>=0.15.2)"]
 
 [[package]]
 name = "boto3"
-version = "1.35.12"
+version = "1.35.13"
 description = "The AWS SDK for Python"
 optional = true
 python-versions = ">=3.8"
 files = [
-    {file = "boto3-1.35.12-py3-none-any.whl", hash = "sha256:acaa7c75cbf483605e3c46e9ac03043a4cf5e9866940122d68b06d1defe00774"},
-    {file = "boto3-1.35.12.tar.gz", hash = "sha256:b32faab174f6f9b75fada27bcf054ab3e8846bd410ed9817d0b511109326b6b1"},
+    {file = "boto3-1.35.13-py3-none-any.whl", hash = "sha256:6e220eae161a4c0ed21e2561edcb0fd9603fa621692c50bc099db318ed3e3ad4"},
+    {file = "boto3-1.35.13.tar.gz", hash = "sha256:4af17bd7bada591ddaa835d774b242705210e5d45133e25bd73417daa42e53e7"},
 ]
 
 [package.dependencies]
-botocore = ">=1.35.12,<1.36.0"
+botocore = ">=1.35.13,<1.36.0"
 jmespath = ">=0.7.1,<2.0.0"
 s3transfer = ">=0.10.0,<0.11.0"
 
@@ -99,13 +99,13 @@ crt = ["botocore[crt] (>=1.21.0,<2.0a0)"]
 
 [[package]]
 name = "boto3-stubs"
-version = "1.35.12"
-description = "Type annotations for boto3 1.35.12 generated with mypy-boto3-builder 8.0.1"
+version = "1.35.13.post1"
+description = "Type annotations for boto3 1.35.13 generated with mypy-boto3-builder 8.0.1"
 optional = false
 python-versions = ">=3.8"
 files = [
-    {file = "boto3_stubs-1.35.12-py3-none-any.whl", hash = "sha256:4287130d0a64cd849f40a6a7a985e6ee46c99d1db3f7a07dc051e63ff91cbccb"},
-    {file = "boto3_stubs-1.35.12.tar.gz", hash = "sha256:81699cf3ad36e14d75648a0d9130c28924f5096e23f2d897f8f14741b5909a1c"},
+    {file = "boto3_stubs-1.35.13.post1-py3-none-any.whl", hash = "sha256:7be9a5006d623092f45c19d06000f99cf39e84d7e4002efb0b91a7db25429aaf"},
+    {file = "boto3_stubs-1.35.13.post1.tar.gz", hash = "sha256:8a88a189d37c3323dff6b5a6cfe1fe9b1f4c219512837300e581716e46d0eaea"},
 ]
 
 [package.dependencies]
@@ -156,7 +156,7 @@ bedrock-agent = ["mypy-boto3-bedrock-agent (>=1.35.0,<1.36.0)"]
 bedrock-agent-runtime = ["mypy-boto3-bedrock-agent-runtime (>=1.35.0,<1.36.0)"]
 bedrock-runtime = ["mypy-boto3-bedrock-runtime (>=1.35.0,<1.36.0)"]
 billingconductor = ["mypy-boto3-billingconductor (>=1.35.0,<1.36.0)"]
-boto3 = ["boto3 (==1.35.12)", "botocore (==1.35.12)"]
+boto3 = ["boto3 (==1.35.13)", "botocore (==1.35.13)"]
 braket = ["mypy-boto3-braket (>=1.35.0,<1.36.0)"]
 budgets = ["mypy-boto3-budgets (>=1.35.0,<1.36.0)"]
 ce = ["mypy-boto3-ce (>=1.35.0,<1.36.0)"]
@@ -264,6 +264,7 @@ forecastquery = ["mypy-boto3-forecastquery (>=1.35.0,<1.36.0)"]
 frauddetector = ["mypy-boto3-frauddetector (>=1.35.0,<1.36.0)"]
 freetier = ["mypy-boto3-freetier (>=1.35.0,<1.36.0)"]
 fsx = ["mypy-boto3-fsx (>=1.35.0,<1.36.0)"]
+full = ["boto3-stubs-full"]
 gamelift = ["mypy-boto3-gamelift (>=1.35.0,<1.36.0)"]
 glacier = ["mypy-boto3-glacier (>=1.35.0,<1.36.0)"]
 globalaccelerator = ["mypy-boto3-globalaccelerator (>=1.35.0,<1.36.0)"]
@@ -506,13 +507,13 @@ xray = ["mypy-boto3-xray (>=1.35.0,<1.36.0)"]
 
 [[package]]
 name = "botocore"
-version = "1.35.12"
+version = "1.35.13"
 description = "Low-level, data-driven core of boto 3."
 optional = true
 python-versions = ">=3.8"
 files = [
-    {file = "botocore-1.35.12-py3-none-any.whl", hash = "sha256:cb787030415438ea6ff8381f8acd8b1107593d5ebea457fd843a5e36ba19e9a4"},
-    {file = "botocore-1.35.12.tar.gz", hash = "sha256:a8f8230032d090225a93763675a73c208d121bb63ed99f41ee6ad3d51b74b80d"},
+    {file = "botocore-1.35.13-py3-none-any.whl", hash = "sha256:dd8a8bb1946187c8eb902a3b856d3b24df63917e4f2c61a6bce7f3ea9f112761"},
+    {file = "botocore-1.35.13.tar.gz", hash = "sha256:f7ae62eab44d731a5ad8917788378316c79c7bceb530a8307ed0f3bca7037341"},
 ]
 
 [package.dependencies]
@@ -525,13 +526,13 @@ crt = ["awscrt (==0.21.2)"]
 
 [[package]]
 name = "botocore-stubs"
-version = "1.35.12"
+version = "1.35.13"
 description = "Type annotations and code completion for botocore"
 optional = false
 python-versions = ">=3.8"
 files = [
-    {file = "botocore_stubs-1.35.12-py3-none-any.whl", hash = "sha256:fb1514f0385307f89d189f4247822e4b5c55344b3470364be064fa1ed3c40e9c"},
-    {file = "botocore_stubs-1.35.12.tar.gz", hash = "sha256:320520f5b51f60be599b91e781a503f82b277ddc9b18e840254b6e82422e6172"},
+    {file = "botocore_stubs-1.35.13-py3-none-any.whl", hash = "sha256:5a0f68e9aeebfbce5a2be80302974b450f022ccedd073deb366cb278b74b8612"},
+    {file = "botocore_stubs-1.35.13.tar.gz", hash = "sha256:755a818b016658b410e4c52cb135953d09fd1db086c829ed87c367971d7084da"},
 ]
 
 [package.dependencies]
@@ -1432,17 +1433,6 @@ files = [
 ]
 
 [[package]]
-name = "pydub"
-version = "0.25.1"
-description = "Manipulate audio with an simple and easy high level interface"
-optional = false
-python-versions = "*"
-files = [
-    {file = "pydub-0.25.1-py2.py3-none-any.whl", hash = "sha256:65617e33033874b59d87db603aa1ed450633288aefead953b30bded59cb599a6"},
-    {file = "pydub-0.25.1.tar.gz", hash = "sha256:980a33ce9949cab2a569606b65674d748ecbca4f0796887fd6f46173a7b0d30f"},
-]
-
-[[package]]
 name = "pyjwt"
 version = "2.9.0"
 description = "JSON Web Token implementation in Python"
@@ -1458,6 +1448,81 @@ crypto = ["cryptography (>=3.4.0)"]
 dev = ["coverage[toml] (==5.0.4)", "cryptography (>=3.4.0)", "pre-commit", "pytest (>=6.0.0,<7.0.0)", "sphinx", "sphinx-rtd-theme", "zope.interface"]
 docs = ["sphinx", "sphinx-rtd-theme", "zope.interface"]
 tests = ["coverage[toml] (==5.0.4)", "pytest (>=6.0.0,<7.0.0)"]
+
+[[package]]
+name = "pymp3"
+version = "0.2.0"
+description = "Read and write MP3 files."
+optional = false
+python-versions = ">=3.6"
+files = [
+    {file = "pymp3-0.2.0-cp310-cp310-macosx_10_9_x86_64.whl", hash = "sha256:5da6ef7de6e5bfc508c865d6be281ac7a4d7447ec5b9f6c3a80634a82d88ad07"},
+    {file = "pymp3-0.2.0-cp310-cp310-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:950ccc0db29a7845c527a7866b359156252546253b1dee15e5dc882afde83c1b"},
+    {file = "pymp3-0.2.0-cp310-cp310-manylinux_2_5_i686.manylinux1_i686.manylinux_2_17_i686.manylinux2014_i686.whl", hash = "sha256:529cfa107511957235c830d304b99a4cf10c7be707da746440cbadf44690cf3b"},
+    {file = "pymp3-0.2.0-cp310-cp310-musllinux_1_1_i686.whl", hash = "sha256:d4b325750685fab19efdaf4c4818ae05d10cc44e415a0ac1f5c4a508e363c472"},
+    {file = "pymp3-0.2.0-cp310-cp310-musllinux_1_1_x86_64.whl", hash = "sha256:c90aecfb71b39eb27d5c6ea4405d178cea73b5f232285f230b953b3c4f52f2fa"},
+    {file = "pymp3-0.2.0-cp310-cp310-win32.whl", hash = "sha256:af6df1a5348de1568490abc2fd01e82eecd7df4a7e22716ed0c36cd97efa202e"},
+    {file = "pymp3-0.2.0-cp310-cp310-win_amd64.whl", hash = "sha256:b35e5825dee96c0e2317448c0a937c3062d855e14ee2b79497dcf646ce34ce52"},
+    {file = "pymp3-0.2.0-cp311-cp311-macosx_10_9_x86_64.whl", hash = "sha256:a2264eb36eaced7919a9bad93dc630b6b002aa1a1b6eb7122e03b8b055e86b48"},
+    {file = "pymp3-0.2.0-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:c6a3c98bb20e43f411b216cf0217a6edb9948d476065492d1fa22100840c7471"},
+    {file = "pymp3-0.2.0-cp311-cp311-manylinux_2_5_i686.manylinux1_i686.manylinux_2_17_i686.manylinux2014_i686.whl", hash = "sha256:ba8d0b397295952ee2cd52f307eb17f51e26ff002fa3af9c55c13528cf1f7752"},
+    {file = "pymp3-0.2.0-cp311-cp311-musllinux_1_1_i686.whl", hash = "sha256:69ffba77a1eb179ae99a6305dd5434fd82dddb4fbc086383343f58ad76e393a7"},
+    {file = "pymp3-0.2.0-cp311-cp311-musllinux_1_1_x86_64.whl", hash = "sha256:06e6eda4a5f2942ed1a8b3ff6677ffd58120494731939dcc79096c9c17596bcb"},
+    {file = "pymp3-0.2.0-cp311-cp311-win32.whl", hash = "sha256:97d70bbcfb50b06b883786868e42ebe6bae3b4c3df9ab4cacdcb3a0de305516a"},
+    {file = "pymp3-0.2.0-cp311-cp311-win_amd64.whl", hash = "sha256:5bddfb389e567e201521ae666c245ac61a1fca2387444a0ae7594cb2cb52dfe6"},
+    {file = "pymp3-0.2.0-cp312-cp312-macosx_10_9_x86_64.whl", hash = "sha256:dc28cc97239966360e2e1b84fd04bb471a631f66043cf1bcb358fdde4eb89962"},
+    {file = "pymp3-0.2.0-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:eeffcca0315538116fbf54deb0f8e91e8dd1db7710c4d007e9b97f6847d37593"},
+    {file = "pymp3-0.2.0-cp312-cp312-manylinux_2_5_i686.manylinux1_i686.manylinux_2_17_i686.manylinux2014_i686.whl", hash = "sha256:9e89a78e1d9942a7290dc317d9100b9e252ac303aaf9a9748c95003cc69eb06c"},
+    {file = "pymp3-0.2.0-cp312-cp312-musllinux_1_1_i686.whl", hash = "sha256:a5a509336431d7cc8b47559c8c0d5471397acb8dcf57a8732dca9c3062570d2a"},
+    {file = "pymp3-0.2.0-cp312-cp312-musllinux_1_1_x86_64.whl", hash = "sha256:29a508c59bc2b6a00698675e39d768f58b8cf1ab5212b964b943499b1abb9300"},
+    {file = "pymp3-0.2.0-cp312-cp312-win32.whl", hash = "sha256:2a3b6f31c2549aea91c99679407f042ce97e90c829ebee1fc38640643c6ffa26"},
+    {file = "pymp3-0.2.0-cp312-cp312-win_amd64.whl", hash = "sha256:b813f2eda08112cc2a03494ea6c77c8da3958ba2b649c99c56b5b78e835bd211"},
+    {file = "pymp3-0.2.0-cp36-cp36m-macosx_10_9_x86_64.whl", hash = "sha256:83337a55c4e6a560049a2171e12619c9d5c0333816711cae9744edf1ad7faea7"},
+    {file = "pymp3-0.2.0-cp36-cp36m-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:d142319aae055e1c4f697bbea2c538d8250c83692cee1daa569249a6f2af2ba5"},
+    {file = "pymp3-0.2.0-cp36-cp36m-manylinux_2_5_i686.manylinux1_i686.manylinux_2_17_i686.manylinux2014_i686.whl", hash = "sha256:dde8403f68af903a3d30704e3a1105486ac3a48f2ae23526555b255551c1a03a"},
+    {file = "pymp3-0.2.0-cp36-cp36m-musllinux_1_1_i686.whl", hash = "sha256:1ec2cd0384185586838a3eb62d7b9247750481bc861b6351398dda56d939b1c0"},
+    {file = "pymp3-0.2.0-cp36-cp36m-musllinux_1_1_x86_64.whl", hash = "sha256:f9fd2bbee4e4bf640b081d400940abb06070298754535659aca40b71a4d4a4c2"},
+    {file = "pymp3-0.2.0-cp36-cp36m-win32.whl", hash = "sha256:1d16f308c1923e1cf361079c59a5debef389a4642dcb8a30e9036d93402a1465"},
+    {file = "pymp3-0.2.0-cp36-cp36m-win_amd64.whl", hash = "sha256:a529395fe31ddf4147478edb1c52b590d82228526e6a35b485f4f3257e2cb9d7"},
+    {file = "pymp3-0.2.0-cp37-cp37m-macosx_10_9_x86_64.whl", hash = "sha256:7710be32a53ed94c298a73a2ab2d50f1ed164100a81760e13f9764f727be9b1d"},
+    {file = "pymp3-0.2.0-cp37-cp37m-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:3a33a0b4784b888553f3ce71b98ce8bca4667f89f92dba4b3f678db68e33fde3"},
+    {file = "pymp3-0.2.0-cp37-cp37m-manylinux_2_5_i686.manylinux1_i686.manylinux_2_17_i686.manylinux2014_i686.whl", hash = "sha256:0537e8872b23bd3f9b7fb1bc6df7721fb89dc4b00a2a1d7856597bbdfa3088fe"},
+    {file = "pymp3-0.2.0-cp37-cp37m-musllinux_1_1_i686.whl", hash = "sha256:4a67f239c819b437ab12e0cb479ca8d6d1d8ab4175fdad73d92d7a50195b939a"},
+    {file = "pymp3-0.2.0-cp37-cp37m-musllinux_1_1_x86_64.whl", hash = "sha256:bf11a79056a2835fc7f5748ae494fa2aed3f6fbe276a47688d63737b4a833beb"},
+    {file = "pymp3-0.2.0-cp37-cp37m-win32.whl", hash = "sha256:ae5e168c8c0a0fe13de42d0f1fca7622ba12bf5376e5bc479c96aeea73ac56c2"},
+    {file = "pymp3-0.2.0-cp37-cp37m-win_amd64.whl", hash = "sha256:471774b7b7c6f3de89b4176d9ab40748a5c585caeb4334e750a76479e9c0477b"},
+    {file = "pymp3-0.2.0-cp38-cp38-macosx_10_9_x86_64.whl", hash = "sha256:51093ad51775776e4d79c8a8bf34762cdfb5355130737288c1442cf37aa0f65b"},
+    {file = "pymp3-0.2.0-cp38-cp38-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:76dff146ff35cd104c43ae192766d75209d021e7a6a05862048bdad0f403e007"},
+    {file = "pymp3-0.2.0-cp38-cp38-manylinux_2_5_i686.manylinux1_i686.manylinux_2_17_i686.manylinux2014_i686.whl", hash = "sha256:2c1fd9a704e501b4a21d1c43da7c1500290a69b46b1fe494836bfd7c90d108c9"},
+    {file = "pymp3-0.2.0-cp38-cp38-musllinux_1_1_i686.whl", hash = "sha256:3a960545f787a00d15afb86ec940d88d763bb37e8fddf8586ba75509ff4c5fb2"},
+    {file = "pymp3-0.2.0-cp38-cp38-musllinux_1_1_x86_64.whl", hash = "sha256:485e3ef097ab279f23062cc7f2d6406c9bf9eec698a7fec492bda00fec56b8a8"},
+    {file = "pymp3-0.2.0-cp38-cp38-win32.whl", hash = "sha256:4aa9cdcb8d769a1d0b8d2efd5a03b0ddd69bce20d115b350d98c99194ff1fc16"},
+    {file = "pymp3-0.2.0-cp38-cp38-win_amd64.whl", hash = "sha256:a729380ced5c185737a2c3c9b1fdfd9cf0dc297d2fca9ae900ba48df40fa463d"},
+    {file = "pymp3-0.2.0-cp39-cp39-macosx_10_9_x86_64.whl", hash = "sha256:e1e5b2a33934a81bd07cb8a09092680f2fd65bce09d2c70d41cb6584bd01148a"},
+    {file = "pymp3-0.2.0-cp39-cp39-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:200f8029826fe111ea3e717571e48d9a0e183b1e2d1d252d724da58dffeee08b"},
+    {file = "pymp3-0.2.0-cp39-cp39-manylinux_2_5_i686.manylinux1_i686.manylinux_2_17_i686.manylinux2014_i686.whl", hash = "sha256:7b9b752df6595eba313862dd88199d7845874fd266bfc7f18a53b5d65b866a1a"},
+    {file = "pymp3-0.2.0-cp39-cp39-musllinux_1_1_i686.whl", hash = "sha256:5280c5c3e63b47d869eb46079ed139365471da90d6fa2c57bfd75a99985c9b4c"},
+    {file = "pymp3-0.2.0-cp39-cp39-musllinux_1_1_x86_64.whl", hash = "sha256:5e292967563956604fd1c4dac353f200d650e093c39ac7031b329575ae718ff2"},
+    {file = "pymp3-0.2.0-cp39-cp39-win32.whl", hash = "sha256:5c17f248c45a6ec1fec4474e68bb244b58f7ec65841ae2f6dfb008a6d8254d10"},
+    {file = "pymp3-0.2.0-cp39-cp39-win_amd64.whl", hash = "sha256:2e301b0d1b866af40ac52225cc7a0f38897b0401bba95a62571ee719bfeecb06"},
+    {file = "pymp3-0.2.0-pp310-pypy310_pp73-macosx_10_9_x86_64.whl", hash = "sha256:e8785a27ef84a9810d4f1bcf4cd33ec4b9ac8adefd25a38cfe8d7fb7cc530f8d"},
+    {file = "pymp3-0.2.0-pp310-pypy310_pp73-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:87455d5fe7776c3594886717b25d19559276631f5edb102127b5100c6ac92cd7"},
+    {file = "pymp3-0.2.0-pp310-pypy310_pp73-manylinux_2_5_i686.manylinux1_i686.manylinux_2_17_i686.manylinux2014_i686.whl", hash = "sha256:1f26f4fb4f31866d98171003eadca06fd9219372252209961014376dea7a23b4"},
+    {file = "pymp3-0.2.0-pp310-pypy310_pp73-win_amd64.whl", hash = "sha256:b286ad139b1ef4d269597d362ec1f9c96336fd9fde69294bc0feb0a71853dfaf"},
+    {file = "pymp3-0.2.0-pp37-pypy37_pp73-macosx_10_9_x86_64.whl", hash = "sha256:c6d4c13d0b1077572ee000b8a5a8aa8216cb6e746cfecbdd97465c9d6bbf152a"},
+    {file = "pymp3-0.2.0-pp37-pypy37_pp73-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:f1c04ef29d80d62c0feb3d7d214332eebce231ff48b9b2d36b75ab6c38c58323"},
+    {file = "pymp3-0.2.0-pp37-pypy37_pp73-manylinux_2_5_i686.manylinux1_i686.manylinux_2_17_i686.manylinux2014_i686.whl", hash = "sha256:59c29e72e2a2d83c80fa627cbe3e3ca168a62d8ebbc6c9abf1c6cf17bb0a0a53"},
+    {file = "pymp3-0.2.0-pp37-pypy37_pp73-win_amd64.whl", hash = "sha256:4b5ec64bccb0452dc7758b2582bfb3742918ee565155741a9110ae3a414b8325"},
+    {file = "pymp3-0.2.0-pp38-pypy38_pp73-macosx_10_9_x86_64.whl", hash = "sha256:f04300e84a7b77f079bd56724e9dd93e49d5c5f38a2c65d7812932422c827bbd"},
+    {file = "pymp3-0.2.0-pp38-pypy38_pp73-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:0f1bf2b3421ac4c6e78c0e72188c696c1429a21f8ff8f555d7ab7e570667b5f8"},
+    {file = "pymp3-0.2.0-pp38-pypy38_pp73-manylinux_2_5_i686.manylinux1_i686.manylinux_2_17_i686.manylinux2014_i686.whl", hash = "sha256:c937d9732d8330f78a8d01dcecabb6256df3dbd62ad8529096b1a5507b496771"},
+    {file = "pymp3-0.2.0-pp38-pypy38_pp73-win_amd64.whl", hash = "sha256:5c5ef2239f2317da3cf152d1f8fa77899328dc24164b418007d1312f9052b6ec"},
+    {file = "pymp3-0.2.0-pp39-pypy39_pp73-macosx_10_9_x86_64.whl", hash = "sha256:d515f334b922d7a7facf46797cf3b972a973b5e3c9467663ca0b65717a94c02a"},
+    {file = "pymp3-0.2.0-pp39-pypy39_pp73-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:ae7bb14a840e37182862ec680e3b3a157841bb7cfcea4b374f195d23169001e1"},
+    {file = "pymp3-0.2.0-pp39-pypy39_pp73-manylinux_2_5_i686.manylinux1_i686.manylinux_2_17_i686.manylinux2014_i686.whl", hash = "sha256:2f36db54c0e22a1641b9ff5c60b58d63403bf13d7492d83cb25f15423d587baa"},
+    {file = "pymp3-0.2.0-pp39-pypy39_pp73-win_amd64.whl", hash = "sha256:2c01ed2cc7e830f4275e787b0bca7f1560290c479defc47200282cdb14b3f983"},
+    {file = "pymp3-0.2.0.tar.gz", hash = "sha256:26c95917600cff593e53955059772859739b5f365dbc377c82d256a7f41c983d"},
+]
 
 [[package]]
 name = "pyobjc"
@@ -4416,17 +4481,6 @@ files = [
 boto3-stubs = "*"
 
 [[package]]
-name = "types-pyaudio"
-version = "0.2.16.20240516"
-description = "Typing stubs for pyaudio"
-optional = false
-python-versions = ">=3.8"
-files = [
-    {file = "types-pyaudio-0.2.16.20240516.tar.gz", hash = "sha256:f1c419ccc78b00d26c6c1ae4fcb17f7e4f08af2c2b9b73b12fcbc4a4ffa3a2c7"},
-    {file = "types_pyaudio-0.2.16.20240516-py3-none-any.whl", hash = "sha256:40063f13ae15a422cbd4a2a783653eb3e1091bdd23fc7ab8ca3abc21ad0d13f8"},
-]
-
-[[package]]
 name = "types-requests"
 version = "2.32.0.20240905"
 description = "Typing stubs for requests"
@@ -4537,7 +4591,7 @@ files = [
 [extras]
 elevenlabs = ["numpy", "numpy", "requests"]
 google = ["google-cloud-texttospeech"]
-googletrans = ["gTTS", "pydub"]
+googletrans = ["gTTS"]
 microsoft = ["azure-cognitiveservices-speech"]
 polly = ["boto3"]
 sapi = ["py3-tts"]
@@ -4549,4 +4603,4 @@ witai = ["requests"]
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.10,<3.13"
-content-hash = "ed2a4d2e2c148300eae2791b1f77a9ccbf01494ac732fe6a1f98d474a584d913"
+content-hash = "6b7545038dacbcee2862d9012dec7ca5fc006b235ff3c12ec8634c287e7e1588"

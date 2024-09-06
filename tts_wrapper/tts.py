@@ -9,7 +9,9 @@ import time
 import wave
 import soundfile as sf
 from io import BytesIO
-from pydub import AudioSegment
+import mp3
+from wave import Wave_read
+import re
 
 FileFormat = Union[str, None]
 WordTiming = Union[Tuple[float, str], Tuple[float, float, str]]
@@ -72,6 +74,20 @@ class AbstractTTS(ABC):
         """
         return wav_data[44:]  # Assuming the header is 44 bytes for standard WAV format
 
+    def _infer_channels_from_pcm(self,pcm_data: np.ndarray) -> int:
+        """
+        Infer the number of channels from the PCM data.
+        
+        :param pcm_data: PCM data as a numpy array.
+        :return: Number of channels (1 for mono, 2 for stereo).
+        """
+        if pcm_data.ndim == 1:
+            return 1  # Mono audio
+        elif pcm_data.ndim == 2:
+            return pcm_data.shape[1]  # Stereo or multi-channel
+        else:
+            raise ValueError("Unsupported PCM data format")
+        
     def _convert_audio(self, pcm_data: np.ndarray, target_format: str, sample_rate: int) -> bytes:
         """
         Convert raw PCM data to a specified audio format.
@@ -100,15 +116,37 @@ class AbstractTTS(ABC):
             return output.read()
         
         elif target_format == 'mp3':
-            # Convert to MP3 using pydub (requires ffmpeg or libav)
-            # Convert PCM to WAV first
-            wav_output = BytesIO()
-            sf.write(wav_output, pcm_data, samplerate=sample_rate, format='WAV')
-            wav_output.seek(0)
+            # Infer number of channels from the shape of the PCM data
+            nchannels = self._infer_channels_from_pcm(pcm_data)
             
-            # Use pydub to convert WAV to MP3
-            audio_segment = AudioSegment.from_wav(wav_output)
-            audio_segment.export(output, format='mp3')
+            # Ensure sample size is 16-bit PCM
+            sample_size = pcm_data.dtype.itemsize
+            if sample_size != 2:
+                raise ValueError(f"Only PCM 16-bit sample size is supported (input audio: {sample_size * 8}-bit)")
+
+            # Convert to bytes
+            pcm_bytes = pcm_data.tobytes()
+
+            # Create an in-memory file object for MP3 output
+            output = BytesIO()
+
+            # Initialize the MP3 encoder
+            encoder = mp3.Encoder(output)
+            encoder.set_bit_rate(64)  # Example bit rate in kbps
+            encoder.set_sample_rate(sample_rate)
+            encoder.set_channels(nchannels)
+            encoder.set_quality(5)  # Adjust quality: 2 = highest, 7 = fastest
+            #encoder.set_mod(mp3.MODE_STEREO if nchannels == 2 else mp3.MODE_SINGLE_CHANNEL)
+
+            # Write PCM data in chunks
+            chunk_size = 8000 * nchannels * sample_size
+            for i in range(0, len(pcm_bytes), chunk_size):
+                encoder.write(pcm_bytes[i:i+chunk_size])
+
+            # Finalize the MP3 encoding
+            encoder.flush()
+
+            # Return the MP3-encoded data
             output.seek(0)
             return output.read()
         
