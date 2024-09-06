@@ -4457,13 +4457,13 @@ files = [
 
 [[package]]
 name = "types-awscrt"
-version = "0.21.2"
+version = "0.21.4"
 description = "Type annotations and code completion for awscrt"
 optional = false
-python-versions = "<4.0,>=3.7"
+python-versions = ">=3.8"
 files = [
-    {file = "types_awscrt-0.21.2-py3-none-any.whl", hash = "sha256:0839fe12f0f914d8f7d63ed777c728cb4eccc2d5d79a26e377d12b0604e7bf0e"},
-    {file = "types_awscrt-0.21.2.tar.gz", hash = "sha256:84a9f4f422ec525c314fdf54c23a1e73edfbcec968560943ca2d41cfae623b38"},
+    {file = "types_awscrt-0.21.4-py3-none-any.whl", hash = "sha256:47f002cab99e25c10aee873d0f6d906a7144d58373b6ba68629993ed2d64f65b"},
+    {file = "types_awscrt-0.21.4.tar.gz", hash = "sha256:c2e58067a88818cb2aa2bdd39032aa41ce4b2637cef703edad477424f72530ee"},
 ]
 
 [[package]]
@@ -4603,4 +4603,4 @@ witai = ["requests"]
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.10,<3.13"
-content-hash = "6b7545038dacbcee2862d9012dec7ca5fc006b235ff3c12ec8634c287e7e1588"
+content-hash = "d6dd2d82fa6ede4bef42a58b17abf3f713fc90b133c996f8f1ee2fb9fa3bfac6"

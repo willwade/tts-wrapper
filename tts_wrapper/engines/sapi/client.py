@@ -3,6 +3,7 @@ from ...exceptions import ModuleNotInstalled
 from ..utils import create_temp_filename
 import os
 import platform
+import soundfile as sf  
 
 Credentials = Tuple[str]
 
@@ -18,7 +19,6 @@ class SAPIClient:
             raise ModuleNotInstalled("pyttsx3")
             pyttsx3 = None
 
-
         # Determine the default driver based on the platform
         if driver is None:
             self._system = platform.system()
@@ -26,10 +26,6 @@ class SAPIClient:
                 driver = "sapi5"
             elif self._system == "Darwin":
                 driver = "nsss"
-                try:
-                    from pydub import AudioSegment
-                except ImportError:
-                    raise ModuleNotInstalled("pydub")
             elif self._system == "Linux":
                 driver = "espeak"
             else:
@@ -42,7 +38,7 @@ class SAPIClient:
             elif driver == 'nsss':
                 default_voice = 'com.apple.voice.compact.en-US.Samantha'
             elif driver == 'espeak':
-                default_voice = 'English (America)'  # You may need to adjust based on available voices
+                default_voice = 'English (America)'
 
             self.properties = {
                 "rate": 100,
@@ -53,20 +49,21 @@ class SAPIClient:
         except Exception as e:
             raise RuntimeError(f"Failed to initialize pyttsx3 with driver '{driver}': {e}")
 
-
     def synth(self, text: str) -> bytes:
         temp_filename = create_temp_filename(".wav")
-        # On a mac its actually a aiff file
+        # On a mac, it's actually an aiff file
         self._client.save_to_file(text, temp_filename)
         self._client.runAndWait()
-        
+
         if self._system == 'Darwin':
-            try:
-                from pydub import AudioSegment
-            except ImportError:
-                raise ModuleNotInstalled("pydub")
-            aiff_audio = AudioSegment.from_file(temp_filename, format="aiff")
-            aiff_audio.export(temp_filename, format="wav")
+            # Use soundfile to read AIFF and write to WAV
+            temp_aiff = temp_filename.replace(".wav", ".aiff")
+            os.rename(temp_filename, temp_aiff)  # Rename .wav to .aiff, as macOS uses AIFF internally
+
+            data, samplerate = sf.read(temp_aiff)
+            sf.write(temp_filename, data, samplerate, format='WAV')
+
+            os.remove(temp_aiff)  # Clean up temporary AIFF file
 
         with open(temp_filename, "rb") as temp_f:
             content = temp_f.read()
@@ -85,7 +82,7 @@ class SAPIClient:
                 'languages': str(voice.languages).replace('_','-'),
                 'gender': self._standardize_gender(voice.gender),
                 'age': voice.age,
-                'voice_uri': voice.id  # or any other unique identifier available
+                'voice_uri': voice.id
             }
             standardized_voices.append(voice_data)
 
@@ -145,5 +142,3 @@ class SAPIClient:
     def _map_volume(self, volume: str) -> float:
         """Maps volume from 0-100 scale to pyttsx3 0-1 scale."""
         return float(volume) / 100.0
-
-
