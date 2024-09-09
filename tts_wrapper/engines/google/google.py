@@ -16,12 +16,10 @@ class GoogleTTS(AbstractTTS):
         self.generated_audio = None
         self.audio_format = None
 
-    def synth_to_bytes(self, text: Any, format: Optional[FileFormat] = "wav") -> bytes:
-        if format not in self.supported_formats():
-            raise UnsupportedFileFormat(format, self.__class__.__name__)
+    def synth_to_bytes(self, text: Any) -> bytes:
         if not self._is_ssml(text):
             text = self.ssml.add(text)
-        result = self._client.synth(str(text), self._voice, self._lang, format, include_timepoints=True)
+        result = self._client.synth(str(text), self._voice, self._lang, include_timepoints=True)
         self.generated_audio = result["audio_content"]
         self.audio_format = format
         timings = self._process_word_timings(result.get("timepoints", []))
@@ -47,7 +45,7 @@ class GoogleTTS(AbstractTTS):
 
     def get_audio_duration(self) -> float:
         if self.generated_audio and self.audio_format:
-            return self._client.get_audio_duration(self.generated_audio, self.audio_format)
+            return self._client.get_audio_duration(self.generated_audio)
         return 0.0
 
         

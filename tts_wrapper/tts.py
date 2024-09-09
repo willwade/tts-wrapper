@@ -7,6 +7,7 @@ import logging
 import time
 import re
 import wave
+import numpy as np
 
 FileFormat = Union[Literal["wav"], Literal["mp3"]]
 WordTiming = Union[Tuple[float, str], Tuple[float, float, str]]
@@ -50,39 +51,39 @@ class AbstractTTS(ABC):
 
     @classmethod
     @abstractmethod
-    def supported_formats(cls) -> List[FileFormat]:
+    def supported_formats(self) -> List[str]:
         """Returns list of supported audio types in concrete text-to-speech classes."""
         pass
 
     @abstractmethod
-    def synth_to_bytes(self, text: Any, format: Optional[FileFormat] = "wav") -> bytes:
+    def synth_to_bytes(self, text: Any) -> bytes:
         """Transforms written text to audio bytes on supported formats."""
         pass
+    
+    #@abstractmethod
+    #def convertaudio(self, pcm_data: np.ndarray, target_format: str, sample_rate: int) -> bytes:
+    #    pass    
 
-    def synth_to_file(self, text: Any, filename: str, format: Optional[FileFormat] = None) -> None:
-        audio_content = self.synth_to_bytes(text, format=format or "wav")
+    def synth_to_file(self, text: Any, filename: str) -> None:
+        audio_content = self.synth_to_bytes(text)
         #audio_content = self.apply_fade_in(audio_content)
         
-        if format == "wav":
-            # Open file and add WAV header before writing the audio content
-            channels = 1
-            sample_width = 2  # 16 bit audio, corrected from 8 bit
-            with wave.open(filename, "wb") as file:
-                file.setnchannels(channels)
-                file.setsampwidth(sample_width)
-                file.setframerate(self.audio_rate)
-                file.writeframes(audio_content)
-        else:
-            # Directly save the audio content for formats other than WAV
-            with open(filename, "wb") as file:
-                file.write(audio_content)
+        # Open file and add WAV header before writing the audio content
+        channels = 1
+        sample_width = 2  # 16 bit audio, corrected from 8 bit
+        with wave.open(filename, "wb") as file:
+            file.setnchannels(channels)
+            file.setsampwidth(sample_width)
+            file.setframerate(self.audio_rate)
+            file.writeframes(audio_content)
 
-    def synth(self, text: str, filename: str, format: Optional[FileFormat] = "wav"):
-        self.synth_to_file(text, filename, format)
 
-    def speak(self, text: Any, format: Optional[FileFormat] = "wav") -> bytes:
+    def synth(self, text: str, filename: str):
+        self.synth_to_file(text, filename)
+
+    def speak(self, text: Any) -> bytes:
         try:
-            audio_bytes = self.synth_to_bytes(text, format)
+            audio_bytes = self.synth_to_bytes(text)
             # Check if this data has a WAV header (first 4 bytes should be 'RIFF')
             if audio_bytes[:4] == b'RIFF':
                 logging.info("[TTS.speak_streamed] Detected WAV header, stripping header.")
@@ -134,10 +135,10 @@ class AbstractTTS(ABC):
             return (None, pyaudio.paContinue)
 
 
-    def speak_streamed(self, text: Any, format: Optional[FileFormat] = "wav"):
+    def speak_streamed(self, text: Any):
         try:
             logging.info("[TTS.speak_streamed] Starting speech synthesis...")
-            audio_bytes = self.synth_to_bytes(text, format)
+            audio_bytes = self.synth_to_bytes(text)
             if audio_bytes[:4] == b'RIFF':
                 logging.info("[TTS.speak_streamed] Detected WAV header, stripping header.")
                 audio_bytes = audio_bytes[44:]  # Strip the 44-byte WAV header
