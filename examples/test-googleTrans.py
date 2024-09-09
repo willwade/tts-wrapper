@@ -22,7 +22,7 @@ try:
     print(f"Synthesis time: {synthesis_time - start_time:.3f} seconds")
     text = "Hello, This is a word timing test"
     start_time = time.time()
-    tts.synth_to_file(text,"test.mp3", "mp3")
+    tts.synth_to_file(text, "test.mp3", "mp3")
     synthesis_time = time.time()
     print(f"Synthesis time: {synthesis_time - start_time:.3f} seconds")
 

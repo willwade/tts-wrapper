@@ -25,9 +25,15 @@ try:
 
     text = "I want to test the streaming function and this a much longer sentence than the previous one. This is a test of the streaming function."
     start_time = time.time()
-    tts.speak_streamed(text)
+    #tts.speak(text)
+    tts.synth_to_file("i like cheese", "test.mp3", "mp3")
     synthesis_time = time.time()
     print(f"Synthesis time: {synthesis_time - start_time:.3f} seconds")
+    # text = "I want to test the streaming function and this a much longer sentence than the previous one. This is a test of the streaming function."
+    # start_time = time.time()
+    # tts.speak_streamed(text)
+    # synthesis_time = time.time()
+    # print(f"Synthesis time: {synthesis_time - start_time:.3f} seconds")
 
     # tts.set_property("volume", "50")
     # print("Setting volume at 50")
