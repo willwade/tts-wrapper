@@ -16,6 +16,7 @@ FORMATS = {
     "wav": "wav"
 }
 
+
 class GoogleTransClient:
     def __init__(self, voice_id='en-co.uk'):
         self.lang, self.tld = self._parse_voice_id(voice_id)
