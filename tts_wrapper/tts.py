@@ -6,11 +6,6 @@ import threading
 from threading import Event
 import logging
 import time
-import wave
-import soundfile as sf
-from io import BytesIO
-import mp3
-from wave import Wave_read
 import re
 
 FileFormat = Union[str, None]
@@ -57,16 +52,15 @@ class AbstractTTS(ABC):
         :param mp3_data: MP3 audio data as bytes.
         :return: Raw PCM data as bytes (int16).
         """
+        from soundfile import SoundFile, read  
+        from io import BytesIO
+
         # Use soundfile to convert MP3 to WAV
         mp3_fp = BytesIO(mp3_data)
-        audio = sf.SoundFile(mp3_fp)
-        
-        # Convert to PCM format
-        pcm_data, _ = sf.read(mp3_fp, dtype='int16', always_2d=False)
-        
-        # Ensure PCM data is returned as bytes
+        audio = SoundFile(mp3_fp)
+        pcm_data, _ = read(mp3_fp, dtype='int16', always_2d=False)
         return pcm_data.tobytes()
-    
+        
     def _strip_wav_header(self, wav_data: bytes) -> bytes:
         """
         Strip the WAV header from the audio data to return raw PCM.
@@ -100,23 +94,19 @@ class AbstractTTS(ABC):
         if target_format not in ['mp3', 'flac', 'wav']:
             raise ValueError(f"Unsupported format: {target_format}")
         
+        from io import BytesIO
         # Create an in-memory file object
         output = BytesIO()
         
-        if target_format == 'flac':
-            # Convert to FLAC using soundfile
-            sf.write(output, pcm_data, samplerate=sample_rate, format='FLAC')
+        if target_format == 'flac' or target_format == 'wav':
+            from soundfile import write  # Lazy import
+            write(output, pcm_data, samplerate=sample_rate, format=target_format.upper())
             output.seek(0)
             return output.read()
-        
-        elif target_format == 'wav':
-            # Convert to WAV using soundfile
-            sf.write(output, pcm_data, samplerate=sample_rate, format='WAV')
-            output.seek(0)
-            return output.read()
-        
+                
         elif target_format == 'mp3':
             # Infer number of channels from the shape of the PCM data
+            import mp3  # Lazy import
             nchannels = self._infer_channels_from_pcm(pcm_data)
             
             # Ensure sample size is 16-bit PCM
@@ -153,10 +143,9 @@ class AbstractTTS(ABC):
         else:
             raise ValueError(f"Unsupported format: {target_format}")
     
-    @abstractmethod
     def supported_formats(self) -> List[str]:
-        """Returns list of supported audio types in concrete text-to-speech classes."""
-        pass
+        """Returns a list of supported audio formats."""
+        return ['mp3', 'flac', 'wav']
 
     @abstractmethod
     def synth_to_bytes(self, text: Any) -> bytes:
