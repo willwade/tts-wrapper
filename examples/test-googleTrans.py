@@ -17,12 +17,12 @@ try:
     # Define the text to be synthesized
     text = "Hello, This is a word timing test"
     start_time = time.time()
-    tts.speak(text,"wav")
+    tts.speak(text)
     synthesis_time = time.time()
     print(f"Synthesis time: {synthesis_time - start_time:.3f} seconds")
     text = "Hello, This is a word timing test"
     start_time = time.time()
-    tts.speak(text,"wav")
+    tts.synth_to_file(text, "test.mp3", "mp3")
     synthesis_time = time.time()
     print(f"Synthesis time: {synthesis_time - start_time:.3f} seconds")
 

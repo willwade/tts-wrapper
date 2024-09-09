@@ -19,8 +19,18 @@ class GoogleTransTTS(AbstractTTS):
     def get_voices(self):
         return self.client.get_voices()
 
-    def synth_to_bytes(self, text, format='mp3'):
-        return self.client.synth(text, format)
+    def synth_to_bytes(self, text: Any) -> bytes:
+        """
+        Transforms text to raw PCM audio bytes.
+        The output is always raw PCM data (int16) with no headers.
+        """
+        # Get the MP3 data from GoogleTransClient
+        mp3_data = self.client.synth(text)
+
+        # Convert the MP3 data to raw PCM using the utility method
+        pcm_data = self._convert_mp3_to_pcm(mp3_data)
+
+        return pcm_data
 
     def set_voice(self, voice_id: str, lang_id: Optional[str] = None):
         super().set_voice(voice_id, lang_id)
