@@ -9,7 +9,7 @@ load_credentials('credentials-private.json')
 
 client = ElevenLabsClient(credentials=(os.getenv('ELEVENLABS_API_KEY')))
 tts = ElevenLabsTTS(client)
-#print(client.get_voices())
+print(client.get_voices())
 # # # pausing
 try:
     ssml_text = tts.ssml.add(f"This is me speaking with Speak function and ElevenLabs")
@@ -34,8 +34,8 @@ time.sleep(3)
 # # Demonstrate saving audio to a file
 try:
     ssml_text = tts.ssml.add(f"This is me speaking with Speak function and ElevenLabs")
-    output_file = Path(f"output_elevenlabs.wav")
-    tts.synth(ssml_text, str(output_file), format='wav')
+    output_file = Path(f"output_elevenlabs.mp3")
+    tts.synth(ssml_text, str(output_file), format='mp3')
     # or you could do
     #tts.speak(ssml_text)
     print(f"Audio content saved to {output_file}")
