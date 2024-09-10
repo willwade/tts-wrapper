@@ -130,7 +130,7 @@ class AbstractTTS(ABC):
             encoder.set_sample_rate(sample_rate)
             encoder.set_channels(nchannels)
             encoder.set_quality(5)  # Adjust quality: 2 = highest, 7 = fastest
-            # encoder.set_mod(mp3.MODE_STEREO if nchannels == 2 else mp3.MODE_SINGLE_CHANNEL)
+            # encoder.set_mod(mp3.MODE_STEREO if nchannels == 2 else mp3.MODE_SINGLE_CHANNEL)   # noqa: E501
 
             # Write PCM data in chunks
             chunk_size = 8000 * nchannels * sample_size
@@ -251,9 +251,9 @@ class AbstractTTS(ABC):
             if len(data) < frames * 2:
                 # Not enough data to fill outdata, zero-pad it
                 outdata.fill(0)
-                outdata[:len(data) // 2] = np.frombuffer(data, dtype='int16').reshape(-1, 1)
+                outdata[:len(data) // 2] = np.frombuffer(data, dtype='int16').reshape(-1, 1)  # noqa: E501
             else:
-                outdata[:] = np.frombuffer(data, dtype='int16').reshape(outdata.shape)
+                outdata[:] = np.frombuffer(data, dtype='int16').reshape(outdata.shape)   # noqa: E501
             self.position = end_position
 
             if self.position >= len(self.audio_bytes):
@@ -307,7 +307,7 @@ class AbstractTTS(ABC):
             if len(timing) == 2:
                 start_time, word = timing
                 if i < len(timings) - 1:
-                    end_time = timings[i+1][0] if len(timings[i+1]) == 2 else timings[i+1][1]
+                    end_time = timings[i+1][0] if len(timings[i+1]) == 2 else timings[i+1][1]  # noqa: E501
                 else:
                     end_time = total_duration
                 self.timings.append((start_time, end_time, word))
@@ -325,14 +325,15 @@ class AbstractTTS(ABC):
         return 0.0
 
     def on_word_callback(self, word: str, start_time: float, end_time: float):
-        logging.info(f"Word spoken: {word}, Start: {start_time:.3f}s, End: {end_time:.3f}s")
+        logging.info(f"Word spoken: {word}, Start: {start_time:.3f}s, End: {end_time:.3f}s")  # noqa: E501
 
     def connect(self, event_name: str, callback: Callable):
         if event_name in self.callbacks:
             self.callbacks[event_name] = callback
 
     def _trigger_callback(self, event_name: str, *args):
-        if event_name in self.callbacks and self.callbacks[event_name] is not None:
+        if (event_name in self.callbacks and
+                self.callbacks[event_name] is not None):
             self.callbacks[event_name](*args)
 
     def start_playback_with_callbacks(self, text: str, callback=None):
