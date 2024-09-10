@@ -1,5 +1,4 @@
 from tts_wrapper import ElevenLabsTTS, ElevenLabsClient
-import json
 import time
 from pathlib import Path
 import os
@@ -12,7 +11,9 @@ tts = ElevenLabsTTS(client)
 print(client.get_voices())
 # # # pausing
 try:
-    ssml_text = tts.ssml.add(f"This is me speaking with Speak function and ElevenLabs")
+    ssml_text = tts.ssml.add(
+        "This is me speaking with Speak function and ElevenLabs"
+    )
     tts.speak_streamed(ssml_text)
     # Pause after 5 seconds
     time.sleep(0.3)
@@ -33,11 +34,13 @@ time.sleep(3)
 # 
 # # Demonstrate saving audio to a file
 try:
-    ssml_text = tts.ssml.add(f"This is me speaking with Speak function and ElevenLabs")
-    output_file = Path(f"output_elevenlabs.mp3")
-    tts.synth(ssml_text, str(output_file), format='mp3')
+    ssml_text = tts.ssml.add(
+        "This is me speaking with Speak function and ElevenLabs"
+    )
+    output_file = Path("output_elevenlabs.mp3")
+    tts.synth(str(ssml_text), str(output_file), format='mp3')
     # or you could do
-    #tts.speak(ssml_text)
+    # tts.speak(ssml_text)
     print(f"Audio content saved to {output_file}")
 except Exception as e:
     print(f"Error at saving: {e}")

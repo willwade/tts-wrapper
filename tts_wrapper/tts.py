@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import Any, List, Optional, Union, Dict, Callable, Tuple
-import sounddevice as sd
-import numpy as np
+import sounddevice as sd  # type: ignore
+import numpy as np  # type: ignore
 import threading
 from threading import Event
 import logging
@@ -52,7 +52,7 @@ class AbstractTTS(ABC):
         :param mp3_data: MP3 audio data as bytes.
         :return: Raw PCM data as bytes (int16).
         """
-        from soundfile import read
+        from soundfile import read  # type: ignore
         from io import BytesIO
 
         # Use soundfile to read MP3 data
@@ -109,7 +109,7 @@ class AbstractTTS(ABC):
             return output.read()
         elif target_format == 'mp3':
             # Infer number of channels from the shape of the PCM data
-            import mp3  # Lazy import
+            import mp3  # type: ignore
             nchannels = self._infer_channels_from_pcm(pcm_data)
             # Ensure sample size is 16-bit PCM
             sample_size = pcm_data.dtype.itemsize
@@ -178,6 +178,9 @@ class AbstractTTS(ABC):
             file.write(converted_audio)
 
     def synth(self, text: str, filename: str, format: Optional[str] = "wav"):
+        """
+        Alias for synth_to_file method.
+        """
         self.synth_to_file(text, filename, format)
 
     def speak(self, text: Any) -> None:
