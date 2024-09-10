@@ -10,5 +10,5 @@ from .uwp import *
 from .witai import *
 from .sherpaonnx import *
 from .googletrans import *
-from .mms import * 
-from .piper import *
+# from .mms import * 
+# from .piper import *
