@@ -69,7 +69,7 @@ class SherpaOnnxTTS(AbstractTTS):
             self._client.set_voice(voice_id)
             self.audio_rate = self._client.sample_rate  # Update the audio_rate based on the selected voice
 
-    def synth_to_bytes(self, text: str, format: Optional[FileFormat] = "wav") -> bytes:
+    def synth_to_bytes(self, text: str) -> bytes:
         text = str(text)
         if not self._is_ssml(text):
             text = self.ssml.add(text)

@@ -5,6 +5,7 @@ from pathlib import Path
 import os
 from load_credentials import load_credentials
 import logging
+
 # Load credentials
 load_credentials('credentials.json')
 client = MicrosoftClient(credentials=(os.getenv('MICROSOFT_TOKEN'), os.getenv('MICROSOFT_REGION')))

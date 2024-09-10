@@ -247,4 +247,5 @@ class SherpaOnnxClient:
                 raise RuntimeError("Failed to initialize TTS engine with the specified voice.")
     
     def _convert_samples_to_bytes(self, samples: np.ndarray) -> bytes:
+        samples = np.array(samples)
         return (samples * 32767).astype(np.int16).tobytes()

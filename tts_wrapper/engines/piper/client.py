@@ -22,13 +22,10 @@ except ImportError as e:
 
 Credentials = Tuple[str]
 
-FORMATS = {
-    "wav": "pcm",
-    "mp3": "mp3",
-}
-
-
-
+#FORMATS = {
+#    "wav": "pcm",
+#    "mp3": "mp3",
+#}
 
 class PiperClient:
     def __init__(
@@ -84,7 +81,7 @@ class PiperClient:
         print(f"Loading voice: {model_path}, {config_path}, {use_cuda}")    
         self._client = PiperVoice.load(str(model_path), config_path, use_cuda)
 
-    def synth(self, text: str, format: str, speaker_id: Optional[int] = None, length_scale: Optional[float] = None, noise_scale: Optional[float] = None, noise_w: Optional[float] = None, sentence_silence: float = 0.0) -> bytes:
+    def synth(self, text: str, speaker_id: Optional[int] = None, length_scale: Optional[float] = None, noise_scale: Optional[float] = None, noise_w: Optional[float] = None, sentence_silence: float = 0.0) -> bytes:
         try:
             synthesize_args = {
                 "speaker_id": speaker_id,

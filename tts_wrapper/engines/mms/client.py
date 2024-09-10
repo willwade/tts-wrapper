@@ -56,10 +56,7 @@ class MMSClient:
             except Exception as download_error:
                 raise ModelNotFound(lang, str(download_error))
 
-    def synth(self, text: str, voice: str, lang: str, format: str) -> Dict[str, Any]:
-        if format.lower() != "wav":
-            raise UnsupportedFileFormat(format, "MMSClient")
-        
+    def synth(self, text: str, voice: str, lang: str) -> Dict[str, Any]:      
         # Ensure the TTS model is initialized for the correct language
         self._initialize_tts(lang)
 

@@ -14,7 +14,7 @@ class PicoTTS(AbstractTTS):
         self._client = client
         self._voice = voice or "en-US"
 
-    def synth_to_bytes(self, text: Any, format: FileFormat) -> bytes:
+    def synth_to_bytes(self, text: Any) -> bytes:
         if format not in self.supported_formats():
             raise UnsupportedFileFormat(format, self.__class__.__name__)
         return self._client.synth(str(text), self._voice)

@@ -10,7 +10,7 @@ from ...exceptions import ModuleNotInstalled
 
 Credentials = Tuple[str, str, str]  # api_key, region, instance_id 
 
-FORMATS = {"wav": "audio/wav", "mp3": "audio/mp3"}
+#FORMATS = {"wav": "audio/wav", "mp3": "audio/mp3"}
 
 class WatsonClient:
     def __init__(self, credentials: Credentials, disableSSLVerification: bool = False) -> None:
@@ -59,15 +59,15 @@ class WatsonClient:
             # Construct the WebSocket URL
             self.ws_url = f"wss://api.{self.region}.text-to-speech.watson.cloud.ibm.com/instances/{self.instance_id}/v1/synthesize"
 
-    def synth(self, ssml: str, voice: str, format: str) -> bytes:
+    def synth(self, ssml: str, voice: str) -> bytes:
         self._initialize_ibm_watson()
         return (
-            self._client.synthesize(text=str(ssml), voice=voice, accept=FORMATS[format])
+            self._client.synthesize(text=str(ssml), voice=voice, accept="audio/wav")
             .get_result()
             .content
         )
 
-    def synth_with_timings(self, ssml: str, voice: str, format: str) -> bytes:
+    def synth_with_timings(self, ssml: str, voice: str) -> bytes:
         self._initialize_ibm_watson()
         audio_data = []
         self.word_timings = []
@@ -83,7 +83,7 @@ class WatsonClient:
         def on_open(ws):
             message = {
                 'text': ssml,
-                'accept': FORMATS[format],
+                'accept': "audio/wav",
                 'voice': voice,
                 'timings': ['words']
             }
@@ -107,48 +107,33 @@ class WatsonClient:
             wst.start()
             wst.join()
             raw_audio = b''.join(audio_data)
-            if format == "wav":
-                with io.BytesIO() as wav_file:
-                    with wave.open(wav_file, 'wb') as wav:
-                        wav.setnchannels(1)
-                        wav.setsampwidth(2)
-                        wav.setframerate(22050)
-                        wav.writeframes(raw_audio)
-                    return wav_file.getvalue()
-            else:
-                return raw_audio
+                
+            return raw_audio
         except Exception as e:
             logging.error(f"Error in WebSocket thread: {e}")
             return b''
         finally:
             ws.close()
 
-    def get_audio_duration(self, audio_content: bytes, format: str) -> float:
-        if format == "wav":
-            riff, size, fformat = struct.unpack('<4sI4s', audio_content[:12])
-            if riff != b'RIFF' or fformat != b'WAVE':
-                raise ValueError("Not a WAV file")
+    def get_audio_duration(self, audio_content: bytes) -> float:
+        riff, size, fformat = struct.unpack('<4sI4s', audio_content[:12])
+        if riff != b'RIFF' or fformat != b'WAVE':
+            raise ValueError("Not a WAV file")
             
-            subchunk1, subchunk1_size = struct.unpack('<4sI', audio_content[12:20])
-            if subchunk1 != b'fmt ':
-                raise ValueError("Not a valid WAV file")
+        subchunk1, subchunk1_size = struct.unpack('<4sI', audio_content[12:20])
+        if subchunk1 != b'fmt ':
+            raise ValueError("Not a valid WAV file")
             
-            aformat, channels, sample_rate, byte_rate, block_align, bits_per_sample = struct.unpack('HHIIHH', audio_content[20:36])
+        aformat, channels, sample_rate, byte_rate, block_align, bits_per_sample = struct.unpack('HHIIHH', audio_content[20:36])
             
-            subchunk2, subchunk2_size = struct.unpack('<4sI', audio_content[36:44])
-            if subchunk2 != b'data':
-                raise ValueError("Not a valid WAV file")
+        subchunk2, subchunk2_size = struct.unpack('<4sI', audio_content[36:44])
+        if subchunk2 != b'data':
+            raise ValueError("Not a valid WAV file")
             
-            num_samples = subchunk2_size // (channels * (bits_per_sample // 8))
-            duration = num_samples / sample_rate
+        num_samples = subchunk2_size // (channels * (bits_per_sample // 8))
+        duration = num_samples / sample_rate
             
-            return duration
-        elif format == "mp3":
-            bitrate = 128 * 1024
-            duration = len(audio_content) * 8 / bitrate
-            return duration
-        else:
-            raise ValueError(f"Unsupported format: {format}")
+        return duration
             
     def get_voices(self) -> List[Dict[str, Any]]:
         self._initialize_ibm_watson()

@@ -18,15 +18,7 @@ class SAPITTS(AbstractTTS):
         self._client.set_voice(voice_id)
         
 
-    def synth_to_bytes(self, text: Any, format: Optional[Literal['wav', 'mp3']] = None) -> bytes:
-        # Default format to 'wav' if not specified
-        if format is None:
-            format = 'wav'
-        
-        # Ensure the requested format is supported
-        if format not in self.supported_formats():
-            raise UnsupportedFileFormat(format, self.__class__.__name__)
-
+    def synth_to_bytes(self, text: Any) -> bytes:
         return self._client.synth(str(text))
 
         

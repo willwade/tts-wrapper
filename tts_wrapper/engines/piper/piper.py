@@ -20,12 +20,10 @@ class PiperTTS(AbstractTTS):
         self.set_voice(voice or "Joanna", lang or "en-US")
         self.audio_rate = 16000
 
-    def synth_to_bytes(self, text: Any, format: Optional[FileFormat] = "wav") -> bytes:
-        if format not in self.supported_formats():
-            raise UnsupportedFileFormat(format, self.__class__.__name__)
+    def synth_to_bytes(self, text: Any) -> bytes:
         word_timings = estimate_word_timings(str(text))
         self.set_timings(word_timings)
-        return self._client.synth(str(text), format)
+        return self._client.synth(str(text))
 
     @property
     def ssml(self) -> PiperSSML:

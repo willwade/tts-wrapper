@@ -14,13 +14,11 @@ class PollyTTS(AbstractTTS):
         self.set_voice(voice or "Joanna", lang or "en-US")
         self.audio_rate = 16000
 
-    def synth_to_bytes(self, text: Any, format: Optional[FileFormat] = "wav") -> bytes:
-        if format not in self.supported_formats():
-            raise UnsupportedFileFormat(format, self.__class__.__name__)
+    def synth_to_bytes(self, text: Any) -> bytes:
         if not self._is_ssml(str(text)):
             text = self.ssml.add(str(text))
 
-        result = self._client.synth_with_timings(str(text), self._voice, format)
+        result = self._client.synth_with_timings(str(text), self._voice)
         
         if isinstance(result, tuple) and len(result) == 2:
             self.generated_audio, word_timings = result

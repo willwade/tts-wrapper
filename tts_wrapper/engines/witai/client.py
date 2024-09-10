@@ -2,6 +2,7 @@ from ...tts import AbstractTTS, FileFormat
 from typing import Any, Dict, Optional, List
 from ...exceptions import UnsupportedFileFormat
 import logging
+import requests
 
 FORMATS = {
     "mp3": "mp3",
@@ -64,7 +65,7 @@ class WitAiClient:
         
     def synth(self, text: str, voice: str, format: str = "pcm") -> bytes:
         self.headers["Content-Type"] = "application/json"
-        self.headers["Accept"] = self._get_mime_type(format)
+        self.headers["Accept"] = "audio/raw"
     
         
         data = {

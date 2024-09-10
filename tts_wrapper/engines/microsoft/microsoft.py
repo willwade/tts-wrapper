@@ -40,10 +40,10 @@ class MicrosoftTTS(AbstractTTS):
     def supported_formats(cls) -> List[FileFormat]:
         return list(FORMATS.keys())
     
-    def speak(self, ssml: str, format: Optional[FileFormat] = "wav"):
+    def speak(self, ssml: str):
         if not self._is_ssml(str(ssml)):
             ssml = self.ssml.add(str(ssml))
-        format = FORMATS.get(format, "Riff24Khz16BitMonoPcm")
+        format = FORMATS.get("wav", "Riff24Khz16BitMonoPcm")
         self._client.speech_config.set_speech_synthesis_output_format(getattr(speechsdk.SpeechSynthesisOutputFormat, format))
 
         result = self.synthesizer.speak_ssml_async(str(ssml)).get()
@@ -95,15 +95,13 @@ class MicrosoftTTS(AbstractTTS):
         
         return text_with_tag
     
-    def synth_to_bytes(self, text: Any, format: Optional[FileFormat] = "wav") -> bytes:
-        if format not in self.supported_formats():
-            raise UnsupportedFileFormat(format, self.__class__.__name__)
+    def synth_to_bytes(self, text: Any) -> bytes:
         if not self._is_ssml(str(text)):
             ssml = self.ssml.add(str(text))
         else:
             ssml = str(text)
 
-        azure_format = FORMATS.get(format, "Riff24Khz16BitMonoPcm")
+        azure_format = FORMATS.get("wav", "Riff24Khz16BitMonoPcm")
         self._client.speech_config.set_speech_synthesis_output_format(getattr(speechsdk.SpeechSynthesisOutputFormat, azure_format))
         
         # Ensure we're requesting word boundary information

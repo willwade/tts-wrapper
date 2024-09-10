@@ -11,10 +11,6 @@ except ImportError:
     np = None  # type: ignore
 
 class MMSTTS(AbstractTTS):
-    @classmethod
-    def supported_formats(cls) -> List[FileFormat]:
-        return ["wav"]  # MMS only supports WAV format
-
     def __init__(self, client: MMSClient, lang: Optional[str] = None, voice: Optional[str] = None):
         super().__init__()
         self._client = client
@@ -52,17 +48,14 @@ class MMSTTS(AbstractTTS):
             return str(match.group(1))
         return input_string
 
-    def synth_to_bytes(self, text: Any, format: Optional[FileFormat] = "wav") -> bytes:
-        if format not in self.supported_formats():
-            raise UnsupportedFileFormat(format, self.__class__.__name__)
-        
+    def synth_to_bytes(self, text: Any) -> bytes:        
         text = str(text)
         if not self._is_ssml(text):
             text = self.ssml.add(text)
             text = str(text)
 
         extracted_text = self.extract_text_from_tags(text)
-        result = self._client.synth(str(extracted_text), self._voice, self._lang, format)
+        result = self._client.synth(str(extracted_text), self._voice, self._lang)
         
         self.audio_bytes = result["audio_content"]
 
@@ -71,11 +64,11 @@ class MMSTTS(AbstractTTS):
         if "volume=" in prosody_text:
             volume = self.get_volume_value(prosody_text)
             print("extracted volume from prosody is ", volume)
-            self.audio_bytes = self.adjust_volume_value(self.audio_bytes, volume, format)
+            self.audio_bytes = self.adjust_volume_value(self.audio_bytes, volume)
 
         return self.audio_bytes
 
-    def adjust_volume_value(self, generated_audio: bytes, volume: float, format: str) -> bytes:
+    def adjust_volume_value(self, generated_audio: bytes, volume: float) -> bytes:
         # Ensure even length
         if len(generated_audio) % 2 != 0:
             generated_audio += b'\x00'
@@ -109,11 +102,8 @@ class MMSTTS(AbstractTTS):
         
         return float(match.group(1))
 
-    def synth(self, text: Any, output_file: str, format: Optional[FileFormat] = "wav") -> None:
-        if format.lower() != "wav":
-            raise UnsupportedFileFormat(format, self.__class__.__name__)
-        
-        audio_bytes = self.synth_to_bytes(text, format)
+    def synth(self, text: Any, output_file: str) -> None:
+        audio_bytes = self.synth_to_bytes(text)
         with open(output_file, "wb") as f:
             f.write(audio_bytes)
 
