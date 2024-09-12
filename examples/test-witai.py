@@ -50,3 +50,10 @@ try:
     tts.start_playback_with_callbacks(text, callback=my_callback)
 except Exception as e:
     print(f"Error at callbacks: {e}")
+
+try:
+    text = "Test saving audio to file"
+    print(text)
+    tts.synth_to_file(text, "test-witai.wav", "wav")
+except Exception as e:
+    print(f"Error saving audio to file")

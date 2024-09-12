@@ -37,25 +37,23 @@ class PollyClient:
             )
         self._client = boto_session.client("polly")
 
-    def synth(self, ssml: str, voice: str, format: str) -> bytes:
+    def synth(self, ssml: str, voice: str) -> bytes:
         raw = self._client.synthesize_speech(
             Engine="neural",
-            OutputFormat=FORMATS[format],
+            OutputFormat="pcm",
             VoiceId=voice,
             TextType="ssml",
             Text=ssml,
         )["AudioStream"].read()
 
-        if format == "wav":
-            return process_wav(raw)
-        else:
-            return raw
+        return process_wav(raw)
 
-    def synth_with_timings(self, ssml: str, voice: str, format: str) -> Tuple[bytes, List[Tuple[float, str]]]:
-            audio_data, word_timings = self._synth_with_marks(ssml, voice, format)
+
+    def synth_with_timings(self, ssml: str, voice: str) -> Tuple[bytes, List[Tuple[float, str]]]:
+            audio_data, word_timings = self._synth_with_marks(ssml, voice)
             return audio_data, word_timings
 
-    def _synth_with_marks(self, ssml: str, voice: str, format: str) -> Tuple[bytes, List[Tuple[float, str]]]:
+    def _synth_with_marks(self, ssml: str, voice: str) -> Tuple[bytes, List[Tuple[float, str]]]:
         # Get speech marks
         marks_response = self._client.synthesize_speech(
             Engine="neural",
@@ -74,7 +72,7 @@ class PollyClient:
         # Get audio data
         audio_response = self._client.synthesize_speech(
             Engine="neural",
-            OutputFormat=FORMATS[format],
+            OutputFormat="pcm",
             VoiceId=voice,
             TextType="ssml",
             Text=ssml,
@@ -82,8 +80,7 @@ class PollyClient:
         
         audio_data = audio_response["AudioStream"].read()
         
-        if format == "wav":
-            audio_data = process_wav(audio_data)
+        audio_data = process_wav(audio_data)
 
         return audio_data, word_timings
 

@@ -9,9 +9,6 @@ import time
 from ...engines.utils import estimate_word_timings  
 
 class PiperTTS(AbstractTTS):
-    @classmethod
-    def supported_formats(cls) -> List[FileFormat]:
-        return ["wav", "mp3"]
 
     def __init__(self, client: PiperClient, lang: Optional[str] = None, voice: Optional[str] = None):
         super().__init__()
@@ -20,12 +17,15 @@ class PiperTTS(AbstractTTS):
         self.set_voice(voice or "Joanna", lang or "en-US")
         self.audio_rate = 16000
 
-    def synth_to_bytes(self, text: Any, format: Optional[FileFormat] = "wav") -> bytes:
-        if format not in self.supported_formats():
-            raise UnsupportedFileFormat(format, self.__class__.__name__)
+    def synth_to_bytes(self, text: Any) -> bytes:
         word_timings = estimate_word_timings(str(text))
         self.set_timings(word_timings)
-        return self._client.synth(str(text), format)
+        audio_bytes = self._client.synth(str(text))
+        
+        if self.audio_bytes[:4] == b'RIFF':
+            audio_bytes = self._strip_wav_header(audio_bytes)
+        
+        return audio_bytes
 
     @property
     def ssml(self) -> PiperSSML:

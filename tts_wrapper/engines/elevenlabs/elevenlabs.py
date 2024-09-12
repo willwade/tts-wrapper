@@ -3,7 +3,8 @@ from ...exceptions import UnsupportedFileFormat
 from ...tts import AbstractTTS, FileFormat
 from . import ElevenLabsClient, ElevenLabsSSMLRoot
 import re
-
+import numpy as np
+import pathlib
 
 class ElevenLabsTTS(AbstractTTS):
     def __init__(self, client: ElevenLabsClient, lang: Optional[str] = None, voice: Optional[str] = None):
@@ -12,20 +13,22 @@ class ElevenLabsTTS(AbstractTTS):
         self.audio_rate = 22050  # Kept at 22050
         self.set_voice(voice or "yoZ06aMxZJJ28mfd3POQ", lang or "en-US")
 
-    def synth_to_bytes(self, text: Any, format: Optional[FileFormat] = "wav") -> bytes:
-        if format not in self.supported_formats():
-            raise UnsupportedFileFormat(format, "ElevenLabs API")
+    def synth_to_bytes(self, text: Any) -> bytes:
         if not self._voice:
             raise ValueError("Voice ID must be set before synthesizing speech.")
 
         # Get the audio and word timings from the ElevenLabs API
-        self.generated_audio, word_timings = self._client.synth(str(text), self._voice, format)
+        self.generated_audio, word_timings = self._client.synth(str(text), self._voice)
         self.set_timings(word_timings)
 
         prosody_text = str(text)
         if "volume=" in prosody_text:
             volume = self.get_volume_value(prosody_text)
-            self.generated_audio = self.adjust_volume_value(self.generated_audio, volume, format)
+            self.generated_audio = self.adjust_volume_value(self.generated_audio, volume)
+
+        #check if wav file has header. Strip header to make it raw
+        if self.generated_audio[:4] == b'RIFF':
+            self.generated_audio = tts._strip_wav_header(self.generated_audio)
 
         return self.generated_audio
 
@@ -38,7 +41,7 @@ class ElevenLabsTTS(AbstractTTS):
             return num_samples / self.audio_rate
         return 0.0
 
-    def adjust_volume_value(self, generated_audio: bytes, volume: float, format: str) -> bytes:
+    def adjust_volume_value(self, generated_audio: bytes, volume: float) -> bytes:
         #check if generated audio length is odd. If it is, add an empty byte since np.frombuffer is expecting
         #an even length
         
@@ -104,14 +107,9 @@ class ElevenLabsTTS(AbstractTTS):
     def ssml(self) -> ElevenLabsSSMLRoot:
         return ElevenLabsSSMLRoot()
         
-    @classmethod
-    def supported_formats(cls) -> List[FileFormat]:
-        return ["wav", "mp3"]
-        
     def set_voice(self, voice_id: str, lang_id: str=None):
         """Updates the currently set voice ID."""
         super().set_voice(voice_id)
         self._voice = voice_id
         #NB: Lang doesnt do much for ElevenLabs
         self._lang = lang_id
- 

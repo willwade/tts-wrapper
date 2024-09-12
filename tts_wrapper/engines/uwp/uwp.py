@@ -5,19 +5,18 @@ from .client import UWPClient
 from .ssml import UWPSSML
 
 class UWPTTS(AbstractTTS):
-    @classmethod
-    def supported_formats(cls) -> List[FileFormat]:
-        return ["wav"]
-
     def __init__(self, client: UWPClient) -> None:
         super().__init__()
         self._client = client
 
-    def synth_to_bytes(self, text: Any, format: FileFormat) -> bytes:
-        if format not in self.supported_formats():
-            raise UnsupportedFileFormat(format, self.__class__.__name__)
+    def synth_to_bytes(self, text: Any, format: FileFormat) -> bytes:        
         ssml = UWPSsml(str(text)).to_ssml()
-        return self._client.synth(ssml)
+        audio_bytes = self._client.synth(ssml)
+        
+        if audio_bytes[:4] == b'RIFF':
+           audio_bytes = self._strip_wav_header(audio_bytes)
+
+        return audio_bytes
 
     def get_voices(self) -> List[str]:
         return self._client.get_voices()

@@ -14,10 +14,6 @@ import sounddevice as sd
 import time
 
 class SherpaOnnxTTS(AbstractTTS):
-    @classmethod
-    def supported_formats(cls) -> List[FileFormat]:
-        return ["wav"]
-
     def __init__(self, client: SherpaOnnxClient, lang: Optional[str] = None, voice: Optional[str] = None):
         super().__init__()
         self._client = client
@@ -69,7 +65,7 @@ class SherpaOnnxTTS(AbstractTTS):
             self._client.set_voice(voice_id)
             self.audio_rate = self._client.sample_rate  # Update the audio_rate based on the selected voice
 
-    def synth_to_bytes(self, text: str, format: Optional[FileFormat] = "wav") -> bytes:
+    def synth_to_bytes(self, text: str) -> bytes:
         text = str(text)
         if not self._is_ssml(text):
             text = self.ssml.add(text)
@@ -78,6 +74,10 @@ class SherpaOnnxTTS(AbstractTTS):
         audio_bytes, sample_rate = self._client.synth(text)
         logging.info(f"Audio bytes length: {len(audio_bytes)}, Sample rate: {sample_rate}")
         self.audio_rate = sample_rate
+        
+        if audio_bytes[:4] == b'RIFF':
+           audio_bytes = self._strip_wav_header(audio_bytes)
+
         return audio_bytes
 
     def play_audio(self):

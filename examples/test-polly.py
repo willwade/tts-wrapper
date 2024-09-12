@@ -10,7 +10,6 @@ load_credentials('credentials.json')
 client = PollyClient(credentials=(os.getenv('POLLY_REGION'),os.getenv('POLLY_AWS_KEY_ID'), os.getenv('POLLY_AWS_ACCESS_KEY')))
 tts = PollyTTS(client)
 
-
 # # # pausng
 # try:
 #     ssml_text = tts.ssml.add(f"This is me speaking with Speak function and google")
@@ -82,12 +81,15 @@ def on_start():
 def on_end():
     print('Speech ended')
 
-
 try:
     text = "Hello, This is a word timing test"
+    print(text)
     tts.connect('onStart', on_start)
     tts.connect('onEnd', on_end)
+    print(tts)
     tts.start_playback_with_callbacks(text, callback=my_callback)
+    print("save to file")
+    tts.synth_to_file(text, "polly_output.wav", "wav")
 except Exception as e:
     print(f"Error at callbacks: {e}")
 

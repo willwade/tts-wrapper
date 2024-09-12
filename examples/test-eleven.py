@@ -1,5 +1,4 @@
 from tts_wrapper import ElevenLabsTTS, ElevenLabsClient
-import json
 import time
 from pathlib import Path
 import os
@@ -9,42 +8,45 @@ load_credentials('credentials-private.json')
 
 client = ElevenLabsClient(credentials=(os.getenv('ELEVENLABS_API_KEY')))
 tts = ElevenLabsTTS(client)
-# print(client.get_voices())
+print(client.get_voices())
 # # # pausing
-# try:
-#     ssml_text = tts.ssml.add(f"This is me speaking with Speak function and ElevenLabs")
-#     tts.speak_streamed(ssml_text)
-#     # Pause after 5 seconds
-#     time.sleep(0.3)
-#     tts.pause_audio()
-#     print("Pausing..")
-#     # Resume after 3 seconds
-#     time.sleep(0.5)
-#     tts.resume_audio()
-#     print("Resuming")
-#     # Stop after 2 seconds
-#     time.sleep(1)
-#     tts.stop_audio()
-#     print("Stopping.")
-# except Exception as e:
-#     print(f"Error at pausing: {e}")
-#   
-# time.sleep(3)
+try:
+    ssml_text = tts.ssml.add(
+        "This is me speaking with Speak function and ElevenLabs"
+    )
+    tts.speak_streamed(ssml_text)
+    # Pause after 5 seconds
+    time.sleep(0.3)
+    tts.pause_audio()
+    print("Pausing..")
+    # Resume after 3 seconds
+    time.sleep(0.5)
+    tts.resume_audio()
+    print("Resuming")
+    # Stop after 2 seconds
+    time.sleep(1)
+    tts.stop_audio()
+    print("Stopping.")
+except Exception as e:
+    print(f"Error at pausing: {e}")
+   
+time.sleep(3)
 # 
 # # Demonstrate saving audio to a file
-# try:
-#     ssml_text = tts.ssml.add(f"This is me speaking with Speak function and ElevenLabs")
-#     output_file = Path(f"output_elevenlabs.wav")
-#     tts.synth(ssml_text, str(output_file), format='wav')
-#     # or you could do
-#     #tts.speak(ssml_text)
-#     print(f"Audio content saved to {output_file}")
-# except Exception as e:
-#     print(f"Error at saving: {e}")
-# 
-# time.sleep(3)  
-#       
-# # Change voice and test again if possible
+try:
+    ssml_text = tts.ssml.add(f"This is me speaking with Speak function and ElevenLabs")
+    output_file = Path(f"output_elevenlabs.wav")
+    #tts.synth(ssml_text, str(output_file), format='wav')
+    tts.synth_to_file(ssml_text, output_file, format='wav')
+    # or you could do
+    # tts.speak(ssml_text)
+    print(f"Audio content saved to {output_file}")
+except Exception as e:
+    print(f"Error at saving: {e}")
+ 
+time.sleep(3)  
+      
+# Change voice and test again if possible
 # try:
 #     voices = tts.get_voices()
 # except Exception as e:

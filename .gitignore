@@ -27,3 +27,5 @@ cov.xml
 .secrets/
 .stamps/
 credentials-private.json
+examples/*.wav
+examples/*.mp3

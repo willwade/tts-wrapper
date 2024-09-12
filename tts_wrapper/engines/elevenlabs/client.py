@@ -3,16 +3,16 @@ import base64
 from typing import List, Dict, Any, Optional, Tuple
 from ...tts import FileFormat
 from ...exceptions import UnsupportedFileFormat
+import requests
 
-FORMATS = {
-    "wav": "pcm_22050",
-    "mp3": "mp3_22050_32",
-}
+audio_format = "pcm_22050",
+
 
 class ElevenLabsClient:
     def __init__(self, credentials):
         try:
             import requests
+
         except ImportError:
             requests = None  # type: ignore
             raise ModuleNotInstalled("requests")
@@ -22,7 +22,7 @@ class ElevenLabsClient:
         self.api_key = credentials
         self.base_url = "https://api.elevenlabs.io"
 
-    def synth(self, text: str, voice_id: str, format: FileFormat) -> Tuple[bytes, List[Tuple[float, float, str]]]:
+    def synth(self, text: str, voice_id: str) -> Tuple[bytes, List[Tuple[float, float, str]]]:
         url = f"{self.base_url}/v1/text-to-speech/{voice_id}/stream/with-timestamps"
         headers = {
             'Content-Type': 'application/json',
@@ -37,11 +37,11 @@ class ElevenLabsClient:
             }
         }
         params = {
-            'output_format': FORMATS[format],
+            'output_format': audio_format,
             'optimize_streaming_latency': 0,
             'enable_logging': False
         }
-        
+
         response = requests.post(url, headers=headers, json=data, params=params, stream=True)
         
         if response.status_code != 200:

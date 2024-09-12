@@ -5,6 +5,7 @@ from pathlib import Path
 import os
 from load_credentials import load_credentials
 import logging
+
 # Load credentials
 load_credentials('credentials.json')
 client = MicrosoftClient(credentials=(os.getenv('MICROSOFT_TOKEN'), os.getenv('MICROSOFT_REGION')))
@@ -192,5 +193,7 @@ try:
     ssml_text = tts.ssml.add(text_with_prosody)
     tts.speak_streamed(ssml_text)
     time.sleep(5)
+
+    tts.synth_to_file(ssml_text, "test-microsoft.mp3", "mp3")
 except Exception as e:
     print(f"Error at setting pitch: {e}")  

@@ -18,8 +18,7 @@ except ImportError:
 Credentials = Tuple[str, Optional[str]]
 
 FORMATS = {
-    "wav": "Riff24Khz16BitMonoPcm",
-    "mp3": "Audio24Khz160KBitRateMonoMp3",
+    "wav": "Riff24Khz16BitMonoPcm"
 }
 
 class MicrosoftClient:

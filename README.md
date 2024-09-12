@@ -68,7 +68,6 @@ _TTS-Wrapper_ simplifies using text-to-speech APIs by providing a unified interf
 
 - Add more tests and logging code for better debugging and exception handling. (see tests/ we do have examples/ where we are doing some quick real-world testing but the tests dir is where we should focus efforts)
 - Verify the functionality of UWP (Universal Windows Platform). Not tested. 
-- Investigate other audio engines. PyAudio is a pain to install on Linux 
 - Piper needs a lot of work. Its playing at strange speeds. 
 
 and an aside
@@ -331,7 +330,7 @@ tts.stop_audio()
 ```python
 tts.synth_to_file(ssml_text, 'output.mp3', format='mp3')
 ```
-there is also "synth" method which is legacy
+there is also "synth" method which is legacy. Note we support saving as mp3, wav or flac. 
 
 ```Python
 tts.synth('<speak>Hello, world!</speak>', 'hello.mp3', format='mp3)
