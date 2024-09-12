@@ -99,6 +99,13 @@ except Exception as e:
 
 time.sleep(3)
 
+try:
+    text = "Test saving audio to file"
+    print(text)
+    tts.synth_to_file(text, "test-watson.wav", "wav")
+except Exception as e:
+    print(f"Error saving audio to file")
+
 # # volume control test
 # print("Volume setting is from 0-100")
 # text_read = ""

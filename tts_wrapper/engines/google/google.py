@@ -2,11 +2,11 @@ from typing import Any, List, Dict, Optional, Tuple
 from ...exceptions import UnsupportedFileFormat
 from ...tts import AbstractTTS, FileFormat
 from . import GoogleClient, GoogleSSML
+import re
+import numpy as np
+import pathlib
 
 class GoogleTTS(AbstractTTS):
-    @classmethod
-    def supported_formats(cls) -> List[FileFormat]:
-        return ["wav", "mp3"]
 
     def __init__(self, client: GoogleClient, lang: Optional[str] = None, voice: Optional[str] = None):
         super().__init__()
@@ -24,6 +24,10 @@ class GoogleTTS(AbstractTTS):
         self.audio_format = format
         timings = self._process_word_timings(result.get("timepoints", []))
         self.set_timings(timings)
+        
+        if self.generated_audio[:4] == b'RIFF':
+            self.generated_audio = self._strip_wav_header(self.generated_audio)
+        
         return self.generated_audio
 
     def _process_word_timings(self, timepoints: List[Dict[str, Any]]) -> List[Tuple[float, float, str]]:
@@ -92,5 +96,3 @@ class GoogleTTS(AbstractTTS):
             return "loud"
         if 81 <= volume_in_float <= 100:
             return "x-loud"
-
-    

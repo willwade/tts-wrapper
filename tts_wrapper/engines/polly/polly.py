@@ -4,13 +4,9 @@ from ...tts import AbstractTTS, FileFormat
 from . import PollyClient, PollySSML
 
 class PollyTTS(AbstractTTS):
-    @classmethod
-    def supported_formats(cls) -> List[FileFormat]:
-        return ["wav", "mp3"]
-
     def __init__(self, client: PollyClient, lang: Optional[str] = None, voice: Optional[str] = None):
         super().__init__()
-        self._client = client
+        self._client = client   
         self.set_voice(voice or "Joanna", lang or "en-US")
         self.audio_rate = 16000
 
@@ -28,6 +24,10 @@ class PollyTTS(AbstractTTS):
 
         processed_timings = self._process_word_timings(word_timings)
         self.set_timings(processed_timings)
+
+        if self.generated_audio[:4] == b'RIFF':
+            self.generated_audio = self._strip_wav_header(self.generated_audio)
+
         return self.generated_audio
     
 

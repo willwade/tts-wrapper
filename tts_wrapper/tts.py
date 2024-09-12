@@ -146,10 +146,6 @@ class AbstractTTS(ABC):
         else:
             raise ValueError(f"Unsupported format: {target_format}")
 
-    def supported_formats(self) -> List[str]:
-        """Returns a list of supported audio formats."""
-        return ['mp3', 'flac', 'wav']
-
     @abstractmethod
     def synth_to_bytes(self, text: Any) -> bytes:
         """

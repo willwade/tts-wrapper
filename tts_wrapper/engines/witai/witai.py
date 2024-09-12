@@ -12,17 +12,18 @@ class WitAiTTS(AbstractTTS):
         self._voice = voice
         self._lang = lang
         self.audio_rate = 24000  # Adjusted based on Wit.ai's 24kHz sample rate for PCM
-
-    @classmethod
-    def supported_formats(cls) -> List[FileFormat]:
-        return ["mp3", "pcm", "wav"]
     
     def synth_to_bytes(self, text: str) -> bytes:
         if not self._is_ssml(str(text)):
             text = self.ssml.add(str(text))
         word_timings = estimate_word_timings(str(text))
         self.set_timings(word_timings)
-        return self._client.synth(str(text), self._voice)
+        generated_audio = self._client.synth(str(text), self._voice)
+        
+        if generated_audio[:4] == b'RIFF':
+            generated_audio = self._strip_wav_header(generated_audio)
+
+        return generated_audio
 
     @property
     def ssml(self) -> WitAiSSML:

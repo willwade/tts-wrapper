@@ -7,10 +7,6 @@ from . import GoogleTransClient, GoogleTransSSML
 import logging
 
 class GoogleTransTTS(AbstractTTS):
-    @classmethod
-    def supported_formats(cls) -> List[FileFormat]:
-        return ["mp3"]
-
     def __init__(self, client: GoogleTransClient):
         super().__init__()
         self.client = client

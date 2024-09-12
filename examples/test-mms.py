@@ -46,5 +46,8 @@ try:
 
     tts.speak(ssml_text)
     time.sleep(0.5)
+
+    print("save to file")
+    tts.synth_to_file(ssml_text, "mms_output.wav", "wav")
 except Exception as e:
     print(f"Error at setting volume: {e}")

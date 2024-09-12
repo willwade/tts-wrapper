@@ -35,10 +35,6 @@ class MicrosoftTTS(AbstractTTS):
             # Return the end time of the last word
             return self.timings[-1][1]
         return 0.0
-        
-    @classmethod
-    def supported_formats(cls) -> List[FileFormat]:
-        return list(FORMATS.keys())
     
     def speak(self, ssml: str):
         if not self._is_ssml(str(ssml)):
