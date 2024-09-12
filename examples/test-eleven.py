@@ -35,7 +35,8 @@ time.sleep(3)
 try:
     ssml_text = tts.ssml.add(f"This is me speaking with Speak function and ElevenLabs")
     output_file = Path(f"output_elevenlabs.wav")
-    tts.synth(ssml_text, str(output_file), format='wav')
+    #tts.synth(ssml_text, str(output_file), format='wav')
+    tts.synth_to_file(ssml_text, output_file, format='wav')
     # or you could do
     #tts.speak(ssml_text)
     print(f"Audio content saved to {output_file}")

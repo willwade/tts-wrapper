@@ -66,6 +66,9 @@ class MMSTTS(AbstractTTS):
             print("extracted volume from prosody is ", volume)
             self.audio_bytes = self.adjust_volume_value(self.audio_bytes, volume)
 
+        if self.audio_bytes[:4] == b'RIFF':
+            self.audio_bytes = self._strip_wav_header(self.audio_bytes)
+
         return self.audio_bytes
 
     def adjust_volume_value(self, generated_audio: bytes, volume: float) -> bytes:

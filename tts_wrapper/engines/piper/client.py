@@ -61,7 +61,6 @@ class PiperClient:
                 raise
 
             try:
-
                 print(f"Model path: {model_path}")
                 print(f"Voices info keys: {self.voices_info.keys()}")
                 # Check if model_path is in voices_info

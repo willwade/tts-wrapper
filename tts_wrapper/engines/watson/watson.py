@@ -5,10 +5,6 @@ from . import WatsonClient, WatsonSSML
 import logging
 
 class WatsonTTS(AbstractTTS):
-    @classmethod
-    def supported_formats(cls) -> List[FileFormat]:
-        return ["wav", "mp3"]
-
     def __init__(self, client: WatsonClient, lang: Optional[str] = None, voice: Optional[str] = None):
         super().__init__()
         self._client = client
@@ -44,6 +40,9 @@ class WatsonTTS(AbstractTTS):
 
             processed_timings = self._process_word_timings(self._client.word_timings)
             self.set_timings(processed_timings)
+
+            if self.generated_audio[:4] == b'RIFF':
+                self.generated_audio = self._strip_wav_header(self.generated_audio)
 
             return self.generated_audio
         except Exception as e:
