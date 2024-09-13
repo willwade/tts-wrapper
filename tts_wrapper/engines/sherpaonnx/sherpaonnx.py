@@ -98,9 +98,9 @@ class SherpaOnnxTTS(AbstractTTS):
             self.audio_killed = True
 
     # Main function to generate audio and stream it while playing
-    def speak_streamed(self, text):
+    def speak_streamed(self, text: str, save_to_file_path: Optional[str] = None, audio_format: Optional[str] = "wav") -> None:
         logging.info("[SherpaOnnxTTS.speak_streamed] Starting speech synthesis...")
-        
+
         # Reset flags
         self.audio_started = False
         self.audio_stopped = False
@@ -110,14 +110,19 @@ class SherpaOnnxTTS(AbstractTTS):
         playback_thread = threading.Thread(target=self.play_audio)
         playback_thread.start()
 
+        # Buffer to store all audio chunks for later saving
+        all_audio_chunks = []
+
         # Simulate audio generation in chunks from the text
         for chunk_idx, (progress, samples) in enumerate(self.generate_audio_chunks(text)):
             logging.info(f"Generated audio chunk with progress {progress}, samples shape: {samples.shape}")
             
-            # Add audio samples to the buffer
+            # Add audio samples to the buffer for streaming
             self.audio_buffer.put(samples)
             logging.info("Finished with 1 audio chunk, put into queue")
 
+            # Collect audio chunks for saving later
+            all_audio_chunks.append(samples)
 
             if not self.audio_started:
                 logging.info("Starting audio playback...")
@@ -128,7 +133,21 @@ class SherpaOnnxTTS(AbstractTTS):
 
         # Wait for playback to finish
         playback_thread.join()
+
         logging.info("Playback finished.")
+
+        # Save the audio after playback finishes if save_to_file_path is provided
+        if save_to_file_path:
+            logging.info(f"Saving audio to file: {save_to_file_path} in format: {audio_format}")
+            # Combine all chunks into one audio array
+            full_audio = np.concatenate(all_audio_chunks, axis=0)
+
+            # Convert audio and save to the specified file format
+            converted_audio = self._convert_audio(full_audio, audio_format, self.audio_rate)
+            with open(save_to_file_path, "wb") as f:
+                f.write(converted_audio)
+
+            logging.info(f"Audio successfully saved to {save_to_file_path} in {audio_format} format.")
 
 
     def generate_audio_chunks(self, text):
