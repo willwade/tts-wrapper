@@ -45,11 +45,10 @@ class ElevenLabsTTS(AbstractTTS):
         #check if generated audio length is odd. If it is, add an empty byte since np.frombuffer is expecting
         #an even length
         
-        if np is None:
-            try:
-                import numpy as np
-            except ImportError:
-                raise ModuleNotInstalled("numpy")
+        try:
+            import numpy as np
+        except ImportError:
+            raise ModuleNotInstalled("numpy")
 
         if len(generated_audio)%2 != 0:
             generated_audio += b'\x00'

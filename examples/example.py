@@ -49,9 +49,6 @@ def create_tts_client(service):
         api_key = os.getenv('WITAI_TOKEN')
         client = WitAiClient(credentials=(api_key))
         tts = WitAiTTS(client=client)
-    elif service == "mms":
-        client =  MMSClient(('spa'))
-        tts = MMSTTS(client)
     elif service == "sherpaonnx":
         client = SherpaOnnxClient(model_path=None, tokens_path=None)
         tts = SherpaOnnxTTS(client)
@@ -143,7 +140,7 @@ def main():
     service = sys.argv[1] if len(sys.argv) > 1 else "all"
     # Load credentials
     load_credentials('credentials-private.json')
-    services = ["elevenlabs", "google", "microsoft", "mms", "polly", "watson", "witai"] if service == "all" else [service]
+    services = ["elevenlabs", "google", "microsoft", "polly", "watson", "witai"] if service == "all" else [service]
     for svc in services:
         print(f"Testing {svc.upper()} TTS engine.")
         tts = create_tts_client(svc)
