@@ -192,29 +192,47 @@ class AbstractTTS(ABC):
         except Exception as e:
             logging.error(f"Error playing audio: {e}")
 
-    def speak_streamed(self, text: Any) -> None:
+    def speak_streamed(self, text: Any, save_to_file_path: Optional[str] = None, audio_format: Optional[str] = "wav") -> None:
         """
         Synthesize text and stream it for playback using sounddevice.
+        Optionally save the audio to a file after playback completes.
+        
         :param text: The text to synthesize and stream.
+        :param save_to_file_path: Path to save the audio file (optional).
+        :param audio_format: Audio format to save (e.g., 'wav', 'mp3', 'flac').
         """
         try:
+            # Synthesize audio to bytes for playback
             audio_bytes = self.synth_to_bytes(text)
             audio_data = np.frombuffer(audio_bytes, dtype=np.int16)
             self.audio_bytes = audio_data.tobytes()
             self.position = 0
             self.playing.set()
             self._trigger_callback('onStart')
-
+    
+            # Setup the audio stream
             with self.stream_lock:
                 if self.stream:
                     self.stream.close()
                 self.setup_stream()
-
+    
+            # Start playback in a separate thread
             self.play_thread = threading.Thread(target=self._start_stream)
             self.play_thread.start()
+    
+            # Wait for the playback thread to complete
+            self.play_thread.join()
+    
+            # After streaming is finished, save the file if requested
+            if save_to_file_path:
+                pcm_data = np.frombuffer(audio_bytes, dtype=np.int16)
+                converted_audio = self._convert_audio(pcm_data, audio_format, self.audio_rate)
+                with open(save_to_file_path, "wb") as f:
+                    f.write(converted_audio)
+                logging.info(f"Audio saved to {save_to_file_path} in {audio_format} format.")
+    
         except Exception as e:
-            logging.error(f"Error streaming audio: {e}")
-
+            logging.error(f"Error streaming or saving audio: {e}")
     def setup_stream(self, samplerate=22050, channels=1, dtype='int16'):
         """
         Sets up the audio stream for playback.
