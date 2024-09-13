@@ -5,7 +5,7 @@ import sys
 import json
 import logging
 from pathlib import Path
-from tts_wrapper import PollyTTS, PollyClient, MicrosoftTTS, MicrosoftClient, WatsonTTS, WatsonClient, GoogleTTS, GoogleClient, ElevenLabsTTS, ElevenLabsClient,  WitAiTTS, WitAiClient
+from tts_wrapper import PollyTTS, PollyClient, MicrosoftTTS, MicrosoftClient, WatsonTTS, WatsonClient, GoogleTTS, GoogleClient, ElevenLabsTTS, ElevenLabsClient,  WitAiTTS, WitAiClient, SherpaOnnxTTS, SherpaOnnxClient
 import signal
 import sys
 import time
@@ -49,6 +49,15 @@ def create_tts_client(service):
         api_key = os.getenv('WITAI_TOKEN')
         client = WitAiClient(credentials=(api_key))
         tts = WitAiTTS(client=client)
+    elif service == "sherpaonnx":
+        client = SherpaOnnxClient(model_path=None, tokens_path=None)
+        tts = SherpaOnnxTTS(client)
+    elif service == "watson":
+        api_key = os.getenv('WATSON_API_KEY')
+        region = os.getenv('WATSON_REGION')
+        instance_id = os.getenv('WATSON_INSTANCE_ID')
+        client = WatsonClient(credentials=(api_key, region, instance_id))
+        tts = WatsonTTS(client=client)
     else:
         raise ValueError("Unsupported TTS service")
     return tts
@@ -58,7 +67,7 @@ def test_tts_engine(tts, service_name):
     text_read = 'Hello, world! This is a text of plain text sending'
     try:
         print(f"Testing {service_name} TTS engine...in a plain text demo")
-        tts.speak(text_read)            
+        tts.speak_streamed(text_read)            
     except Exception as e:
         print(f"Error testing {service_name} TTS engine at speak with plain text: {e}")
         
@@ -76,11 +85,6 @@ def test_tts_engine(tts, service_name):
             time.sleep(3)
             tts.ssml.clear_ssml()
 
-            #microsoft test
-            #tts.set_property("volume","90")
-            #text_read_2 = "This is louder than before"
-
-            #google test
             tts.set_property("volume","90")
             tts.set_property("pitch","x-high")
             
@@ -89,7 +93,7 @@ def test_tts_engine(tts, service_name):
             text_with_prosody = tts.construct_prosody_tag(text_read_2)
             time.sleep(0.5)
             ssml_text = tts.ssml.add(text_with_prosody)
-            print("ssml_test: ", ssml_text)
+
             #print ("Testing setting volume to 90")
             print ("Testing setting volume to extra loud")
             tts.speak_streamed(ssml_text)
@@ -107,7 +111,7 @@ def test_tts_engine(tts, service_name):
     ssml_text = tts.ssml.add('Lets save to an audio file')  
     # Demonstrate saving audio to a file
     output_file = Path(f"output_{service_name}.wav")
-    tts.synth(ssml_text, str(output_file), format='wav')
+    tts.synth(ssml_text, str(output_file))
     # or you could do
     #tts.speak(ssml_text)
     print(f"Audio content saved to {output_file}")
@@ -136,7 +140,7 @@ def main():
     service = sys.argv[1] if len(sys.argv) > 1 else "all"
     # Load credentials
     load_credentials('credentials-private.json')
-    services = ["watson", "google", "elevenlabs", "microsoft", "polly", "witai" ] if service == "all" else [service]
+    services = ["elevenlabs", "google", "microsoft", "polly", "watson", "witai"] if service == "all" else [service]
     for svc in services:
         print(f"Testing {svc.upper()} TTS engine.")
         tts = create_tts_client(svc)
