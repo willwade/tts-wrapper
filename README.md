@@ -335,6 +335,14 @@ there is also "synth" method which is legacy. Note we support saving as mp3, wav
 ```Python
 tts.synth('<speak>Hello, world!</speak>', 'hello.mp3', format='mp3)
 ```
+Note you can also stream - and save. Just note it saves at the end of streaming entirely..
+
+```python
+ssml_text = tts.ssml.add('Hello world!')
+
+tts.speak_streamed(ssml_text,filepath,'wav')
+```
+
 
 ### Fetch Available Voices
 
