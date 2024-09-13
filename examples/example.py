@@ -5,7 +5,7 @@ import sys
 import json
 import logging
 from pathlib import Path
-from tts_wrapper import PollyTTS, PollyClient, MicrosoftTTS, MicrosoftClient, WatsonTTS, WatsonClient, GoogleTTS, GoogleClient, ElevenLabsTTS, ElevenLabsClient,  WitAiTTS, WitAiClient, SherpaOnnxTTS, SherpaOnnxClient, MMSTTS, MMSClient
+from tts_wrapper import PollyTTS, PollyClient, MicrosoftTTS, MicrosoftClient, WatsonTTS, WatsonClient, GoogleTTS, GoogleClient, ElevenLabsTTS, ElevenLabsClient,  WitAiTTS, WitAiClient, SherpaOnnxTTS, SherpaOnnxClient
 import signal
 import sys
 import time
