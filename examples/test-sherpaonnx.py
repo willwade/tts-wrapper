@@ -25,9 +25,12 @@ try:
 
     text = "I want to test the streaming function and this a much longer sentence than the previous one. This is a test of the streaming function."
     start_time = time.time()
-    tts.speak(text)
+    tts.speak_streamed(text)
+    text = "Lets test a shorter sentence - how and saving."
+    start_time = time.time()
+    tts.speak_streamed(text,'testlivewrite.wav','wav')
+    
     #tts.synth_to_file("i like cheese", "test.wav")
-    tts.synth_to_file(text, "test-sherpa.wav")
     synthesis_time = time.time()
     print(f"Synthesis time: {synthesis_time - start_time:.3f} seconds")
     # text = "I want to test the streaming function and this a much longer sentence than the previous one. This is a test of the streaming function."
