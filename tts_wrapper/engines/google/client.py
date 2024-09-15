@@ -1,4 +1,4 @@
-from typing import List, Dict, Any, Tuple
+from typing import List, Dict, Any, Tuple, Optional
 from ...exceptions import ModuleNotInstalled
 import struct
 from google.cloud import texttospeech_v1beta1 as texttospeech
@@ -9,19 +9,14 @@ class GoogleClient:
     def __init__(self, credentials: str) -> None:
         self._credentials_file = credentials
         self._client = None
+        self._voice = None
+        self._lang = None
 
     def _initialize_client(self):
         if self._client is None:
             try:
-                #from google.cloud import texttospeech_v1beta1 as texttospeech
-                #from google.oauth2 import service_account
                 self.texttospeech = texttospeech
                 self.service_account = service_account
-
-                #self.FORMATS = {
-                #    "wav": texttospeech.AudioEncoding.LINEAR16,
-                #    "mp3": texttospeech.AudioEncoding.MP3,
-                #}
 
                 self._client = texttospeech.TextToSpeechClient(
                     credentials=self.service_account.Credentials.from_service_account_file(
@@ -34,13 +29,22 @@ class GoogleClient:
             if not self._credentials_file:
                 raise ValueError("credentials file is required")
 
-    def synth(self, ssml: str, voice: str, lang: str, include_timepoints: bool = False) -> Dict[str, Any]:
+    def set_voice(self, voice: str, lang: str):
+        """
+        Sets the voice and language for the client.
+        
+        :param voice: The name of the voice to use.
+        :param lang: The language code (e.g., 'en-US').
+        """
+        self._voice = voice
+        self._lang = lang
+
+    def synth(self, ssml: str, voice: Optional[str] = None, lang: Optional[str] = None, include_timepoints: bool = False) -> Dict[str, Any]:
         self._initialize_client()
 
         s_input = self.texttospeech.SynthesisInput(ssml=ssml)
-        voice_params = self.texttospeech.VoiceSelectionParams(language_code=lang, name=voice)
-        #audio_config = self.texttospeech.AudioConfig(audio_encoding=self.FORMATS["wav"])
-        audio_config = self.texttospeech.AudioConfig(audio_encoding=texttospeech.AudioEncoding.LINEAR16)
+        voice_params = self.texttospeech.VoiceSelectionParams(language_code=lang or self._lang, name=voice or self._voice)
+        audio_config = self.texttospeech.AudioConfig(audio_encoding=self.texttospeech.AudioEncoding.LINEAR16,sample_rate_hertz=16000)
 
         if include_timepoints:
             timepoints = [self.texttospeech.SynthesizeSpeechRequest.TimepointType.SSML_MARK]
@@ -94,18 +98,11 @@ class GoogleClient:
         voices = response.voices  # Assuming this returns a list of voice objects
         standardized_voices = []
         for voice in voices:
-            voice_data = voice.__dict__  # or convert to dict if not already one
-            voice_data['id'] = voice.name
-            voice_data['language_codes'] = voice.language_codes
-            voice_data['name'] = voice.name
-            voice_data['gender'] = voice.ssml_gender
-            if voice.ssml_gender == 1:
-                voice_data['gender'] = "Male"
-            elif voice.ssml_gender == 2:
-                voice_data['gender'] = "Female"
-            elif voice.ssml_gender == 3:
-                voice_data['gender'] = "Neutral"
-            else:
-                voice_data['gender'] = "Unknown"
+            voice_data = {
+                'id': voice.name,
+                'name': voice.name,
+                'language_codes': voice.language_codes,
+                'gender': voice.ssml_gender.name  # 'MALE', 'FEMALE', 'NEUTRAL'
+            }
             standardized_voices.append(voice_data)
         return standardized_voices
