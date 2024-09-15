@@ -1,6 +1,6 @@
 # engine.py
 
-from typing import Any, List, Optional, Dict
+from typing import Any, List, Optional, Dict, Generator
 from ...exceptions import UnsupportedFileFormat
 from ...tts import AbstractTTS, FileFormat
 from .client import SherpaOnnxClient  

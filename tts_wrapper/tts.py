@@ -7,6 +7,7 @@ from threading import Event
 import logging
 import time
 import re
+from io import BytesIO
 
 FileFormat = Union[str, None]
 WordTiming = Union[Tuple[float, str], Tuple[float, float, str]]
