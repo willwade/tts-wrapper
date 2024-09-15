@@ -149,7 +149,52 @@ class SherpaOnnxTTS(AbstractTTS):
 
             logging.info(f"Audio successfully saved to {save_to_file_path} in {audio_format} format.")
 
+    def synth_to_bytestream(self, text: Any, format: Optional[str] = "wav") -> Generator[bytes, None, None]:
+        """
+        Synthesizes text to an in-memory bytestream in the specified audio format.
+        Yields audio data chunks as they are generated.
 
+        :param text: The text to synthesize.
+        :param format: The desired audio format (e.g., 'wav', 'mp3', 'flac'). Defaults to 'wav'.
+        :return: A generator yielding bytes objects containing audio data.
+        """
+        try:
+            logging.info(f"[SherpaOnnxTTS.synth_to_bytestream] Synthesizing text: {text}")
+
+            # Buffer to store all audio chunks for conversion
+            audio_chunks = []
+
+            # Iterate over generated audio chunks
+            for chunk_idx, (progress, samples) in enumerate(self.generate_audio_chunks(text)):
+                logging.info(f"Processing audio chunk {chunk_idx} with progress {progress}")
+
+                # Collect audio chunks for conversion
+                audio_chunks.append(samples)
+
+                # Concatenate current chunks for conversion
+                current_audio = np.concatenate(audio_chunks, axis=0)
+
+                # Convert PCM data to the desired audio format
+                converted_audio = self._convert_audio(current_audio, format, self.audio_rate)
+                logging.info(f"Converted audio chunk {chunk_idx} length: {len(converted_audio)} bytes in format: {format}")
+
+                # Yield the converted audio chunk
+                yield converted_audio
+
+                # Reset the buffer after yielding
+                audio_chunks = []
+
+            # After all chunks are processed, perform any necessary finalization
+            if audio_chunks:
+                current_audio = np.concatenate(audio_chunks, axis=0)
+                converted_audio = self._convert_audio(current_audio, format, self.audio_rate)
+                logging.info(f"Final converted audio length: {len(converted_audio)} bytes in format: {format}")
+                yield converted_audio
+
+        except Exception as e:
+            logging.error(f"Error in synth_to_bytestream: {e}")
+            raise
+            
     def generate_audio_chunks(self, text):
         total_samples = 0
         for samples in self._client.generate_stream(text):
