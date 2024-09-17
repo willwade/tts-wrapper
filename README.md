@@ -58,21 +58,26 @@ _TTS-Wrapper_ simplifies using text-to-speech APIs by providing a unified interf
 | NSS        | MacOS               | Offline        | Yes  | Yes               | Yes           |
 | eSpeak     | Linux/MacOS/Windows | Offline        | No   | Yes               | No            |
 
+
+### Methods for each engine
+
+| Method                | Description                                  | Available Engines       |
+|-----------------------|----------------------------------------------|-------------------------|
+| `speak()`             | Plays synthesized speech directly.           | All engines             |
+| `synth_to_file()`      | Synthesizes speech and saves it to a file.   | All engines             |
+| `speak_streamed()`     | Streams synthesized speech.                  | All engines             |
+| `set_property()`       | Sets properties like rate, volume, pitch.    | All engines             |
+| `get_voices()`         | Retrieves available voices.                  | All engines             |
+| `connect()`            | Connects callback functions for events.      | Polly, Microsoft, Google, Watson. |
+| `pause_audio()`        | Pauses ongoing speech playback.              | All engines             |
+| `resume_audio()`       | Resumes paused speech playback.              | All engines             |
+| `stop_audio()`         | Stops ongoing speech playback.               | All engines             |
+
 **Notes**:
 
-* For methods like speak, speak_streamed etc, these are supported by all engines. The table above is really those features where it can't be matched across the board. 
 * For SSML where it says  'no' you can send the engine SSML we will just strip it
 * For onWord Events. For Engines where it is a no we have a very bad fallback mechanism which will emit word timings based on estimation. You cant rely on this for accurate use cases. 
 
-## To-Do
-
-- Add more tests and logging code for better debugging and exception handling. (see tests/ we do have examples/ where we are doing some quick real-world testing but the tests dir is where we should focus efforts)
-- Verify the functionality of UWP (Universal Windows Platform). Not tested. 
-- Piper needs a lot of work. Its playing at strange speeds. 
-
-and an aside
-
-- Explore the possibilities of using libraries like [OpenTTS](https://github.com/synesthesiam/opentts/) and [Orca](https://github.com/synesthesiam/orca).
 
 ## Install
 
@@ -303,6 +308,11 @@ tts.speak(ssml_text)
 
 ### Streaming and Playback Control
 
+### `pause_audio()`, `resume_audio()`, `stop_audio()`
+These methods manage audio playback by pausing, resuming, or stopping it.
+NB: Only to be used for speak_streamed
+
+
 ```python
 tts.speak_streamed(ssml_text)
 
@@ -387,6 +397,7 @@ ssml_text = tts.ssml.add(text_with_prosody)
 - The default volume is 100 if not explicitly specified.
 
 Set rate:
+
 ```python
 tts.set_property("rate", "slow")
 text_read = f"The current rate is SLOW"
@@ -419,6 +430,23 @@ Pitch Control:
 - If not explicitly set, the pitch defaults to medium.
 
 Use the ```tts.ssml.clear_ssml()``` method to clear all entries from the ssml list
+
+### `set_property()`
+This method allows setting properties like `rate`, `volume`, and `pitch`.
+
+```python
+tts.set_property("rate", "fast")
+tts.set_property("volume", "80")
+tts.set_property("pitch", "high")
+```
+
+### `get_property()`
+This method retrieves the value of properties such as `volume`, `rate`, or `pitch`.
+
+```python
+current_volume = tts.get_property("volume")
+print(f"Current volume: {current_volume}")
+```
 
 
 ### Using callbacks on word-level boundaries
@@ -461,6 +489,17 @@ Word: test, Duration: 0.424s
 Speech ended
 ```
 
+### `connect()`
+This method allows registering callback functions for events like `onStart` or `onEnd`.
+
+```python
+def on_start():
+    print("Speech started")
+
+tts.connect('onStart', on_start)
+```
+
+
 ## Supported File Formats
 
 By default, all engines output audio in the WAV format, but can be configured to output MP3 or other formats where supported.
@@ -468,6 +507,79 @@ By default, all engines output audio in the WAV format, but can be configured to
 ```Python
 tts.synth('<speak>Hello, world!</speak>', 'hello.mp3', format='mp3)
 ```
+
+The `synth_to_bytestream` method is designed to synthesize text into an in-memory bytestream in the specified audio format (`wav`, `mp3`, `flac`, etc.). It is particularly useful when you want to handle the audio data in-memory for tasks like saving it to a file, streaming the audio, or passing it to another system for processing.
+
+#### Method Signature:
+
+```python
+def synth_to_bytestream(self, text: Any, format: Optional[str] = "wav") -> BytesIO:
+    """
+    Synthesizes text to an in-memory bytestream in the specified audio format.
+
+    :param text: The text to synthesize.
+    :param format: The audio format (e.g., 'wav', 'mp3', 'flac'). Default: 'wav'.
+    :return: A BytesIO object containing the audio data.
+    """
+```
+
+#### Parameters:
+- **text**: The text to be synthesized into audio.
+- **format**: The audio format in which the synthesized audio should be returned. Default is `wav`. Supported formats include `wav`, `mp3`, and `flac`.
+
+#### Returns:
+- **BytesIO**: A `BytesIO` object containing the audio data in the requested format. This can be used directly to save to a file or for playback in real-time.
+
+---
+
+### Example Use Cases
+
+#### 1. Saving Audio to a File
+
+You can use the `synth_to_bytestream` method to synthesize audio in any supported format and save it directly to a file.
+
+```python
+# Synthesize text into a bytestream in MP3 format
+bytestream = tts.synth_to_bytestream("Hello, this is a test", format="mp3")
+
+# Save the audio bytestream to a file
+with open("output.mp3", "wb") as f:
+    f.write(bytestream.read())
+
+print("Audio saved to output.mp3")
+```
+
+**Explanation**:
+- The method synthesizes the given text into audio in MP3 format.
+- The `BytesIO` object is then written to a file using the `.read()` method of the `BytesIO` class.
+
+#### 2. Real-Time Playback Using `sounddevice`
+
+If you want to play the synthesized audio live without saving it to a file, you can use the `sounddevice` library to directly play the audio from the `BytesIO` bytestream.
+
+```python
+import sounddevice as sd
+import numpy as np
+
+# Synthesize text into a bytestream in WAV format
+bytestream = tts.synth_to_bytestream("Hello, this is a live playback test", format="wav")
+
+# Convert the bytestream back to raw PCM audio data for playback
+audio_data = np.frombuffer(bytestream.read(), dtype=np.int16)
+
+# Play the audio using sounddevice
+sd.play(audio_data, samplerate=tts.audio_rate)
+sd.wait()
+
+print("Live playback completed")
+```
+
+**Explanation**:
+- The method synthesizes the text into a `wav` bytestream.
+- The bytestream is converted to raw PCM data using `np.frombuffer()`, which is then fed into the `sounddevice` library for live playback.
+- `sd.play()` plays the audio in real-time, and `sd.wait()` ensures that the program waits until playback finishes.
+
+
 
 ## Developer's Guide
 

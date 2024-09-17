@@ -44,7 +44,9 @@ uwp = ["winrt_windows.media.speechsynthesis","winrt_windows.storage.streams","wi
 sherpaonnx = ["sherpa-onnx", "requests", "numpy"]
 googletrans = ["gTTS"]
 
-[tool.poetry.dev-dependencies]
+
+[tool.poetry.group.dev.dependencies]
+pyinstrument = "^4.7.3"
 pytest = "^6.2.1"
 pytest-mock = "^3.5.1"
 black = {version = "^22.1.0", allow-prereleases = true}
