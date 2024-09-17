@@ -5,7 +5,7 @@ from ...tts import FileFormat
 from ...exceptions import UnsupportedFileFormat
 import requests
 
-audio_format = "pcm_22050",
+audio_format = ("pcm_22050",)
 
 
 class ElevenLabsClient:
@@ -16,44 +16,51 @@ class ElevenLabsClient:
         except ImportError:
             requests = None  # type: ignore
             raise ModuleNotInstalled("requests")
-            
+
         if not credentials:
             raise ValueError("An API key for ElevenLabs must be provided")
         self.api_key = credentials
         self.base_url = "https://api.elevenlabs.io"
 
-    def synth(self, text: str, voice_id: str) -> Tuple[bytes, List[Tuple[float, float, str]]]:
+    def synth(
+        self, text: str, voice_id: str
+    ) -> Tuple[bytes, List[Tuple[float, float, str]]]:
         url = f"{self.base_url}/v1/text-to-speech/{voice_id}/stream/with-timestamps"
         headers = {
-            'Content-Type': 'application/json',
+            "Content-Type": "application/json",
             "xi-api-key": self.api_key,
         }
         data = {
-            'text': text,
-            'model_id': 'eleven_monolingual_v1',
-            'voice_settings': {
-                'stability': 0.5,
-                'similarity_boost': 0.5
-            }
+            "text": text,
+            "model_id": "eleven_monolingual_v1",
+            "voice_settings": {"stability": 0.5, "similarity_boost": 0.5},
         }
         params = {
-            'output_format': audio_format,
-            'optimize_streaming_latency': 0,
-            'enable_logging': False
+            "output_format": audio_format,
+            "optimize_streaming_latency": 0,
+            "enable_logging": False,
         }
 
-        response = requests.post(url, headers=headers, json=data, params=params, stream=True)
-        
+        response = requests.post(
+            url, headers=headers, json=data, params=params, stream=True
+        )
+
         if response.status_code != 200:
             error_message = f"[Elevenlabs.Client.Synth] Failed to synthesize speech: {response.status_code} - {response.reason}"
             try:
                 json_response = response.json()
-                if 'detail' in json_response:
-                    status = json_response['detail'].get('status', 'No status available')
-                    message = json_response['detail'].get('message', 'No message provided')
+                if "detail" in json_response:
+                    status = json_response["detail"].get(
+                        "status", "No status available"
+                    )
+                    message = json_response["detail"].get(
+                        "message", "No message provided"
+                    )
                     error_message += f" Status: {status}. Message: {message}"
                 else:
-                    error_details = json_response.get('error', {}).get('message', 'No error details available.')
+                    error_details = json_response.get("error", {}).get(
+                        "message", "No error details available."
+                    )
                     error_message += f" Details: {error_details}"
             except ValueError:
                 error_message += " Error details not in JSON format."
@@ -69,14 +76,20 @@ class ElevenLabsClient:
                 json_string = line.decode("utf-8")
                 response_dict = json.loads(json_string)
                 audio_bytes += base64.b64decode(response_dict["audio_base64"])
-                
+
                 if response_dict.get("alignment") is not None:
                     characters.extend(response_dict["alignment"]["characters"])
-                    character_start_times.extend(response_dict["alignment"]["character_start_times_seconds"])
-                    character_end_times.extend(response_dict["alignment"]["character_end_times_seconds"])
+                    character_start_times.extend(
+                        response_dict["alignment"]["character_start_times_seconds"]
+                    )
+                    character_end_times.extend(
+                        response_dict["alignment"]["character_end_times_seconds"]
+                    )
 
         # Process character timings into word timings
-        word_timings = self._process_word_timings(characters, character_start_times, character_end_times)
+        word_timings = self._process_word_timings(
+            characters, character_start_times, character_end_times
+        )
         return audio_bytes, word_timings
 
     def _process_word_timings(self, characters, start_times, end_times):
@@ -85,7 +98,7 @@ class ElevenLabsClient:
         word_start = 0
 
         for char, start, end in zip(characters, start_times, end_times):
-            if char.isspace() or char in [',', '.', '!', '?']:  # Include punctuation
+            if char.isspace() or char in [",", ".", "!", "?"]:  # Include punctuation
                 if current_word:
                     word_timings.append((word_start, end, current_word))
                     current_word = ""
@@ -105,89 +118,95 @@ class ElevenLabsClient:
         response = requests.get(url)
         if response.ok:
             voices_data = response.json()
-            voices = voices_data['voices']
+            voices = voices_data["voices"]
             standardized_voices = []
             accent_to_language_code = {
-                'american': 'en-US',
-                'british': 'en-GB',
-                'british-essex': 'en-GB',
-                'american-southern': 'en-US',
-                'australian': 'en-AU',
-                'irish': 'en-IE',
-                'english-italian': 'en-IT',
-                'english-swedish': 'en-SE',
-                'american-irish': 'en-IE-US',
-                'chinese': 'zh-CN',
-                'korean': 'ko-KR',
-                'dutch': 'nl-NL',
-                'turkish': 'tr-TR',
-                'swedish': 'sv-SE',
-                'indonesian': 'id-ID',
-                'filipino': 'fil-PH',
-                'japanese': 'ja-JP',
-                'ukrainian': 'uk-UA',
-                'greek': 'el-GR',
-                'czech': 'cs-CZ',
-                'finnish': 'fi-FI',
-                'romanian': 'ro-RO',
-                'danish': 'da-DK',
-                'bulgarian': 'bg-BG',
-                'malay': 'ms-MY',
-                'slovak': 'sk-SK',
-                'croatian': 'hr-HR',
-                'classic-arabic': 'ar-SA',
-                'tamil': 'ta-IN'
+                "american": "en-US",
+                "british": "en-GB",
+                "british-essex": "en-GB",
+                "american-southern": "en-US",
+                "australian": "en-AU",
+                "irish": "en-IE",
+                "english-italian": "en-IT",
+                "english-swedish": "en-SE",
+                "american-irish": "en-IE-US",
+                "chinese": "zh-CN",
+                "korean": "ko-KR",
+                "dutch": "nl-NL",
+                "turkish": "tr-TR",
+                "swedish": "sv-SE",
+                "indonesian": "id-ID",
+                "filipino": "fil-PH",
+                "japanese": "ja-JP",
+                "ukrainian": "uk-UA",
+                "greek": "el-GR",
+                "czech": "cs-CZ",
+                "finnish": "fi-FI",
+                "romanian": "ro-RO",
+                "danish": "da-DK",
+                "bulgarian": "bg-BG",
+                "malay": "ms-MY",
+                "slovak": "sk-SK",
+                "croatian": "hr-HR",
+                "classic-arabic": "ar-SA",
+                "tamil": "ta-IN",
             }
             supported_languages_v1 = {
-                'en-US': 'English',
-                'pl-PL': 'Polish',
-                'de-DE': 'German',
-                'es-ES': 'Spanish',
-                'fr-FR': 'French',
-                'it-IT': 'Italian',
-                'hi-IN': 'Hindi',
-                'pt-BR': 'Portuguese'
+                "en-US": "English",
+                "pl-PL": "Polish",
+                "de-DE": "German",
+                "es-ES": "Spanish",
+                "fr-FR": "French",
+                "it-IT": "Italian",
+                "hi-IN": "Hindi",
+                "pt-BR": "Portuguese",
             }
             supported_languages_v2 = {
-                'en-US': 'English',
-                'pl-PL': 'Polish',
-                'de-DE': 'German',
-                'es-ES': 'Spanish',
-                'fr-FR': 'French',
-                'it-IT': 'Italian',
-                'hi-IN': 'Hindi',
-                'pt-BR': 'Portuguese',
-                'zh-CN': 'Chinese',
-                'ko-KR': 'Korean',
-                'nl-NL': 'Dutch',
-                'tr-TR': 'Turkish',
-                'sv-SE': 'Swedish',
-                'id-ID': 'Indonesian',
-                'fil-PH': 'Filipino',
-                'ja-JP': 'Japanese',
-                'uk-UA': 'Ukrainian',
-                'el-GR': 'Greek',
-                'cs-CZ': 'Czech',
-                'fi-FI': 'Finnish',
-                'ro-RO': 'Romanian',
-                'da-DK': 'Danish',
-                'bg-BG': 'Bulgarian',
-                'ms-MY': 'Malay',
-                'sk-SK': 'Slovak',
-                'hr-HR': 'Croatian',
-                'ar-SA': 'Classic Arabic',
-                'ta-IN': 'Tamil'
+                "en-US": "English",
+                "pl-PL": "Polish",
+                "de-DE": "German",
+                "es-ES": "Spanish",
+                "fr-FR": "French",
+                "it-IT": "Italian",
+                "hi-IN": "Hindi",
+                "pt-BR": "Portuguese",
+                "zh-CN": "Chinese",
+                "ko-KR": "Korean",
+                "nl-NL": "Dutch",
+                "tr-TR": "Turkish",
+                "sv-SE": "Swedish",
+                "id-ID": "Indonesian",
+                "fil-PH": "Filipino",
+                "ja-JP": "Japanese",
+                "uk-UA": "Ukrainian",
+                "el-GR": "Greek",
+                "cs-CZ": "Czech",
+                "fi-FI": "Finnish",
+                "ro-RO": "Romanian",
+                "da-DK": "Danish",
+                "bg-BG": "Bulgarian",
+                "ms-MY": "Malay",
+                "sk-SK": "Slovak",
+                "hr-HR": "Croatian",
+                "ar-SA": "Classic Arabic",
+                "ta-IN": "Tamil",
             }
             for voice in voices:
-                voice['id'] = voice['voice_id']
-                accent = voice['labels'].get('accent', 'american')
-                language_code = accent_to_language_code.get(accent, 'en-US')  # Default to 'en-US'
-                if voice['high_quality_base_model_ids'] == 'eleven_multilingual_v1':
-                    voice['language_codes'] = [language_code for language_code in supported_languages_v1.keys()]
+                voice["id"] = voice["voice_id"]
+                accent = voice["labels"].get("accent", "american")
+                language_code = accent_to_language_code.get(
+                    accent, "en-US"
+                )  # Default to 'en-US'
+                if voice["high_quality_base_model_ids"] == "eleven_multilingual_v1":
+                    voice["language_codes"] = [
+                        language_code for language_code in supported_languages_v1.keys()
+                    ]
                 else:
-                    voice['language_codes'] = [language_code for language_code in supported_languages_v2.keys()]
-                voice['name'] = voice['name']
-                voice['gender'] = 'Unknown'
+                    voice["language_codes"] = [
+                        language_code for language_code in supported_languages_v2.keys()
+                    ]
+                voice["name"] = voice["name"]
+                voice["gender"] = "Unknown"
                 standardized_voices.append(voice)
             return standardized_voices
         else:

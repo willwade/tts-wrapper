@@ -13,5 +13,5 @@ class PicoTTS(AbstractTTS):
     def synth_to_bytes(self, text: Any) -> bytes:
         return self._client.synth(str(text), self._voice)
 
-    def construct_prosody_tag(self, text:str ) -> str:
+    def construct_prosody_tag(self, text: str) -> str:
         pass

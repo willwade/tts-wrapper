@@ -6,6 +6,7 @@ from ...tts import AbstractTTS, FileFormat
 from . import GoogleTransClient, GoogleTransSSML
 import logging
 
+
 class GoogleTransTTS(AbstractTTS):
     def __init__(self, client: GoogleTransClient):
         super().__init__()

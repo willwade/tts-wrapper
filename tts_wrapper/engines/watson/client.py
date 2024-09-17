@@ -8,12 +8,15 @@ import logging
 
 from ...exceptions import ModuleNotInstalled
 
-Credentials = Tuple[str, str, str]  # api_key, region, instance_id 
+Credentials = Tuple[str, str, str]  # api_key, region, instance_id
 
-#FORMATS = {"wav": "audio/wav", "mp3": "audio/mp3"}
+# FORMATS = {"wav": "audio/wav", "mp3": "audio/mp3"}
+
 
 class WatsonClient:
-    def __init__(self, credentials: Credentials, disableSSLVerification: bool = False) -> None:
+    def __init__(
+        self, credentials: Credentials, disableSSLVerification: bool = False
+    ) -> None:
         self.api_key, self.region, self.instance_id = credentials
         self.disableSSLVerification = disableSSLVerification
 
@@ -30,6 +33,7 @@ class WatsonClient:
                 from ibm_cloud_sdk_core.authenticators import IAMAuthenticator  # type: ignore
                 from ibm_watson import TextToSpeechV1  # type: ignore
                 import requests
+
                 self.IAMAuthenticator = IAMAuthenticator
                 self.TextToSpeechV1 = TextToSpeechV1
                 self.requests = requests
@@ -43,6 +47,7 @@ class WatsonClient:
             if self.disableSSLVerification:
                 self._client.set_disable_ssl_verification(True)
                 import urllib3
+
                 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
             # Get IAM token
@@ -77,15 +82,17 @@ class WatsonClient:
                 audio_data.append(message)
             else:
                 data = json.loads(message)
-                if 'words' in data:
-                    self.word_timings.extend([(float(timing[2]), timing[0]) for timing in data['words']])
+                if "words" in data:
+                    self.word_timings.extend(
+                        [(float(timing[2]), timing[0]) for timing in data["words"]]
+                    )
 
         def on_open(ws):
             message = {
-                'text': ssml,
-                'accept': "audio/wav",
-                'voice': voice,
-                'timings': ['words']
+                "text": ssml,
+                "accept": "audio/wav",
+                "voice": voice,
+                "timings": ["words"],
             }
             try:
                 ws.send(json.dumps(message))
@@ -96,45 +103,56 @@ class WatsonClient:
             logging.error(f"WebSocket error: {error}")
 
         def on_close(ws, status_code, reason):
-            logging.info(f"WebSocket closed with status code: {status_code}, reason: {reason}")
+            logging.info(
+                f"WebSocket closed with status code: {status_code}, reason: {reason}"
+            )
 
         import websocket
-        ws = websocket.WebSocketApp(self.ws_url + f"?access_token={self.iam_token}&voice={voice}", on_message=on_message, on_open=on_open, on_error=on_error, on_close=on_close)
+
+        ws = websocket.WebSocketApp(
+            self.ws_url + f"?access_token={self.iam_token}&voice={voice}",
+            on_message=on_message,
+            on_open=on_open,
+            on_error=on_error,
+            on_close=on_close,
+        )
 
         wst = threading.Thread(target=ws.run_forever)
         try:
             wst.daemon = True
             wst.start()
             wst.join()
-            raw_audio = b''.join(audio_data)
-                
+            raw_audio = b"".join(audio_data)
+
             return raw_audio
         except Exception as e:
             logging.error(f"Error in WebSocket thread: {e}")
-            return b''
+            return b""
         finally:
             ws.close()
 
     def get_audio_duration(self, audio_content: bytes) -> float:
-        riff, size, fformat = struct.unpack('<4sI4s', audio_content[:12])
-        if riff != b'RIFF' or fformat != b'WAVE':
+        riff, size, fformat = struct.unpack("<4sI4s", audio_content[:12])
+        if riff != b"RIFF" or fformat != b"WAVE":
             raise ValueError("Not a WAV file")
-            
-        subchunk1, subchunk1_size = struct.unpack('<4sI', audio_content[12:20])
-        if subchunk1 != b'fmt ':
+
+        subchunk1, subchunk1_size = struct.unpack("<4sI", audio_content[12:20])
+        if subchunk1 != b"fmt ":
             raise ValueError("Not a valid WAV file")
-            
-        aformat, channels, sample_rate, byte_rate, block_align, bits_per_sample = struct.unpack('HHIIHH', audio_content[20:36])
-            
-        subchunk2, subchunk2_size = struct.unpack('<4sI', audio_content[36:44])
-        if subchunk2 != b'data':
+
+        aformat, channels, sample_rate, byte_rate, block_align, bits_per_sample = (
+            struct.unpack("HHIIHH", audio_content[20:36])
+        )
+
+        subchunk2, subchunk2_size = struct.unpack("<4sI", audio_content[36:44])
+        if subchunk2 != b"data":
             raise ValueError("Not a valid WAV file")
-            
+
         num_samples = subchunk2_size // (channels * (bits_per_sample // 8))
         duration = num_samples / sample_rate
-            
+
         return duration
-            
+
     def get_voices(self) -> List[Dict[str, Any]]:
         self._initialize_ibm_watson()
         voice_data = self._client.list_voices().get_result()
@@ -142,10 +160,10 @@ class WatsonClient:
         standardized_voices = []
         for voice in voices:
             standardized_voice = {
-                'id': voice['name'],
-                'language_codes': [voice['language']],
-                'name': voice['name'].split('_')[1].replace('V3Voice', ''),
-                'gender': voice['gender']
+                "id": voice["name"],
+                "language_codes": [voice["language"]],
+                "name": voice["name"].split("_")[1].replace("V3Voice", ""),
+                "gender": voice["gender"],
             }
             standardized_voices.append(standardized_voice)
         return standardized_voices

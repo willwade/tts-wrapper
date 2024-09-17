@@ -2,7 +2,8 @@ from typing import Any, List, Optional, Literal
 from ...exceptions import UnsupportedFileFormat
 from ...tts import AbstractTTS, FileFormat
 from . import SAPIClient
-from . ssml import SAPISSML
+from .ssml import SAPISSML
+
 
 class SAPITTS(AbstractTTS):
     @classmethod
@@ -16,12 +17,10 @@ class SAPITTS(AbstractTTS):
     def set_voice(self, voice_id: str, lang_id: Optional[str] = None):
         """Set the TTS voice by ID and optionally set the language ID."""
         self._client.set_voice(voice_id)
-        
 
     def synth_to_bytes(self, text: Any) -> bytes:
         return self._client.synth(str(text))
 
-        
     @property
     def ssml(self) -> SAPISSML:
         return SAPISSML()
@@ -35,8 +34,7 @@ class SAPITTS(AbstractTTS):
 
     def set_property(self, property_name, value):
         """Set the value of a TTS property."""
-        return self._client.set_property(property_name,value)
-
+        return self._client.set_property(property_name, value)
 
     def construct_prosody_tag(self, text: str) -> str:
         """Constructs a prosody tag for consistency."""
@@ -57,7 +55,7 @@ class SAPITTS(AbstractTTS):
             properties.append(f'pitch="{pitch}"')
 
         prosody_content = " ".join(properties)
-        text_with_tag = f'<prosody {prosody_content}>{text}</prosody>'
+        text_with_tag = f"<prosody {prosody_content}>{text}</prosody>"
 
         return text_with_tag
 

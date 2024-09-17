@@ -2,6 +2,7 @@ from ...ssml import BaseSSMLRoot, SSMLNode
 
 # Microsoft/ssml.py
 
+
 class MicrosoftSSML(BaseSSMLRoot):
     def __init__(self, lang: str, voice: str) -> None:
         self.lang = lang
@@ -14,7 +15,7 @@ class MicrosoftSSML(BaseSSMLRoot):
                 "xml:lang": self.lang,
                 "xmlns": "https://www.w3.org/2001/10/synthesis",
                 "xmlns:mstts": "https://www.w3.org/2001/mstts",
-            }
+            },
         ).add(self._inner)
         self._prosody = None
 
@@ -24,7 +25,7 @@ class MicrosoftSSML(BaseSSMLRoot):
     def add(self, text: str) -> str:
         self._inner.add(text)
         return str(self)
-        
+
     def set_voice(self, new_voice: str, new_lang: str):
         """Updates the voice and language for the SSML without reconstructing the SSML nodes."""
         self.voice = new_voice
@@ -36,7 +37,9 @@ class MicrosoftSSML(BaseSSMLRoot):
         self._inner.add(SSMLNode("break", attrs={"time": time}))
         return self
 
-    def say_as(self, text: str, interpret_as: str, format: str = None) -> "MicrosoftSSML":
+    def say_as(
+        self, text: str, interpret_as: str, format: str = None
+    ) -> "MicrosoftSSML":
         attrs = {"interpret-as": interpret_as}
         if format:
             attrs["format"] = format
@@ -47,7 +50,9 @@ class MicrosoftSSML(BaseSSMLRoot):
         self._inner.add(SSMLNode("emphasis", attrs={"level": level}, children=[text]))
         return self
 
-    def prosody(self, text: str, rate: str = None, pitch: str = None, volume: str = None) -> "MicrosoftSSML":
+    def prosody(
+        self, text: str, rate: str = None, pitch: str = None, volume: str = None
+    ) -> "MicrosoftSSML":
         attrs = {}
         if rate:
             attrs["rate"] = rate
@@ -60,4 +65,3 @@ class MicrosoftSSML(BaseSSMLRoot):
 
     def clear_ssml(self):
         self._inner.clear_ssml()
-
