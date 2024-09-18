@@ -48,27 +48,6 @@ class MicrosoftTTS(AbstractTTS):
             return self.timings[-1][1]
         return 0.0
 
-    def speak(self, ssml: str):
-        if not self._is_ssml(str(ssml)):
-            ssml = self.ssml.add(str(ssml))
-        format = FORMATS.get("wav", "Riff24Khz16BitMonoPcm")
-        self._client.speech_config.set_speech_synthesis_output_format(
-            getattr(speechsdk.SpeechSynthesisOutputFormat, format)
-        )
-
-        result = self.synthesizer.speak_ssml_async(str(ssml)).get()
-        if result.reason == speechsdk.ResultReason.SynthesizingAudioCompleted:
-            logging.info("Speech synthesized for text [{}]".format(ssml))
-        elif result.reason == speechsdk.ResultReason.Canceled:
-            cancellation_details = result.cancellation_details
-            logging.info(
-                "Speech synthesis canceled: {}".format(cancellation_details.reason)
-            )
-            if cancellation_details.reason == speechsdk.CancellationReason.Error:
-                logging.error(
-                    "Error details: {}".format(cancellation_details.error_details)
-                )
-
     @property
     def ssml(self) -> MicrosoftSSML:
         return MicrosoftSSML(self._lang, self._voice)
