@@ -36,6 +36,26 @@ class AbstractTTS(ABC):
         """Retrieves a list of available voices from the TTS service."""
         pass
 
+    def check_credentials(self) -> bool:
+        """
+        Verifies that the provided credentials are valid by calling get_voices.
+        This method should be implemented by the child classes to handle the
+          specific credential checks.
+        Also try not to use get_voices. It can be wasteful in credits/bandwidth
+        """
+        try:
+            # Attempt to retrieve voices to validate credentials
+            voices = self.get_voices()
+            if voices:
+                print("Credentials successfully verified.")
+                return True
+            else:
+                print("Failed to retrieve voices. Credentials may be invalid.")
+                return False
+        except Exception as e:
+            print(f"Credentials check failed: {e}")
+            return False
+
     def set_voice(self, voice_id: str, lang: str = "en-US"):
         self.voice_id = voice_id
         self.lang = lang

@@ -72,6 +72,7 @@ _TTS-Wrapper_ simplifies using text-to-speech APIs by providing a unified interf
 | `pause_audio()`        | Pauses ongoing speech playback.              | All engines             |
 | `resume_audio()`       | Resumes paused speech playback.              | All engines             |
 | `stop_audio()`         | Stops ongoing speech playback.               | All engines             |
+| `check_credentials()`  | True or False if Credentials are ok          | All engines             |
 
 **Notes**:
 
@@ -305,6 +306,24 @@ This will use the default audio output of your device to play the audio immediat
 ```python
 tts.speak(ssml_text)
 ```
+
+### Check Credentials
+
+This will check if the credentials are valid. Its only on the client object. Eg
+
+```python
+
+    client = MicrosoftClient(
+        credentials=(os.getenv("MICROSOFT_TOKEN"), os.getenv("MICROSOFT_REGION"))
+    )
+    if client.check_credentials():
+        print("Credentials are valid.")
+    else:
+        print("Credentials are invalid."
+
+```
+
+NB: Each engine has a different way of checking credentials. If they dont have a supported the parent class will check get_voices. If you want to save calls just do a get_voices call.
 
 ### Streaming and Playback Control
 

@@ -39,12 +39,25 @@ class MicrosoftClient:
         )
         print(f"MicrosoftClient initialized with region: {self._subscription_region}")
 
+    def check_credentials(self) -> bool:
+        """Verifies that the provided credentials are valid by initializing SpeechConfig."""
+        try:
+            # Attempt to create a synthesizer using the speech config
+            # This checks if the subscription key and region are accepted without any API call.
+            test_synthesizer = speechsdk.SpeechSynthesizer(
+                speech_config=self.speech_config
+            )
+            return True
+        except Exception as e:
+            return False
+
     def get_available_voices(self) -> List[Dict[str, Any]]:
         """Fetches available voices from Microsoft Azure TTS service."""
         speech_synthesizer = speechsdk.SpeechSynthesizer(
             speech_config=self.speech_config, audio_config=None
         )
         result = speech_synthesizer.get_voices_async().get()
+
         # Check the result
         if result.reason == speechsdk.ResultReason.VoicesListRetrieved:
             standardized_voices = []
@@ -62,4 +75,7 @@ class MicrosoftClient:
             raise Exception(
                 f"Get Voices cancelled; error details: {cancellation_details}"
             )
-            return []  # Return an empty list or raise an exception
+
+        # Add a default return statement to handle unexpected cases
+        logging.error("Unexpected result reason while fetching voices.")
+        return []
