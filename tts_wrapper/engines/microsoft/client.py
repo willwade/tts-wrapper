@@ -52,30 +52,34 @@ class MicrosoftClient:
             return False
 
     def get_available_voices(self) -> List[Dict[str, Any]]:
-        """Fetches available voices from Microsoft Azure TTS service."""
-        speech_synthesizer = speechsdk.SpeechSynthesizer(
-            speech_config=self.speech_config, audio_config=None
-        )
-        result = speech_synthesizer.get_voices_async().get()
+        """Fetches available voices from Microsoft Azure TTS service using REST API with optimized connection handling."""
+        import requests
 
-        # Check the result
-        if result.reason == speechsdk.ResultReason.VoicesListRetrieved:
-            standardized_voices = []
-            for voice in result.voices:
-                voice_dict = {
-                    "id": voice.short_name,
-                    "language_codes": [voice.locale],
-                    "name": voice.local_name,
-                    "gender": voice.gender.name,  # Convert enum to string
-                }
-                standardized_voices.append(voice_dict)
-            return standardized_voices
-        elif result.reason == speechsdk.ResultReason.Canceled:
-            cancellation_details = result.error_details
-            raise Exception(
-                f"Get Voices cancelled; error details: {cancellation_details}"
-            )
+        # Extract the subscription key and region from the speech_config
+        subscription_key = self.speech_config.subscription_key
+        region = self.speech_config.region
 
-        # Add a default return statement to handle unexpected cases
-        logging.error("Unexpected result reason while fetching voices.")
-        return []
+        url = f"https://{region}.tts.speech.microsoft.com/cognitiveservices/voices/list"
+        headers = {"Ocp-Apim-Subscription-Key": subscription_key}
+
+        try:
+            # Use a Session to reuse the connection
+            with requests.Session() as session:
+                session.headers.update(headers)
+                response = session.get(url)
+                response.raise_for_status()
+        except requests.exceptions.RequestException as e:
+            logging.error(f"Error fetching voices: {e}")
+            raise Exception(f"Failed to fetch voices; error details: {e}")
+
+        voices = response.json()
+        standardized_voices = []
+        for voice in voices:
+            voice_dict = {
+                "id": voice["ShortName"],
+                "language_codes": [voice["Locale"]],
+                "name": voice["LocalName"],
+                "gender": voice["Gender"],  # 'Gender' is already a string
+            }
+            standardized_voices.append(voice_dict)
+        return standardized_voices
