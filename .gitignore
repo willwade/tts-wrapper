@@ -29,3 +29,4 @@ cov.xml
 credentials-private.json
 examples/*.wav
 examples/*.mp3
+examples/ttsandtranslate-7dd2e2d80d42.json

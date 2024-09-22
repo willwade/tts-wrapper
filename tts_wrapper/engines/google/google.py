@@ -35,6 +35,7 @@ class GoogleTTS(AbstractTTS):
         self.audio_started = False
         self.audio_stopped = False
         self.audio_killed = False
+        self.is_paused = False
 
     # Audio playback callback, called continuously to stream audio from the buffer
     def play_audio_callback(
@@ -273,7 +274,6 @@ class GoogleTTS(AbstractTTS):
                 logging.info(
                     f"Processing audio chunk {chunk_idx} with size {len(audio_chunk)} bytes"
                 )
-
                 if audio_format.lower() == "wav":
                     # Convert bytes back to numpy float32 array for playback
                     # Assuming audio_chunk is raw PCM data (LINEAR16)
@@ -324,6 +324,12 @@ class GoogleTTS(AbstractTTS):
                 logging.info(
                     f"Audio successfully saved to {save_to_file_path} in {audio_format} format."
                 )
+
+    def pause_playback(self):
+        is_paused = True
+
+    def resume_playback(self):
+        is_paused = False
 
     def play_audio(self):
         """

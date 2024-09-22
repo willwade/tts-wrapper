@@ -446,3 +446,9 @@ class AbstractTTS(ABC):
             ssml_parts.append(f'<mark name="word{i}"/>{word}')
         ssml_parts.append("</speak>")
         return " ".join(ssml_parts)
+
+    def pause_playback(self):
+        pass
+
+    def resume_playback(self):
+        pass

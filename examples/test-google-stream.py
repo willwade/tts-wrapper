@@ -40,31 +40,41 @@ def main():
         )
         logging.info(f"Text to synthesize: {text}")
 
-        # Test synth_to_bytestream method
-        output_file_bytestream = "output_streamed_google.wav"  # Change to 'mp3' or 'flac' as needed
-        audio_format = "wav"  # Supported formats: 'wav', 'mp3', 'flac'
-
-        if audio_format.lower() == 'wav':
-            # Initialize WAV file
-            with wave.open(output_file_bytestream, 'wb') as wf:
-                wf.setnchannels(1)  # Mono
-                wf.setsampwidth(2)  # 16-bit PCM
-                wf.setframerate(tts.audio_rate)
-                logging.info(f"Starting synthesis and streaming to {output_file_bytestream} in {audio_format} format.")
-
-                for chunk_idx, audio_chunk in enumerate(tts.synth_to_bytestream(text, format=audio_format)):
-                    logging.info(f"Received audio chunk {chunk_idx} with size {len(audio_chunk)} bytes")
-                    wf.writeframes(audio_chunk)  # Write PCM frames to WAV file
-
-            logging.info(f"Audio successfully saved to {output_file_bytestream} in {audio_format} format via synth_to_bytestream.")
-
-        else:
-            # Handle non-WAV formats if implemented
-            pass
-
+        ## Test synth_to_bytestream method
+        #output_file_bytestream = "output_streamed_google.wav"  # Change to 'mp3' or 'flac' as needed
+        #audio_format = "wav"  # Supported formats: 'wav', 'mp3', 'flac'
+        #
+        #if audio_format.lower() == 'wav':
+        #    # Initialize WAV file
+        #    with wave.open(output_file_bytestream, 'wb') as wf:
+        #        wf.setnchannels(1)  # Mono
+        #        wf.setsampwidth(2)  # 16-bit PCM
+        #        wf.setframerate(tts.audio_rate)
+        #        logging.info(f"Starting synthesis and streaming to {output_file_bytestream} in {audio_format} format.")
+        #
+        #        for chunk_idx, audio_chunk in enumerate(tts.synth_to_bytestream(text, format=audio_format)):
+        #            logging.info(f"Received audio chunk {chunk_idx} with size {len(audio_chunk)} bytes")
+        #            wf.writeframes(audio_chunk)  # Write PCM frames to WAV file
+        #
+        #    logging.info(f"Audio successfully saved to {output_file_bytestream} in {audio_format} format via synth_to_bytestream.")
+        #
+        #else:
+        #    # Handle non-WAV formats if implemented
+        #    pass
+        #
         # Test speak_streamed method
         output_file_speak_streamed = "output_speak_streamed_google.wav"
         tts.speak_streamed(text)
+        # Pause playback after 5 seconds
+        # time.sleep(2)
+        tts.pause_playback()
+        print("Playback paused.")
+
+        # Resume playback after 3 seconds
+        time.sleep(3)
+        tts.resume_playback()
+        print("Playback resumed.")
+
         logging.info(f"Audio successfully saved to {output_file_speak_streamed} in wav format via speak_streamed.")
 
     except Exception as e:

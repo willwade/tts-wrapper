@@ -47,7 +47,7 @@ def main():
                 f.write(audio_chunk)  # Write the chunk to the file
 
         logging.info(f"Audio successfully saved to {output_file} in {audio_format} format.")
-
+        tts.speak_streamed(text)
     except Exception as e:
         logging.error(f"An error occurred during synthesis: {e}")
 
