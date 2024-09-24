@@ -3,6 +3,7 @@ import json
 import os 
 import os
 from load_credentials import load_credentials
+
 # Load credentials
 load_credentials('credentials.json')
 
@@ -44,10 +45,12 @@ def on_end():
     print('Speech ended')
 
 try:
-    text = "Hello, This is a word timing test"
-    tts.connect('onStart', on_start)
-    tts.connect('onEnd', on_end)
-    tts.start_playback_with_callbacks(text, callback=my_callback)
+    #text = "Hello, This is a word timing test"
+    #tts.connect('onStart', on_start)
+    #tts.connect('onEnd', on_end)
+    #tts.start_playback_with_callbacks(text, callback=my_callback)
+    text = "This is a speak streamed function test using WITAI"
+    tts.speak_streamed(text)
 except Exception as e:
     print(f"Error at callbacks: {e}")
 

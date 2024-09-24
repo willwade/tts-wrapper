@@ -295,6 +295,7 @@ class AbstractTTS(ABC):
             # Each frame is 2 bytes for int16,
             # so frames * 2 gives the number of bytes
             end_position = self.position + frames * 2
+
             data = self.audio_bytes[self.position : end_position]
             if len(data) < frames * 2:
                 # Not enough data to fill outdata, zero-pad it

@@ -13,26 +13,27 @@ instance_id = os.getenv('WATSON_INSTANCE_ID')
 client = WatsonClient(credentials=(api_key, region, instance_id))
 tts = WatsonTTS(client=client)
 
-# print(client.get_voices())
+print(client.get_voices())
 # # # pausing
-# try:
-#     ssml_text = tts.ssml.add(f"This is me speaking with Speak function and ElevenLabs")
-#     tts.speak_streamed(ssml_text)
-#     # Pause after 5 seconds
-#     time.sleep(0.3)
-#     tts.pause_audio()
-#     print("Pausing..")
-#     # Resume after 3 seconds
-#     time.sleep(0.5)
-#     tts.resume_audio()
-#     print("Resuming")
-#     # Stop after 2 seconds
-#     time.sleep(1)
-#     tts.stop_audio()
-#     print("Stopping.")
-# except Exception as e:
-#     print(f"Error at pausing: {e}")
-#   
+try:
+    ssml_text = tts.ssml.add(f"This is me speaking with Speak function and ElevenLabs")
+    tts.speak_streamed(ssml_text)
+    print (ssml_text)
+    # Pause after 5 seconds
+    #time.sleep(0.3)
+    #tts.pause_audio()
+    #print("Pausing..")
+    # Resume after 3 seconds
+    #time.sleep(0.5)
+    #tts.resume_audio()
+    print("Resuming")
+    # Stop after 2 seconds
+    #time.sleep(1)
+    #tts.stop_audio()
+    print("Stopping.")
+except Exception as e:
+    print(f"Error at pausing: {e}")
+  
 # time.sleep(3)
 # 
 # # Demonstrate saving audio to a file
@@ -79,26 +80,26 @@ tts = WatsonTTS(client=client)
 
 # ## calbacks
 
-def my_callback(word: str, start_time: float, end_time: float):
-    duration = end_time - start_time
-    print(f"Word: {word}, Duration: {duration:.3f}s")
-
-def on_start():
-    print('Speech started')
-
-def on_end():
-    print('Speech ended')
-
-try:
-    text = "Hello, This is a word timing test"
-    tts.connect('onStart', on_start)
-    tts.connect('onEnd', on_end)
-    tts.start_playback_with_callbacks(text, callback=my_callback)
-except Exception as e:
-    print(f"Error at callbacks: {e}")
-
-time.sleep(3)
-
+#def my_callback(word: str, start_time: float, end_time: float):
+#    duration = end_time - start_time
+#    print(f"Word: {word}, Duration: {duration:.3f}s")
+#
+#def on_start():
+#    print('Speech started')
+#
+#def on_end():
+#    print('Speech ended')
+#
+#try:
+#    text = "Hello, This is a word timing test"
+#    tts.connect('onStart', on_start)
+#    tts.connect('onEnd', on_end)
+#    tts.start_playback_with_callbacks(text, callback=my_callback)
+#except Exception as e:
+#    print(f"Error at callbacks: {e}")
+#
+#time.sleep(3)
+#
 try:
     text = "Test saving audio to file"
     print(text)

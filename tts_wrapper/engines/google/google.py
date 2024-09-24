@@ -35,7 +35,6 @@ class GoogleTTS(AbstractTTS):
         self.audio_started = False
         self.audio_stopped = False
         self.audio_killed = False
-        self.is_paused = False
 
     # Audio playback callback, called continuously to stream audio from the buffer
     def play_audio_callback(
@@ -325,11 +324,6 @@ class GoogleTTS(AbstractTTS):
                     f"Audio successfully saved to {save_to_file_path} in {audio_format} format."
                 )
 
-    def pause_playback(self):
-        is_paused = True
-
-    def resume_playback(self):
-        is_paused = False
 
     def play_audio(self):
         """
