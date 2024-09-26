@@ -1,4 +1,4 @@
-from typing import List, Dict, Any, Tuple, Optional
+from typing import List, Dict, Any, Tuple, Optional, Union
 from ...exceptions import ModuleNotInstalled
 import struct
 from google.cloud import texttospeech_v1beta1 as texttospeech
@@ -6,28 +6,46 @@ from google.oauth2 import service_account
 
 
 class GoogleClient:
-    def __init__(self, credentials: str) -> None:
-        self._credentials_file = credentials
+    def __init__(self, credentials: Union[str, Dict]) -> None:
+        """
+        Initialize the GoogleClient with credentials. Accepts either a file path or a dictionary.
+
+        :param credentials: The credentials for Google Cloud, can be a file path (str) or a dictionary.
+        """
+        self._credentials = credentials
         self._client = None
         self._voice = None
         self._lang = None
 
     def _initialize_client(self):
+        self.texttospeech = texttospeech
+        self.service_account = service_account
         if self._client is None:
             try:
-                self.texttospeech = texttospeech
-                self.service_account = service_account
-
-                self._client = texttospeech.TextToSpeechClient(
-                    credentials=self.service_account.Credentials.from_service_account_file(
-                        self._credentials_file
+                if isinstance(self._credentials, str):
+                    # Credentials provided as a file path
+                    self._client = self.texttospeech.TextToSpeechClient(
+                        credentials=self.service_account.Credentials.from_service_account_file(
+                            self._credentials
+                        )
                     )
-                )
+                elif isinstance(self._credentials, dict):
+                    # Credentials provided as a dictionary
+                    self._client = self.texttospeech.TextToSpeechClient(
+                        credentials=self.service_account.Credentials.from_service_account_info(
+                            self._credentials
+                        )
+                    )
+                else:
+                    raise ValueError(
+                        "Credentials must be a file path (str) or a dictionary"
+                    )
+
             except ImportError:
                 raise ModuleNotInstalled("google-cloud-texttospeech")
 
-            if not self._credentials_file:
-                raise ValueError("credentials file is required")
+        if not self._credentials:
+            raise ValueError("Credentials are required")
 
     def set_voice(self, voice: str, lang: str):
         """
