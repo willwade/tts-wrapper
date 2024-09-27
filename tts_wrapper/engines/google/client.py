@@ -1,4 +1,4 @@
-from typing import List, Dict, Any, Tuple, Optional, Union
+from typing import List, Dict, Any, Optional, Union
 from ...exceptions import ModuleNotInstalled
 import struct
 from google.cloud import texttospeech_v1beta1 as texttospeech
