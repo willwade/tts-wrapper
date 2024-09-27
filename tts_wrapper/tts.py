@@ -67,7 +67,6 @@ class AbstractTTS(ABC):
         :return: Raw PCM data as bytes (int16).
         """
         from soundfile import read  # type: ignore
-        from io import BytesIO
 
         # Use soundfile to read MP3 data
         mp3_fp = BytesIO(mp3_data)
@@ -111,7 +110,6 @@ class AbstractTTS(ABC):
             target_format = "wav"
         if target_format not in ["mp3", "flac", "wav"]:
             raise ValueError(f"Unsupported format: {target_format}")
-        from io import BytesIO
 
         # Create an in-memory file object
         output = BytesIO()
@@ -171,32 +169,6 @@ class AbstractTTS(ABC):
           no headers for sounddevice playback.
         """
         pass
-
-    def synth_to_bytestream(self, text: Any, format: Optional[str] = "wav") -> BytesIO:
-        """
-        Synthesizes text to an in-memory bytestream in the specified audio format.
-
-        :param text: The text to synthesize.
-        :param format: The audio format (e.g., 'wav', 'mp3', 'flac'). Default: 'wav'.
-        :return: A BytesIO object containing the audio data.
-        """
-        try:
-            # Synthesize text to raw PCM bytes
-            audio_bytes = self.synth_to_bytes(text)
-            pcm_data = np.frombuffer(audio_bytes, dtype=np.int16)
-
-            # Convert PCM data to the desired audio format
-            format = format if format else "wav"
-            converted_audio = self._convert_audio(pcm_data, format, self.audio_rate)
-
-            # Wrap the converted audio bytes in a BytesIO bytestream
-            bytestream = BytesIO(converted_audio)
-            bytestream.seek(0)  # Reset stream position to the beginning
-
-            return bytestream
-        except Exception as e:
-            logging.error(f"Error in synth_to_bytestream: {e}")
-            raise
 
     def synth_to_file(
         self, text: Any, filename: str, format: Optional[str] = "wav"
