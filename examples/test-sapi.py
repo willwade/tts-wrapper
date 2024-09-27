@@ -10,9 +10,20 @@ client = SAPIClient()
 tts = SAPITTS(client)
 print(client.get_voices())
 # # # pausing
+long_text = '''"Title: "The Silent Truth"
+The town of Brookhollow was the kind of place where people left their doors unlocked and trusted everyone they met. Tucked away in the rolling hills of the countryside, it was a town where time seemed to stand still. But on a crisp October morning, something sinister shattered the peace.
+Chapter 1: A Quiet Morning
+Detective Emma Hayes had just finished her morning coffee when the phone rang. It was a local officer from the Brookhollow precinct. Something felt wrong from the tone of his voice.
+"Detective Hayes, there's been an incident," Officer Morgan said, his voice tight. "You need to come to the Harrison estate right away."
+The Harrison estate was the largest property in Brookhollow, home to George Harrison, a well-known philanthropist and businessman. Emma grabbed her coat, knowing instinctively that this wasn’t a routine call.
+When she arrived, the estate was cordoned off. Police officers and forensic teams were scattered around the front lawn. Emma approached Officer Morgan, who was standing by the front entrance.
+"What's the situation?" she asked.
+Morgan gestured towards the house. "George Harrison. He’s dead. The maid found him this morning, lying in his study. Looks like a murder."
+Emma followed him inside, her mind racing. The air was thick with tension as they entered the study. The room was tastefully decorated, books lined the walls, and a grand mahogany desk stood in the center. But the most striking thing was the body slumped over the desk, a pool of blood soaking the papers beneath George Harrison's hand. A single gunshot to the back of the head.
+Emma examined the scene carefully. There were no signs of a struggle, and nothing seemed out of place. It was clean. Too clean."'''
 try:
     ssml_text = tts.ssml.add(
-        "This is me speaking with Speak function and SAPI"
+        long_text
     )
     tts.speak_streamed(ssml_text)
     # Pause after 5 seconds

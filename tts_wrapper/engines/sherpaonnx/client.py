@@ -227,8 +227,7 @@ class SherpaOnnxClient:
             logging.info(f"SAMPLE {samples}")
             if samples is None:  # End of stream signal
                 break
-            print("samples generate stream")
-            print(type(samples))
+            
             yield samples
 
     def _stream_audio_to_queue(self, text: str, sid: int = 0, speed: float = 1.0):

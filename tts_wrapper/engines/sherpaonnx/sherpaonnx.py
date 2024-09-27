@@ -203,8 +203,7 @@ class SherpaOnnxTTS(AbstractTTS):
                 logging.info(
                     f"Processing audio chunk {chunk_idx} with progress {progress}"
                 )
-                print ("samples type")
-                print(type(samples))
+
                 # Collect audio chunks for conversion
                 audio_chunks.append(samples)
 
