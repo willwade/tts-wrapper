@@ -64,7 +64,7 @@ def main():
 
         # Test speak_streamed method
         output_file_speak_streamed = "output_speak_streamed_google.wav"
-        tts.speak_streamed(text)
+        tts.speak_streamed(text,output_file_speak_streamed, "mp3")
         logging.info(f"Audio successfully saved to {output_file_speak_streamed} in wav format via speak_streamed.")
 
     except Exception as e:

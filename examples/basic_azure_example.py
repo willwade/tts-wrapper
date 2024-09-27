@@ -32,6 +32,8 @@ tts.set_property("rate", "medium")
 text_read = f"Hello, this is a streamed test"
 text_with_prosody = tts.construct_prosody_tag(text_read)
 ssml_text = tts.ssml.add(text_with_prosody)
+tts.pause_audio()
+time.sleep(1)
 print("ssml_test: ", ssml_text)
 
 start_time = time.time()

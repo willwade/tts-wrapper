@@ -194,6 +194,6 @@ try:
     tts.speak_streamed(ssml_text)
     time.sleep(5)
 
-    tts.synth_to_file(ssml_text, "test-microsoft.mp3", "mp3")
+    tts.speak_streamed(ssml_text, "test-microsoft.mp3", "mp3")
 except Exception as e:
     print(f"Error at setting pitch: {e}")  
