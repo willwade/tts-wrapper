@@ -135,14 +135,11 @@ class SherpaOnnxTTS(AbstractTTS):
         all_audio_chunks = []
 
         # Simulate audio generation in chunks from the text
-        for chunk_idx, (progress, samples) in enumerate(
-            self.generate_audio_chunks(text)
-        ):
-            logging.info(
-                f"Generated audio chunk with progress {progress}, samples shape: {samples.shape}"
-            )
-
+        for chunk_idx, audio_chunk in enumerate(self.synth_to_bytestream(str(text), format=audio_format)):
             # Add audio samples to the buffer for streaming
+            samples = (
+                np.frombuffer(audio_chunk, dtype=np.int16).astype(np.float32)/ 32767.0
+            )
             self.audio_buffer.put(samples)
             logging.info("Finished with 1 audio chunk, put into queue")
 

@@ -77,8 +77,9 @@ class SAPIClient:
         """Fetches available voices and returns a standardized list of voice properties."""
         voices = self._client.getProperty("voices")
         standardized_voices = []
-
         for voice in voices:
+            if voice.gender is None:
+                voice.gender = "male"
             voice_data = {
                 "id": voice.id,
                 "name": voice.name,

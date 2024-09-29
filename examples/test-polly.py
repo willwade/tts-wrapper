@@ -10,25 +10,25 @@ load_credentials('credentials.json')
 client = PollyClient(credentials=(os.getenv('POLLY_REGION'),os.getenv('POLLY_AWS_KEY_ID'), os.getenv('POLLY_AWS_ACCESS_KEY')))
 tts = PollyTTS(client)
 
-# # # pausng
-# try:
-#     ssml_text = tts.ssml.add(f"This is me speaking with Speak function and google")
-#     tts.speak_streamed(ssml_text)
-#     # Pause after 5 seconds
-#     time.sleep(0.3)
-#     tts.pause_audio()
-#     print("Pausing..")
-#     # Resume after 3 seconds
-#     time.sleep(0.5)
-#     tts.resume_audio()
-#     print("Resuming")
-#     # Stop after 2 seconds
-#     time.sleep(1)
-#     tts.stop_audio()
-#     print("Stopping.")
-# except Exception as e:
-#     print(f"Error at pausing: {e}")
-# #   
+ # # pausng
+try:
+    ssml_text = tts.ssml.add(f"This is me speaking with speak_streamed function and google")
+    tts.speak_streamed(ssml_text)
+    # Pause after 5 seconds
+    time.sleep(0.3)
+    tts.pause_audio()
+    print("Pausing..")
+    # Resume after 3 seconds
+    time.sleep(0.5)
+    tts.resume_audio()
+    print("Resuming")
+    # Stop after 2 seconds
+    time.sleep(1)
+    tts.stop_audio()
+    print("Stopping.")
+except Exception as e:
+    print(f"Error at pausing: {e}")
+   
 # #         
 # # # Demonstrate saving audio to a file
 # try:
@@ -89,7 +89,7 @@ try:
     print(tts)
     tts.start_playback_with_callbacks(text, callback=my_callback)
     print("save to file")
-    tts.synth_to_file(text, "polly_output.wav", "wav")
+    tts.speak_streamed(text, "polly_output.wav", "wav")
 except Exception as e:
     print(f"Error at callbacks: {e}")
 

@@ -35,7 +35,7 @@ except Exception as e:
 try:
     ssml_text = tts.ssml.add(f"This is me speaking with Speak function and google")
     output_file = Path(f"output_google.mp3")
-    tts.synth_to_file(ssml_text, str(output_file), format='mp3')
+    tts.speak_streamed(ssml_text, str(output_file), audio_format='mp3')
 #     # or you could do
      #tts.speak(ssml_text)
     print(f"Audio content saved to {output_file}")

@@ -1,4 +1,4 @@
-from tts_wrapper import ElevenLabsTTS, ElevenLabsClient
+from tts_wrapper import SAPITTS, SAPIClient
 import time
 from pathlib import Path
 import os
@@ -6,10 +6,10 @@ from load_credentials import load_credentials
 # Load credentials
 load_credentials('credentials-private.json')
 
-client = ElevenLabsClient(credentials=(os.getenv('ELEVENLABS_API_KEY')))
-tts = ElevenLabsTTS(client)
+client = SAPIClient()
+tts = SAPITTS(client)
 print(client.get_voices())
-
+# # # pausing
 long_text = '''"Title: "The Silent Truth"
 The town of Brookhollow was the kind of place where people left their doors unlocked and trusted everyone they met. Tucked away in the rolling hills of the countryside, it was a town where time seemed to stand still. But on a crisp October morning, something sinister shattered the peace.
 Chapter 1: A Quiet Morning
@@ -21,7 +21,6 @@ When she arrived, the estate was cordoned off. Police officers and forensic team
 Morgan gestured towards the house. "George Harrison. He’s dead. The maid found him this morning, lying in his study. Looks like a murder."
 Emma followed him inside, her mind racing. The air was thick with tension as they entered the study. The room was tastefully decorated, books lined the walls, and a grand mahogany desk stood in the center. But the most striking thing was the body slumped over the desk, a pool of blood soaking the papers beneath George Harrison's hand. A single gunshot to the back of the head.
 Emma examined the scene carefully. There were no signs of a struggle, and nothing seemed out of place. It was clean. Too clean."'''
-# # # pausing
 try:
     ssml_text = tts.ssml.add(
         long_text
@@ -46,12 +45,10 @@ time.sleep(3)
 # 
 # # Demonstrate saving audio to a file
 try:
-    ssml_text = tts.ssml.add(f"This is me speaking with Speak function and ElevenLabs")
-
-    #   ssml_text = tts.ssml.add(long_text)
-    output_file = Path(f"output_elevenlabs.wav")
+    ssml_text = tts.ssml.add(f"This is me speaking with Speak function and SAPI")
+    output_file = Path(f"output_sapi.mp3")
     #tts.synth(ssml_text, str(output_file), format='wav')
-    tts.speak_streamed(ssml_text, output_file, audio_format='wav')
+    tts.speak_streamed(ssml_text, output_file, audio_format='mp3')
     # or you could do
     # tts.speak(ssml_text)
     print(f"Audio content saved to {output_file}")
