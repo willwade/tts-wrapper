@@ -8,12 +8,14 @@ load_credentials('credentials-private.json')
 
 client = ElevenLabsClient(credentials=(os.getenv('ELEVENLABS_API_KEY')))
 tts = ElevenLabsTTS(client)
-print(client.get_voices())
+#print(client.get_voices())
 # # # pausing
 try:
     ssml_text = tts.ssml.add(
-        "This is me speaking with Speak function and ElevenLabs"
+        "This is me speaking with Speak function and ElevenLabs. I should be hearing a sentence"
     )
+    print ("SSML TEXT")
+    print(ssml_text)
     tts.speak_streamed(ssml_text)
     # Pause after 5 seconds
     time.sleep(0.3)
@@ -21,11 +23,11 @@ try:
     print("Pausing..")
     # Resume after 3 seconds
     time.sleep(0.5)
-    tts.resume_audio()
+    #tts.resume_audio()
     print("Resuming")
     # Stop after 2 seconds
     time.sleep(1)
-    tts.stop_audio()
+    #tts.stop_audio()
     print("Stopping.")
 except Exception as e:
     print(f"Error at pausing: {e}")

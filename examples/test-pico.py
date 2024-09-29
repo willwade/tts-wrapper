@@ -1,14 +1,14 @@
-from tts_wrapper import MMSTTS, MMSClient
+from tts_wrapper import PicoTTS, PicoClient
 import json
 import time
 from pathlib import Path
 import os
 
 # Initialize the client with only the lang parameter
-client = MMSClient(('spa'))
-tts = MMSTTS(client)
+client = PicoClient()
+tts = PicoTTS(client)
 text = "hello world i like monkeys"
-tts.speak(text)
+tts.speak_streamed(text)
 
 print(text)
 
@@ -44,10 +44,10 @@ try:
     ssml_text = tts.ssml.add(text_with_prosody)
     print("ssml_text", ssml_text)
 
-    tts.speak_streamed(ssml_text)
+    tts.speak(ssml_text)
     time.sleep(0.5)
 
     print("save to file")
-    tts.synth_to_file(ssml_text, "mms_output.wav", "wav")
+    tts.synth_to_file(ssml_text, "pico_output.wav", "wav")
 except Exception as e:
     print(f"Error at setting volume: {e}")

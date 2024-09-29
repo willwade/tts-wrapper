@@ -272,7 +272,6 @@ class GoogleTTS(AbstractTTS):
                 logging.info(
                     f"Processing audio chunk {chunk_idx} with size {len(audio_chunk)} bytes"
                 )
-
                 if audio_format.lower() == "wav":
                     # Convert bytes back to numpy float32 array for playback
                     # Assuming audio_chunk is raw PCM data (LINEAR16)
@@ -323,6 +322,7 @@ class GoogleTTS(AbstractTTS):
                 logging.info(
                     f"Audio successfully saved to {save_to_file_path} in {audio_format} format."
                 )
+
 
     def play_audio(self):
         """

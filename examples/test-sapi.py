@@ -1,14 +1,14 @@
-from tts_wrapper import MMSTTS, MMSClient
+from tts_wrapper import SAPITTS, SAPIClient, SAPISSML
 import json
 import time
 from pathlib import Path
 import os
 
 # Initialize the client with only the lang parameter
-client = MMSClient(('spa'))
-tts = MMSTTS(client)
+client = SAPIClient()
+tts = SAPITTS(client)
 text = "hello world i like monkeys"
-tts.speak(text)
+tts.speak_streamed(text)
 
 print(text)
 
@@ -22,7 +22,7 @@ try:
     text_with_prosody = tts.construct_prosody_tag(text_read)
     ssml_text = tts.ssml.add(text_with_prosody)
     print("ssml_text", ssml_text)
-    tts.speak(ssml_text)
+    tts.speak_streamed(ssml_text)
     time.sleep(0.5)
     
     #clear ssml so the previous text is not repeated
@@ -34,7 +34,7 @@ try:
     ssml_text = tts.ssml.add(text_with_prosody)
     print("ssml_text", ssml_text)
 
-    tts.speak(ssml_text)
+    tts.speak_streamed(ssml_text)
     time.sleep(0.5)
 
     tts.set_property("volume", "10")
@@ -51,3 +51,14 @@ try:
     tts.synth_to_file(ssml_text, "mms_output.wav", "wav")
 except Exception as e:
     print(f"Error at setting volume: {e}")
+
+# # Demonstrate saving audio to a file
+try:
+    ssml_text = tts.ssml.add(f"This is me speaking with for save to file function and SAPI text to speech")
+    output_file = Path(f"output_sapi.mp3")
+    tts.synth_to_file(ssml_text, str(output_file), format='mp3')
+#     # or you could do
+     #tts.speak(ssml_text)
+    print(f"Audio content saved to {output_file}")
+except Exception as e:
+    print(f"Error at saving: {e}")    

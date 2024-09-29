@@ -287,6 +287,7 @@ class AbstractTTS(ABC):
             # Each frame is 2 bytes for int16,
             # so frames * 2 gives the number of bytes
             end_position = self.position + frames * 2
+
             data = self.audio_bytes[self.position : end_position]
             if len(data) < frames * 2:
                 # Not enough data to fill outdata, zero-pad it
@@ -438,3 +439,9 @@ class AbstractTTS(ABC):
             ssml_parts.append(f'<mark name="word{i}"/>{word}')
         ssml_parts.append("</speak>")
         return " ".join(ssml_parts)
+
+    def pause_playback(self):
+        pass
+
+    def resume_playback(self):
+        pass

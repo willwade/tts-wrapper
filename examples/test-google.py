@@ -25,7 +25,7 @@ try:
 #     print("Resuming")
 #     # Stop after 2 seconds
 #     time.sleep(1)
-#     tts.stop_audio()
+    tts.stop_audio()
 #     print("Stopping.")
 except Exception as e:
     print(f"Error at pausing: {e}")
