@@ -4943,7 +4943,7 @@ google = ["google-cloud-texttospeech"]
 googletrans = ["gTTS"]
 microsoft = ["azure-cognitiveservices-speech"]
 polly = ["boto3"]
-sapi = []
+sapi = ["pyttsx3"]
 sherpaonnx = ["numpy", "numpy", "requests", "sherpa-onnx"]
 uwp = []
 watson = ["ibm-watson", "requests"]
@@ -4952,4 +4952,4 @@ witai = ["requests"]
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.10,<3.13"
-content-hash = "094fe0ee2e141e3b9fab922356dde37b5ca56d004bcd2549982a0bb9305b9866"
+content-hash = "c64fc3e3808bcd3db26ed1b031e0df44080662cc70920dbd6490dd191ef09fdf"
