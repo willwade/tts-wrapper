@@ -1,5 +1,5 @@
 
-# TTS-Wrapper
+# py3-TTS-Wrapper
 
 [![PyPI version](https://badge.fury.io/py/py3-tts-wrapper.svg)](https://badge.fury.io/py/py3-tts-wrapper)
 [![codecov](https://codecov.io/gh/willwade/py3-tts-wrapper/branch/master/graph/badge.svg?token=79IG7GAK0B)](https://codecov.io/gh/willwade/py3-tts-wrapper)
