@@ -2,7 +2,6 @@
 # TTS-Wrapper
 
 [![PyPI version](https://badge.fury.io/py/py3-tts-wrapper.svg)](https://badge.fury.io/py/py3-tts-wrapper)
-![build](https://github.com/willwade/py3-tts-wrapper/workflows/build/badge.svg)
 [![codecov](https://codecov.io/gh/willwade/py3-tts-wrapper/branch/master/graph/badge.svg?token=79IG7GAK0B)](https://codecov.io/gh/willwade/py3-tts-wrapper)
 
 > **Contributions are welcome! Check our [contribution guide](./CONTRIBUTING.md).**
