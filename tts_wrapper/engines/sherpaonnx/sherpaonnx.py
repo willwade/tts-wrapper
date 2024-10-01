@@ -220,7 +220,7 @@ class SherpaOnnxTTS(AbstractTTS):
                     f"Converted audio chunk {chunk_idx} length: {len(converted_audio)} bytes in format: {format}"
                 )
 
-                if format == "wav" and converted_audio[:4] == b"RIFF":
+                if converted_audio[:4] == b"RIFF":
                     logging.info("Stripping wav header from bytestream")
                     converted_audio = self._strip_wav_header(converted_audio)
 

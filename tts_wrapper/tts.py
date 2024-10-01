@@ -224,6 +224,9 @@ class AbstractTTS(ABC):
         try:
             # Synthesize audio to bytes for playback
             audio_bytes = self.synth_to_bytes(text)
+            if audio_bytes[:4] == b"RIFF":
+                audio_bytes = self._strip_wav_header(audio_bytes)
+                logging.info("Stripping wav header from streamed audio")
             audio_data = np.frombuffer(audio_bytes, dtype=np.int16)
             self.audio_bytes = audio_data.tobytes()
             self.position = 0
@@ -250,6 +253,7 @@ class AbstractTTS(ABC):
                 converted_audio = self._convert_audio(
                     pcm_data, audio_format, self.audio_rate
                 )
+
                 with open(save_to_file_path, "wb") as f:
                     f.write(converted_audio)
                 logging.info(
