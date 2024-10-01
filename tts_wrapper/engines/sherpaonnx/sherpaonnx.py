@@ -135,10 +135,12 @@ class SherpaOnnxTTS(AbstractTTS):
         all_audio_chunks = []
 
         # Simulate audio generation in chunks from the text
-        for chunk_idx, audio_chunk in enumerate(self.synth_to_bytestream(str(text), format=audio_format)):
+        for chunk_idx, audio_chunk in enumerate(
+            self.synth_to_bytestream(str(text), format=audio_format)
+        ):
             # Add audio samples to the buffer for streaming
             samples = (
-                np.frombuffer(audio_chunk, dtype=np.int16).astype(np.float32)/ 32767.0
+                np.frombuffer(audio_chunk, dtype=np.int16).astype(np.float32) / 32767.0
             )
             self.audio_buffer.put(samples)
             logging.info("Finished with 1 audio chunk, put into queue")
@@ -218,6 +220,10 @@ class SherpaOnnxTTS(AbstractTTS):
                     f"Converted audio chunk {chunk_idx} length: {len(converted_audio)} bytes in format: {format}"
                 )
 
+                if format == "wav" and converted_audio[:4] == b"RIFF":
+                    logging.info("Stripping wav header from bytestream")
+                    converted_audio = self._strip_wav_header(converted_audio)
+
                 # Yield the converted audio chunk
                 yield converted_audio
 
@@ -233,6 +239,10 @@ class SherpaOnnxTTS(AbstractTTS):
                 logging.info(
                     f"Final converted audio length: {len(converted_audio)} bytes in format: {format}"
                 )
+                if format == "wav" and converted_audio[:4] == b"RIFF":
+                    logging.info("Stripping wav header from bytestream")
+                    converted_audio = self._strip_wav_header(converted_audio)
+
                 yield converted_audio
 
         except Exception as e:
