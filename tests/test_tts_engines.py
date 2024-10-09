@@ -63,6 +63,8 @@ TTS_CLIENTS = {
 def create_tts_client(service):
     config = TTS_CLIENTS[service]
     client = config["client"]()
+    print ("client")
+    print(client)
     tts_class = config["class"]
     tts = tts_class(client)
     return tts
@@ -70,6 +72,7 @@ def create_tts_client(service):
 @pytest.mark.synthetic
 @pytest.mark.parametrize("service", TTS_CLIENTS.keys())
 def test_tts_engine(service):
+    print("here")
     tts = create_tts_client(service)
 
     # Plain text demo

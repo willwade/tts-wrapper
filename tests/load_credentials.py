@@ -32,15 +32,15 @@ def load_credentials(public_json_file='credentials.json'):
 def set_env_vars_from_json(json_file):
     with open(json_file, 'r') as file:
         data = json.load(file)
-        
         env_vars = {}
         for service, creds in data.items():
             for key, value in creds.items():
                 env_var = f"{service.upper()}_{key.upper()}"
                 env_vars[env_var] = value
+                
                 print(f"Set {env_var} to {value}")
                 os.environ[env_var] = value  # Set for the current session
-                
+        print(env_vars)        
         if platform.system() == 'Windows':
             set_env_vars_windows(env_vars)
         else:
@@ -73,5 +73,5 @@ if __name__ == "__main__":
 #     json_file = 'path/to/your/credentials.json'
 #     load_credentials(json_file)
 
-    json_file = 'credentials.json'
+    json_file = 'credentials-private.json'
     set_env_vars_from_json(json_file)
