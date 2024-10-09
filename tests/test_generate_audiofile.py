@@ -13,13 +13,14 @@ from tts_wrapper import (
     ElevenLabsClient, ElevenLabsTTS,
     WitAiClient, WitAiTTS,
     GoogleTransClient, GoogleTransTTS,
-    SherpaOnnxClient, SherpaOnnxTTS
+    SherpaOnnxClient, SherpaOnnxTTS,
+    SAPIClient, SAPITTS
 )
 
 #from load_credentials import load_credentials
 # Load credentials
 #load_credentials('credentials-private.json')
-services = ["polly","google","microsoft", "watson", "elevenlabs", "witai", "googletrans", "sherpaonnx"]
+services = ["polly","google","microsoft", "watson", "elevenlabs", "witai", "googletrans", "sherpaonnx", "sapi"]
 
 TTS_CLIENTS = {
     "polly": {
@@ -59,6 +60,10 @@ TTS_CLIENTS = {
     "sherpaonnx": {
         "client_lambda": lambda: SherpaOnnxClient(model_path=None, tokens_path=None),
         "class": SherpaOnnxTTS
+    },
+        "sapi": {
+        "client_lambda": lambda: SAPIClient(),
+        "class": SAPITTS
     }
 }
 
@@ -126,6 +131,7 @@ class TestFileCreation(unittest.TestCase):
         self.sherpaonnx_filename = "sherpaonnx-test.wav"
         self.watson_filename = "watson-test.wav"
         self.wtai_filename = "wtai-test.wav"
+        self.sapi_filename = "sapi-test.wav"
 
 
     def tearDown(self):
@@ -145,6 +151,8 @@ class TestFileCreation(unittest.TestCase):
             os.remove(self.watson_filename)
         if os.path.exists(self.wtai_filename):
             os.remove(self.wtai_filename)
+        if os.path.exists(self.sapi_filename):
+            os.remove(self.sapi_filename)
 
     def test_google_audio_creation(self):
         googletts = tts_instances["google"]
@@ -218,6 +226,15 @@ class TestFileCreation(unittest.TestCase):
         self.assertTrue(os.path.exists(self.wtai_filename))
         print(f"Test passed: File '{self.wtai_filename}' was created successfully.")
         self.__class__.success_count += 1 
+
+    def test_sapi_audio_creation(self):
+        ssml_text = f"This is me speaking with speak_streamed function and SAPI"
+        print(ssml_text)  
+        sapitts =  tts_instances["sapi"]          
+        sapitts.speak_streamed(ssml_text,self.sapi_filename,"wav")
+        self.assertTrue(os.path.exists(self.sapi_filename))
+        print(f"Test passed: File '{self.sapi_filename}' was created successfully.")
+        self.__class__.success_count += 1
 
 if __name__ == '__main__':
     manager = ClientManager()
