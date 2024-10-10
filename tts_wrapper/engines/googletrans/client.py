@@ -4,6 +4,9 @@ from ...exceptions import UnsupportedFileFormat
 from io import BytesIO
 import logging
 import mp3
+from ...engines.utils import (
+    getISOLangCode,
+)
 
 try:
     from gtts import gTTS
@@ -133,7 +136,7 @@ class GoogleTransClient:
                     standardized_voices.append(
                         {
                             "id": f"{lang_code}-{accent}",
-                            "language_codes": [lang_code],
+                            "language_codes": [getISOLangCode(lang_code)],
                             "name": f"{lang_name} ({accent})",
                             "gender": "Unknown",
                         }
@@ -142,7 +145,7 @@ class GoogleTransClient:
                 standardized_voices.append(
                     {
                         "id": lang_code,
-                        "language_codes": [lang_code],
+                        "language_codes": [getISOLangCode(lang_code)],
                         "name": lang_name,
                         "gender": "Unknown",
                     }
