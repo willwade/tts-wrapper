@@ -1,7 +1,9 @@
 import asyncio
 from typing import List, Dict, Any, Optional
 from ...exceptions import ModuleNotInstalled
-
+from ...engines.utils import (
+    getISOLangCode,
+)
 try:
     from winrt.windows.media.speechsynthesis import SpeechSynthesizer
     from winrt.windows.storage.streams import DataReader
@@ -42,7 +44,7 @@ class UWPClient:
         for voice in voices:
             standardized_voice = {
                 "id": voice.id,
-                "language_codes": [voice.language],
+                "language_codes": [getISOLangCode(voice.language)],
                 "name": voice.display_name,
                 "gender": voice.gender.value,
             }

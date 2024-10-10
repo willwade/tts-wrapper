@@ -1,9 +1,12 @@
+import logging
 from typing import Tuple, List, Dict, Any, Optional
 from tts_wrapper.tts import FileFormat
 import io
 import wave
 from ...exceptions import ModuleNotInstalled
-
+from ...engines.utils import (
+    getISOLangCode,
+)
 try:
     import requests
 except ImportError:
@@ -77,7 +80,7 @@ class MicrosoftClient:
         for voice in voices:
             voice_dict = {
                 "id": voice["ShortName"],
-                "language_codes": [voice["Locale"]],
+                "language_codes": [getISOLangCode(voice["Locale"])],
                 "name": voice["LocalName"],
                 "gender": voice["Gender"],  # 'Gender' is already a string
             }

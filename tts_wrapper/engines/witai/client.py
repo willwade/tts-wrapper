@@ -3,7 +3,9 @@ from typing import Any, Dict, Optional, List
 from ...exceptions import UnsupportedFileFormat
 import logging
 import requests
-
+from ...engines.utils import (
+    getISOLangCode,
+)
 FORMATS = {"mp3": "mp3", "pcm": "raw", "wav": "wav"}
 
 
@@ -48,7 +50,7 @@ class WitAiClient:
                     standardized_voices.append(
                         {
                             "id": voice["name"],
-                            "language_codes": [locale],
+                            "language_codes": [getISOLangCode(locale)],
                             "name": voice["name"].split("$")[1],
                             "gender": voice["gender"],
                             "styles": voice.get("styles", []),

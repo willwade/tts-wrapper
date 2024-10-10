@@ -4,7 +4,9 @@ from typing import List, Dict, Any, Optional, Tuple
 from ...tts import FileFormat
 from ...exceptions import UnsupportedFileFormat
 import requests
-
+from ...engines.utils import (
+    getISOLangCode,
+)
 audio_format = ("pcm_22050",)
 
 
@@ -199,11 +201,11 @@ class ElevenLabsClient:
                 )  # Default to 'en-US'
                 if voice["high_quality_base_model_ids"] == "eleven_multilingual_v1":
                     voice["language_codes"] = [
-                        language_code for language_code in supported_languages_v1.keys()
+                        getISOLangCode(language_code) for language_code in supported_languages_v1.keys()
                     ]
                 else:
                     voice["language_codes"] = [
-                        language_code for language_code in supported_languages_v2.keys()
+                        getISOLangCode(language_code) for language_code in supported_languages_v2.keys()
                     ]
                 voice["name"] = voice["name"]
                 voice["gender"] = "Unknown"
