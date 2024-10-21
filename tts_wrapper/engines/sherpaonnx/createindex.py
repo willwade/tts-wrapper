@@ -1,8 +1,8 @@
-import requests
+import os
 import json
 import re
+import requests
 import tarfile
-import os
 from io import BytesIO
 import langcodes  # For enriching language data
 
@@ -10,37 +10,107 @@ import langcodes  # For enriching language data
 iso_code_pattern = re.compile(r"^[a-zA-Z0-9]{1,8}$")
 
 
-def handle_special_cases(developer, name, quality, url):
-    if developer == "mimic3":
-        name_quality_match = re.search(
-            r"-(?P<name>[a-zA-Z0-9_]+)-(?P<quality>low|medium|high|nwu_low|ailabs_low)",
-            url,
-        )
-        if name_quality_match:
-            name = name_quality_match.group("name")
-            quality = name_quality_match.group("quality")
-    if developer == "cantonese" and "hf" in url:
-        name = "xiaomaiiwn" if "xiaomaiiwn" in url else name
-    return name, quality
-
-
-def extract_language_code_from_config(config_data):
-    """
-    Extracts language information from the config.json file if available.
-    Returns language code and country information if present.
-    """
-    text_language = config_data.get("text_language", "unknown")
+# Function to get detailed language information using langcodes library
+def get_language_data(lang_code: str, region: str):
     if (
-        text_language != "unknown"
-        and text_language.isascii()
-        and iso_code_pattern.match(text_language)
+        lang_code == "unknown"
+        or not lang_code.isascii()
+        or not iso_code_pattern.match(lang_code)
     ):
-        # Return the language code from config.json
-        return [(text_language, "Unknown")]
-    return None  # Return None if language isn't found in the config
+        return {
+            "lang_code": "unknown",
+            "language_name": "Unknown",
+            "country": "Unknown",
+        }
+
+    try:
+        language_info = langcodes.get(lang_code)
+        country = (
+            region
+            if region != "Unknown"
+            else (language_info.maximize().region or "Unknown")
+        )
+        return {
+            "lang_code": lang_code,
+            "language_name": language_info.language_name(),
+            "country": country,
+        }
+    except LookupError:
+        pass
+    return {"lang_code": lang_code, "language_name": "Unknown", "country": region}
 
 
-# Update function to handle fallback correctly
+def save_models(merged_models, filepath="merged_models.json"):
+    with open(filepath, "w") as f:
+        json.dump(merged_models, f, indent=4)
+    print(f"Saved {len(merged_models)} models to {filepath}")
+
+
+def merge_models(
+    mms_models, published_models, output_file="merged_models.json", force=False
+):
+    # Load existing models if file exists and force flag is not set
+    if os.path.exists(output_file) and not force:
+        with open(output_file, "r") as f:
+            merged_models = json.load(f)
+            print("Loaded existing merged models.")
+    else:
+        merged_models = {}
+
+    # Total number of models to process
+    total_models = len(mms_models) + len(published_models)
+    if total_models == 0:
+        print("No models to merge.")
+        return merged_models
+
+    # Filter out models with developer 'mms' from published models
+    filtered_published_models = [
+        model for model in published_models if model["developer"] != "mms"
+    ]
+
+    # Create a dictionary for easy lookup and merging
+    merged_models.update({model["id"]: model for model in filtered_published_models})
+
+    last_saved_index = 0  # Track the last save point to avoid repetitive saving
+
+    # Add MMS models to the merged models (MMS models default to 16000 sample rate)
+    for index, mms_model in enumerate(mms_models):
+        iso_code = mms_model["Iso Code"]
+        language_info = get_language_data(iso_code, "Unknown")
+
+        merged_models[iso_code] = {
+            "id": iso_code,
+            "model_type": "mms",
+            "developer": "mms",
+            "name": mms_model["Language Name"],
+            "language": [language_info],
+            "quality": "unknown",
+            "sample_rate": 16000,  # Set to 16000 by default for MMS models
+            "num_speakers": 1,
+            "url": mms_model["ONNX Model URL"],
+            "compression": False,
+            "filesize_mb": "unknown",
+        }
+
+        # Save every 50 models or at the very end
+        if (index + 1) % 50 == 0 or (index + 1) == len(mms_models):
+            if last_saved_index < index + 1:
+                save_models(merged_models, output_file)
+                last_saved_index = index + 1  # Update last saved index
+
+        # Print progress percentage
+        progress = ((index + 1) / total_models) * 100
+        print(f"Processed {index + 1}/{total_models} models ({progress:.2f}%)")
+
+    # Final save at the end if the last model processed wasn't just saved
+    if last_saved_index < len(mms_models):
+        save_models(merged_models, output_file)
+
+    print("All models have been processed and saved.")
+    return merged_models
+
+
+# Function to extract language codes from config or URL
 def extract_language_code_vits(url, name, developer, config_data=None):
     """
     Extracts the language code either from the config file or the URL.
@@ -51,7 +121,7 @@ def extract_language_code_vits(url, name, developer, config_data=None):
         if config_lang:
             return config_lang
 
-    # Fallback: Special case for models supporting multiple languages
+    # Special case for models supporting multiple languages
     if "zh_en" in url or "zh_en" in name:
         return [
             ("zh", "CN"),
@@ -71,6 +141,10 @@ def extract_language_code_vits(url, name, developer, config_data=None):
             return [(lang_code, region)]
         return [("unknown", "Unknown")]
 
+    if developer == "cantonese" and "hf" in url:
+        # Special case: Cantonese HF models (HuggingFace models)
+        return [("zh", "HK")]
+
     # Generic case: match two-letter language codes with optional region (e.g., en_GB, en-US)
     lang_match = lang_code_pattern.search(url)
     if lang_match:
@@ -85,6 +159,44 @@ def extract_language_code_vits(url, name, developer, config_data=None):
         return [("en", "US")]  # LJSpeech is US English by default
 
     return [("unknown", "Unknown")]
+
+
+# Function to fetch a file from a tar.bz2 archive
+import requests
+import tarfile
+from io import BytesIO
+
+
+# Read a JSON file from within a .tar.bz2 archive
+def read_file_from_tar_bz2(url, filename_in_archive):
+    print(f"Attempting to download and read from {url}")  # Debugging print
+    try:
+        response = requests.get(url, stream=True)
+        if response.status_code == 200:
+            fileobj = BytesIO(response.content)
+            with tarfile.open(fileobj=fileobj, mode="r:bz2") as tar:
+                print(f"Extracting from archive {url}")  # Debugging print
+                found_json = False
+                for member in tar.getmembers():
+                    if member.name.endswith(".json"):
+                        print(f"Found JSON file: {member.name}")  # Debugging print
+                        found_json = True
+                        file = tar.extractfile(member)
+                        return file.read().decode() if file else None
+                if not found_json:
+                    print(f"No JSON file found in {url}")  # Debugging print
+    except Exception as e:
+        print(f"Error extracting JSON from {url}: {e}")  # Error handling
+    return None
+
+
+# Function to generate a unique model ID
+def generate_model_id(developer, lang_codes, name, quality):
+    return (
+        f"{developer}-{'_'.join(lang_codes)}-{name}-{quality}"
+        if quality != "unknown"
+        else f"{developer}-{'_'.join(lang_codes)}-{name}"
+    )
 
 
 # Main function for fetching GitHub models
@@ -117,9 +229,12 @@ def get_github_release_assets(repo, tag):
         developer = parts[1] if len(parts) > 1 else "unknown"
 
         # Read config.json or any other json in the archive
+        print(f"Processing model from URL: {asset_url}")  # Debugging print
         config_data = read_file_from_tar_bz2(asset_url, "config.json")
         if not config_data:
-            config_data = read_file_from_tar_bz2(asset_url, "*.json")  # Try fallback
+            config_data = read_file_from_tar_bz2(
+                asset_url, "*.json"
+            )  # Fallback to any JSON
 
         # Extract language code, prioritizing config.json, fallback to URL
         lang_codes_and_regions = extract_language_code_vits(
@@ -206,134 +321,6 @@ known_lang_codes = {
     "tn": "Tswana",
 }
 
-# Regex to match language codes in filenames or URLs
-lang_code_pattern = re.compile(r"-(?P<lang>[a-z]{2})([_-][A-Z]{2})?-")
-
-
-# Extract detailed language information using langcodes library
-def get_language_data(lang_code: str, region: str):
-    if (
-        lang_code == "unknown"
-        or not lang_code.isascii()
-        or not iso_code_pattern.match(lang_code)
-    ):
-        return {
-            "lang_code": "unknown",
-            "language_name": "Unknown",
-            "country": "Unknown",
-        }
-
-    try:
-        language_info = langcodes.get(lang_code)
-        country = (
-            region
-            if region != "Unknown"
-            else (language_info.maximize().region or "Unknown")
-        )
-        return {
-            "lang_code": lang_code,
-            "language_name": language_info.language_name(),
-            "country": country,
-        }
-    except LookupError:
-        pass
-    return {"lang_code": lang_code, "language_name": "Unknown", "country": region}
-
-
-# Function to generate a unique ID for non-MMS models
-def generate_model_id(developer, lang_codes, name, quality):
-    if quality != "unknown":
-        return f"{developer}-{'_'.join(lang_codes)}-{name}-{quality}"
-    else:
-        return f"{developer}-{'_'.join(lang_codes)}-{name}"
-
-
-# Read a JSON file from within a .tar.bz2 archive
-def read_file_from_tar_bz2(url, filename_in_archive):
-    response = requests.get(url)
-    if response.status_code == 200:
-        fileobj = BytesIO(response.content)
-        with tarfile.open(fileobj=fileobj, mode="r:bz2") as tar:
-            for member in tar.getmembers():
-                if member.name.endswith(".json"):
-                    file_content = tar.extractfile(member).read().decode()
-                    try:
-                        return json.loads(file_content)  # Parse JSON data
-                    except json.JSONDecodeError:
-                        print(f"Failed to parse JSON from {member.name}")
-                        return None
-    return None
-
-
-# Function to save the merged models
-def save_models(merged_models, filepath="merged_models.json"):
-    with open(filepath, "w") as f:
-        json.dump(merged_models, f, indent=4)
-    print(f"Saved {len(merged_models)} models to {filepath}")
-
-
-def merge_models(
-    mms_models, published_models, output_file="merged_models.json", force=False
-):
-    # Load existing models if file exists and force flag is not set
-    if os.path.exists(output_file) and not force:
-        with open(output_file, "r") as f:
-            merged_models = json.load(f)
-            print("Loaded existing merged models.")
-    else:
-        merged_models = {}
-
-    # Total number of models to process
-    total_models = len(mms_models) + len(published_models)
-    if total_models == 0:
-        print("No models to merge.")
-        return merged_models
-
-    # Filter out models with developer 'mms' from published models
-    filtered_published_models = [
-        model for model in published_models if model["developer"] != "mms"
-    ]
-
-    # Create a dictionary for easy lookup and merging
-    merged_models.update({model["id"]: model for model in filtered_published_models})
-
-    last_saved_index = 0  # Track the last save point to avoid repetitive saving
-
-    # Add MMS models to the merged models (MMS models default to 16000 sample rate)
-    for index, mms_model in enumerate(mms_models):
-        iso_code = mms_model["Iso Code"]
-        language_info = get_language_data(iso_code, "Unknown")
-
-        merged_models[iso_code] = {
-            "id": iso_code,
-            "model_type": "mms",
-            "developer": "mms",
-            "name": mms_model["Language Name"],
-            "language": [language_info],
-            "quality": "unknown",
-            "sample_rate": 16000,  # Set to 16000 by default for MMS models
-            "num_speakers": 1,
-            "url": mms_model["ONNX Model URL"],
-            "compression": False,
-            "filesize_mb": "unknown",
-        }
-
-        # Save every 50 models or at the very end
-        if (index + 1) % 50 == 0 or (index + 1) == len(mms_models):
-            if last_saved_index < index + 1:
-                save_models(merged_models, output_file)
-                last_saved_index = index + 1  # Update last saved index
-
-        # Print progress percentage
-        progress = ((index + 1) / total_models) * 100
-        print(f"Processed {index + 1}/{total_models} models ({progress:.2f}%)")
-
-    # Final save at the end if the last model processed wasn't just saved
-    if last_saved_index < len(mms_models):
-        save_models(merged_models, output_file)
-
-    return merged_models
-
 
 # Main entry point
 def main():
@@ -346,7 +333,13 @@ def main():
     tag = "tts-models"
     output_file = "merged_models.json"
     merged_models = merge_models(mms_models, [], output_file)
-    get_github_release_assets(repo, tag)
+    published_models = get_github_release_assets(repo, tag)
+
+    # Step 3: Merge all models
+    merged_models = merge_models(mms_models, published_models, output_file)
+
+    print("Merging completed. Exiting...")
+    exit(0)  # Ensure the program exits
 
 
 if __name__ == "__main__":
