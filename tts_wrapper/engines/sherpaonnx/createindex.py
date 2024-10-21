@@ -12,9 +12,14 @@ lang_code_pattern = re.compile(r"-(?P<lang>[a-z]{2})([_-][A-Z]{2})?")
 
 
 def handle_special_cases(developer, name, quality, url):
-    # Special case for Mimic3, where name and quality can be extracted from the URL
+    # Remove prefixes like 'chars_' from the quality field
+    quality = re.sub(r".*?_", "", quality)
+
+    # For Mimic3, remove quality from the name if it is part of the name
     if developer == "mimic3":
-        # Look for patterns in the URL like "-name-quality"
+        name = re.sub(r"(_low|_medium|_high|_nwu_low|_ailabs_low)$", "", name)
+
+        # Handle the name/quality separation logic if still needed
         name_quality_match = re.search(
             r"-(?P<name>[a-zA-Z0-9_]+)-(?P<quality>low|medium|high|nwu_low|ailabs_low)",
             url,
@@ -22,10 +27,6 @@ def handle_special_cases(developer, name, quality, url):
         if name_quality_match:
             name = name_quality_match.group("name")
             quality = name_quality_match.group("quality")
-
-    # Special case for Cantonese HF models, where "xiaomaiiwn" is used as a standard name
-    if developer == "cantonese" and "hf" in url:
-        name = "xiaomaiiwn" if "xiaomaiiwn" in url else name
 
     return name, quality
 
@@ -236,12 +237,6 @@ def extract_language_code_vits(url, name, developer, config_data=None):
     return [("unknown", "Unknown")]
 
 
-# Function to fetch a file from a tar.bz2 archive
-import requests
-import tarfile
-from io import BytesIO
-
-
 # Read a JSON file from within a .tar.bz2 archive
 def read_file_from_tar_bz2(url, filename_in_archive):
     print(f"Attempting to download and read from {url}")  # Debugging print
@@ -275,8 +270,10 @@ def generate_model_id(developer, lang_codes, name, quality):
 
 
 # Main function for fetching GitHub models
-# Function to get GitHub release assets
-def get_github_release_assets(repo, tag):
+from io import BytesIO
+
+
+def get_github_release_assets(repo, tag, merged_models, output_file):
     headers = {"Accept": "application/vnd.github.v3+json"}
     releases_url = f"https://api.github.com/repos/{repo}/releases/tags/{tag}"
     response = requests.get(releases_url, headers=headers)
@@ -303,6 +300,11 @@ def get_github_release_assets(repo, tag):
             continue
 
         developer = parts[1] if len(parts) > 1 else "unknown"
+
+        # Check if the model has already been processed and saved
+        if filename_no_ext in merged_models:
+            print(f"Skipping {filename_no_ext}, already processed.")
+            continue
 
         # Read config.json or any other json in the archive
         print(f"Processing model from URL: {asset_url}")  # Debugging print
@@ -348,23 +350,29 @@ def get_github_release_assets(repo, tag):
             developer, [code for code, _ in lang_codes_and_regions], name, quality
         )
 
-        assets.append(
-            {
-                "id": id,
-                "model_type": model_type,
-                "developer": developer,
-                "name": name,  # Include the name
-                "language": lang_details,  # Store detailed language data
-                "quality": quality,
-                "sample_rate": sample_rate,  # Use extracted or fallback sample rate
-                "num_speakers": 1,
-                "url": asset_url,
-                "compression": True,
-                "filesize_mb": round(asset["size"] / (1024 * 1024), 2),
-            }
-        )
+        model_data = {
+            "id": id,
+            "model_type": model_type,
+            "developer": developer,
+            "name": name,  # Include the name
+            "language": lang_details,  # Store detailed language data
+            "quality": quality,
+            "sample_rate": sample_rate,  # Use extracted or fallback sample rate
+            "num_speakers": 1,
+            "url": asset_url,
+            "compression": True,
+            "filesize_mb": round(asset["size"] / (1024 * 1024), 2),
+        }
 
-    return assets
+        # Add to merged models
+        merged_models[id] = model_data
+
+        # Save after each model is processed
+        save_models(merged_models, output_file)
+
+        print(f"Processed {len(merged_models)}/{len(release_info['assets'])} models.")
+
+    return merged_models
 
 
 # Function to fetch data from a URL
@@ -408,22 +416,23 @@ known_lang_codes = {
 
 # Main entry point
 def main():
-    # Step 1: Download MMS models
-    mms_url = "https://huggingface.co/willwade/mms-tts-multilingual-models-onnx/raw/main/languages-supported.json"
-    mms_models = fetch_data_from_url(mms_url)
+    output_file = "merged_models.json"
+
+    # Step 1: Load existing models or start fresh
+    try:
+        with open(output_file, "r") as f:
+            merged_models = json.load(f)
+            print(f"Loaded {len(merged_models)} existing models.")
+    except FileNotFoundError:
+        merged_models = {}
+        print("No existing models found. Starting fresh.")
 
     # Step 2: Fetch GitHub models (VITS, Piper, etc.)
     repo = "k2-fsa/sherpa-onnx"
     tag = "tts-models"
-    output_file = "merged_models.json"
-    merged_models = merge_models(mms_models, [], output_file)
-    published_models = get_github_release_assets(repo, tag)
+    published_models = get_github_release_assets(repo, tag, merged_models, output_file)
 
-    # Step 3: Merge all models
-    merged_models = merge_models(mms_models, published_models, output_file)
-
-    print("Merging completed. Exiting...")
-    exit(0)  # Ensure the program exits
+    print("All models have been processed and saved.")
 
 
 if __name__ == "__main__":
