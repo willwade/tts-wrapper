@@ -8,6 +8,81 @@ import langcodes  # For enriching language data
 
 # Regex to validate ISO language codes (1-8 alphanumeric characters)
 iso_code_pattern = re.compile(r"^[a-zA-Z0-9]{1,8}$")
+lang_code_pattern = re.compile(r"-(?P<lang>[a-z]{2})([_-][A-Z]{2})?")
+
+
+def handle_special_cases(developer, name, quality, url):
+    # Special case for Mimic3, where name and quality can be extracted from the URL
+    if developer == "mimic3":
+        # Look for patterns in the URL like "-name-quality"
+        name_quality_match = re.search(
+            r"-(?P<name>[a-zA-Z0-9_]+)-(?P<quality>low|medium|high|nwu_low|ailabs_low)",
+            url,
+        )
+        if name_quality_match:
+            name = name_quality_match.group("name")
+            quality = name_quality_match.group("quality")
+
+    # Special case for Cantonese HF models, where "xiaomaiiwn" is used as a standard name
+    if developer == "cantonese" and "hf" in url:
+        name = "xiaomaiiwn" if "xiaomaiiwn" in url else name
+
+    return name, quality
+
+
+def extract_language_code_from_config(config_data):
+    """
+    Extracts language information from the config.json file if available.
+    Returns language code and country information if present.
+    """
+    # Check if the config has a "text_language" key, which should indicate the language
+    text_language = config_data.get("text_language", "unknown")
+
+    # Validate if the text_language is a proper ISO code
+    if (
+        text_language != "unknown"
+        and text_language.isascii()
+        and re.match(r"^[a-z]{2,3}$", text_language)
+    ):
+        # Return the language code from config.json
+        return [
+            (text_language, "Unknown")
+        ]  # You can replace "Unknown" with a region if available
+
+    return None  # Return None if language isn't found in the config
+
+
+def extract_language_code_from_config(config_data):
+    """
+    Extracts language information from the config.json file if available.
+    Returns language code and country information if present.
+    """
+    # If config_data is a string, attempt to parse it as JSON
+    if config_data and isinstance(config_data, str):
+        try:
+            config_data = json.loads(config_data)
+        except json.JSONDecodeError:
+            print("Error decoding JSON from config data.")
+            return None
+
+    # Ensure config_data is a dictionary before processing
+    if not isinstance(config_data, dict):
+        return None
+
+    # Extract "text_language" from config if available
+    text_language = config_data.get("text_language", "unknown")
+
+    # Validate if the text_language is a valid ISO code (2-3 letter language code)
+    if (
+        text_language != "unknown"
+        and text_language.isascii()
+        and re.match(r"^[a-z]{2,3}$", text_language)
+    ):
+        # Return the language code along with "Unknown" region as a fallback
+        return [(text_language, "Unknown")]
+
+    # If nothing valid is found, return None
+    return None
 
 
 # Function to get detailed language information using langcodes library
@@ -200,6 +275,7 @@ def generate_model_id(developer, lang_codes, name, quality):
 
 
 # Main function for fetching GitHub models
+# Function to get GitHub release assets
 def get_github_release_assets(repo, tag):
     headers = {"Accept": "application/vnd.github.v3+json"}
     releases_url = f"https://api.github.com/repos/{repo}/releases/tags/{tag}"
@@ -235,6 +311,14 @@ def get_github_release_assets(repo, tag):
             config_data = read_file_from_tar_bz2(
                 asset_url, "*.json"
             )  # Fallback to any JSON
+
+        # If config_data is not None and is a string, attempt to parse it as JSON
+        if config_data:
+            try:
+                config_data = json.loads(config_data)
+            except json.JSONDecodeError:
+                print(f"Error decoding JSON from {asset_url}. Skipping...")
+                config_data = None
 
         # Extract language code, prioritizing config.json, fallback to URL
         lang_codes_and_regions = extract_language_code_vits(
