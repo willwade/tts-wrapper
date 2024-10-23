@@ -4,6 +4,9 @@ import os
 import json
 import logging
 import threading
+from ...engines.utils import (
+    getISOLangCode,
+)
 
 try:
     import numpy as np
@@ -268,7 +271,7 @@ class SherpaOnnxClient:
                 "id": voice["Iso Code"],
                 "name": voice["Language Name"],
                 "gender": "N",
-                "language_codes": [voice["Iso Code"]],
+                "language_codes": [getISOLangCode(voice["Iso Code"])],
             }
             for voice in self.voices_cache
         ]

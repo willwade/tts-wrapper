@@ -4,7 +4,9 @@ from ...engines.utils import process_wav
 from ...exceptions import ModuleNotInstalled
 import json
 import io
-
+from ...engines.utils import (
+    getISOLangCode,
+)
 Credentials = Tuple[str, str, str]
 
 FORMATS = {
@@ -98,7 +100,7 @@ class PollyClient:
         standardized_voices = []
         for voice in voices:
             voice["id"] = voice["Id"]
-            voice["language_codes"] = [voice["LanguageCode"]]
+            voice["language_codes"] = [getISOLangCode(voice["LanguageCode"])]
             voice["name"] = voice["Name"]
             voice["gender"] = voice["Gender"]
             standardized_voices.append(voice)

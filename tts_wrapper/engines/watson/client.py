@@ -5,7 +5,9 @@ from typing import Tuple, List, Dict, Any
 import threading
 import json
 import logging
-
+from ...engines.utils import (
+    getISOLangCode,
+)
 from ...exceptions import ModuleNotInstalled
 
 Credentials = Tuple[str, str, str]  # api_key, region, instance_id
@@ -161,7 +163,7 @@ class WatsonClient:
         for voice in voices:
             standardized_voice = {
                 "id": voice["name"],
-                "language_codes": [voice["language"]],
+                "language_codes": [getISOLangCode(voice["language"])],
                 "name": voice["name"].split("_")[1].replace("V3Voice", ""),
                 "gender": voice["gender"],
             }

@@ -3,7 +3,9 @@ from ...exceptions import ModuleNotInstalled
 import struct
 from google.cloud import texttospeech_v1beta1 as texttospeech
 from google.oauth2 import service_account
-
+from ...engines.utils import (
+    getISOLangCode,
+)
 
 class GoogleClient:
     def __init__(self, credentials: Union[str, Dict]) -> None:
@@ -137,7 +139,7 @@ class GoogleClient:
             voice_data = {
                 "id": voice.name,
                 "name": voice.name,
-                "language_codes": voice.language_codes,
+                "language_codes": [getISOLangCode(item) for item in voice.language_codes],
                 "gender": voice.ssml_gender.name,  # 'MALE', 'FEMALE', 'NEUTRAL'
             }
             standardized_voices.append(voice_data)
