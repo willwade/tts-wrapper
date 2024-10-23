@@ -3,11 +3,19 @@ import time
 from pathlib import Path
 import os
 from load_credentials import load_credentials
-# Load credentials
-load_credentials('credentials-private.json')
 
-client = ElevenLabsClient(credentials=(os.getenv('ELEVENLABS_API_KEY')))
+# Load credentials
+load_credentials("credentials-private.json")
+
+client = ElevenLabsClient(credentials=(os.getenv("ELEVENLABS_API_KEY")))
 tts = ElevenLabsTTS(client)
+tts.speak_streamed(
+    "The town of Brookhollow was the kind of place where people left their doors unlocked and trusted everyone they met. Tucked away in the rolling hills of the countryside, it was a town where time seemed to stand still. But on a crisp October morning, something sinister shattered the peace."
+)
+tts.pause_audio()
+input("Press enter to resume")
+tts.resume_audio()
+exit()
 print(client.get_voices())
 
 long_text = '''"Title: "The Silent Truth"
@@ -23,9 +31,7 @@ Emma followed him inside, her mind racing. The air was thick with tension as the
 Emma examined the scene carefully. There were no signs of a struggle, and nothing seemed out of place. It was clean. Too clean."'''
 # # # pausing
 try:
-    ssml_text = tts.ssml.add(
-        long_text
-    )
+    ssml_text = tts.ssml.add(long_text)
     tts.speak_streamed(ssml_text)
     # Pause after 5 seconds
     time.sleep(0.3)
@@ -41,31 +47,31 @@ try:
     print("Stopping.")
 except Exception as e:
     print(f"Error at pausing: {e}")
-   
+
 time.sleep(3)
-# 
+#
 # # Demonstrate saving audio to a file
 try:
     ssml_text = tts.ssml.add(f"This is me speaking with Speak function and ElevenLabs")
 
     #   ssml_text = tts.ssml.add(long_text)
     output_file = Path(f"output_elevenlabs.wav")
-    #tts.synth(ssml_text, str(output_file), format='wav')
-    tts.speak_streamed(ssml_text, output_file, audio_format='wav')
+    # tts.synth(ssml_text, str(output_file), format='wav')
+    tts.speak_streamed(ssml_text, output_file, audio_format="wav")
     # or you could do
     # tts.speak(ssml_text)
     print(f"Audio content saved to {output_file}")
 except Exception as e:
     print(f"Error at saving: {e}")
- 
-time.sleep(3)  
-      
+
+time.sleep(3)
+
 # Change voice and test again if possible
 # try:
 #     voices = tts.get_voices()
 # except Exception as e:
 #     print(f"Error at getting voices: {e}")
-# 
+#
 # print('Getting voices')
 # for voice in voices[:4]:  # Show details for first four voices
 #     language_codes = voice.get('language_codes', [])
@@ -86,7 +92,7 @@ time.sleep(3)
 #         print(f"Error at setting voice: {e}")
 #     ssml_text_part2 = tts.ssml.add('Continuing with a new voice!')
 #     tts.speak_streamed(ssml_text_part2)
-# 
+#
 # time.sleep(3)
 
 # ## calbacks
@@ -94,13 +100,13 @@ time.sleep(3)
 # def my_callback(word: str, start_time: float, end_time: float):
 #     duration = end_time - start_time
 #     print(f"Word: {word}, Duration: {duration:.3f}s")
-# 
+#
 # def on_start():
 #     print('Speech started')
-# 
+#
 # def on_end():
 #     print('Speech ended')
-# 
+#
 # try:
 #     text = "Hello, This is a word timing test"
 #     tts.connect('onStart', on_start)
@@ -122,7 +128,7 @@ time.sleep(3)
 #     ssml_text = tts.ssml.add(text_with_prosody)
 #     tts.speak_streamed(ssml_text)
 #     time.sleep(0.5)
-#     
+#
 #     #clear ssml so the previous text is not repeated
 #     tts.ssml.clear_ssml()
 #     tts.set_property("volume", "100")
@@ -132,16 +138,16 @@ time.sleep(3)
 #     ssml_text = tts.ssml.add(text_with_prosody)
 #     tts.speak_streamed(ssml_text)
 #     time.sleep(0.5)
-# 
+#
 #     tts.ssml.clear_ssml()
 #     tts.set_property("volume", "10")
 #     print("Setting volume at 10")
 #     text_read = f"The current volume is at 10"
-#     text_with_prosody = tts.construct_prosody_tag(text_read)        
+#     text_with_prosody = tts.construct_prosody_tag(text_read)
 #     ssml_text = tts.ssml.add(text_with_prosody)
 #     print("ssml_test: ", ssml_text)
 #     tts.speak_streamed(ssml_text)
 #     time.sleep(0.5)
-# 
+#
 # except Exception as e:
 #     print(f"Error at setting volume: {e}")

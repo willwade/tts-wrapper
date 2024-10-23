@@ -236,93 +236,44 @@ class GoogleTTS(AbstractTTS):
         audio_format: Optional[str] = "wav",
     ) -> None:
         """
-        Synthesizes text and plays it back using sounddevice in a streaming fashion.
-        Optionally saves the audio to a file after playback completes.
+        Synthesize text and stream it for playback using sounddevice.
+        Optionally save the audio to a file after playback completes.
 
-        :param text: The text to synthesize and play.
+        :param text: The text to synthesize and stream.
         :param save_to_file_path: Path to save the audio file (optional).
         :param audio_format: Audio format to save (e.g., 'wav', 'mp3', 'flac').
         """
-        logging.info(
-            "[GoogleTTS.speak_streamed] Starting speech synthesis and playback..."
-        )
+        # Synthesize audio to bytes
+        audio_bytes = self.synth_to_bytes(text)
 
-        # Reset flags
-        self.audio_started = False
-        self.audio_stopped = False
-        self.playback_finished.clear()
+        if audio_format == "mp3":
+            # Decode MP3 to PCM
+            pcm_data = self._convert_mp3_to_pcm(audio_bytes)
+            channels = 1  # Assuming mono output
+        else:
+            # Directly use PCM data for other formats
+            pcm_data = audio_bytes
+            channels = 1
 
-        # Open the output file if saving is required
-        output_file = None
+        # Playback in a new thread for non-blocking audio
+        threading.Thread(
+            target=self._play_pcm_stream, args=(pcm_data, channels)
+        ).start()
+
+        # Optionally save to file
         if save_to_file_path:
-            output_file = open(save_to_file_path, "wb")
-            logging.info(
-                f"Saving audio to {save_to_file_path} in {audio_format} format."
-            )
+            with open(save_to_file_path, "wb") as f:
+                f.write(audio_bytes)
 
-        try:
-            # Start audio playback in a separate thread
-            playback_thread = threading.Thread(target=self.play_audio)
-            playback_thread.start()
-
-            # Iterate over the generator returned by synth_to_bytestream
-            for chunk_idx, audio_chunk in enumerate(
-                self.synth_to_bytestream(text, format=audio_format)
-            ):
-                logging.info(
-                    f"Processing audio chunk {chunk_idx} with size {len(audio_chunk)} bytes"
-                )
-
-                if audio_format.lower() == "wav":
-                    # Convert bytes back to numpy float32 array for playback
-                    # Assuming audio_chunk is raw PCM data (LINEAR16)
-                    samples = (
-                        np.frombuffer(audio_chunk, dtype=np.int16).astype(np.float32)
-                        / 32767.0
-                    )
-                elif audio_format.lower() in ["mp3", "flac"]:
-                    # For formats like MP3 or FLAC, you need to decode them back to PCM
-                    # This requires additional processing which is not implemented here
-                    # For simplicity, we'll skip playback for non-WAV formats
-                    samples = None
-                    logging.warning(
-                        f"Playback for format '{audio_format}' is not implemented."
-                    )
-                else:
-                    raise UnsupportedFileFormat(f"Unsupported format: {audio_format}")
-
-                if samples is not None:
-                    # Add audio samples to the buffer for streaming playback
-                    self.audio_buffer.put(samples)
-                    logging.info(f"Audio chunk {chunk_idx} added to buffer")
-
-                # Write the chunk to the file if saving
-                if save_to_file_path:
-                    output_file.write(
-                        audio_chunk
-                    )  # Corrected from f.write to output_file.write
-
-                if not self.audio_started and samples is not None:
-                    logging.info("Starting audio playback...")
-                    self.audio_started = True
-
-            # Signal that audio generation is complete
-            self.audio_stopped = True
-
-            # Wait for playback to finish
-            playback_thread.join()
-            logging.info("Playback finished.")
-
-        except Exception as e:
-            logging.error(f"Error during speak_streamed: {e}")
-            self.audio_killed = True
-
-        finally:
-            if output_file:
-                output_file.close()
-                logging.info(
-                    f"Audio successfully saved to {save_to_file_path} in {audio_format} format."
-                )
+    def _play_pcm_stream(self, pcm_data: bytes, channels: int):
+        """Streams PCM data using sounddevice."""
+        audio_data = np.frombuffer(pcm_data, dtype=np.int16).reshape(-1, channels)
+        with sd.OutputStream(
+            samplerate=self.audio_rate,
+            channels=channels,
+            dtype="int16",
+        ) as stream:
+            stream.write(audio_data)
 
     def play_audio(self):
         """
