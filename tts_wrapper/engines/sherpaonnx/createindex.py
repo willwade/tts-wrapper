@@ -36,29 +36,6 @@ def extract_language_code_from_config(config_data):
     Extracts language information from the config.json file if available.
     Returns language code and country information if present.
     """
-    # Check if the config has a "text_language" key, which should indicate the language
-    text_language = config_data.get("text_language", "unknown")
-
-    # Validate if the text_language is a proper ISO code
-    if (
-        text_language != "unknown"
-        and text_language.isascii()
-        and re.match(r"^[a-z]{2,3}$", text_language)
-    ):
-        # Return the language code from config.json
-        return [
-            (text_language, "Unknown")
-        ]  # You can replace "Unknown" with a region if available
-
-    return None  # Return None if language isn't found in the config
-
-
-def extract_language_code_from_config(config_data):
-    """
-    Extracts language information from the config.json file if available.
-    Returns language code and country information if present.
-    """
-    # If config_data is a string, attempt to parse it as JSON
     if config_data and isinstance(config_data, str):
         try:
             config_data = json.loads(config_data)
@@ -66,23 +43,28 @@ def extract_language_code_from_config(config_data):
             print("Error decoding JSON from config data.")
             return None
 
-    # Ensure config_data is a dictionary before processing
     if not isinstance(config_data, dict):
         return None
 
-    # Extract "text_language" from config if available
-    text_language = config_data.get("text_language", "unknown")
+    # Prioritize extracting "text_language" or "phoneme_language"
+    text_language = config_data.get("text_language", None)
+    phoneme_language = config_data.get("phoneme_language", None)
 
-    # Validate if the text_language is a valid ISO code (2-3 letter language code)
+    # Return valid language from config
     if (
-        text_language != "unknown"
+        text_language
         and text_language.isascii()
         and re.match(r"^[a-z]{2,3}$", text_language)
     ):
-        # Return the language code along with "Unknown" region as a fallback
         return [(text_language, "Unknown")]
 
-    # If nothing valid is found, return None
+    if (
+        phoneme_language
+        and phoneme_language.isascii()
+        and re.match(r"^[a-z]{2,3}$", phoneme_language)
+    ):
+        return [(phoneme_language, "Unknown")]
+
     return None
 
 
@@ -187,6 +169,8 @@ def merge_models(
 
 
 # Function to extract language codes from config or URL
+# Updated function to prioritize language extraction
+# Function to extract language codes from config or URL
 def extract_language_code_vits(url, name, developer, config_data=None):
     """
     Extracts the language code either from the config file or the URL.
@@ -199,41 +183,35 @@ def extract_language_code_vits(url, name, developer, config_data=None):
 
     # Special case for models supporting multiple languages
     if "zh_en" in url or "zh_en" in name:
-        return [
-            ("zh", "CN"),
-            ("en", "US"),
-        ]  # Chinese and English with respective regions
+        return [("zh", "CN"), ("en", "US")]
 
-    # Handle known developer-specific logic
+    # Override for specific developers (e.g., "cantonese" should map to Cantonese)
+    if developer == "cantonese":
+        return [("zh", "HK")]
+
+    # Handle known developer-specific logic for "mimic3"
     if developer == "mimic3":
-        # Mimic3 follows the pattern: <lang_code>_<region>-<name>
-        lang_match = re.search(r"-(?P<lang>[a-z]{2})([_-][A-Z]{2})", url)
+        lang_match = re.search(r"-(?P<lang>[a-z]{2})([_-][A-Z]{2})?", url)
         if lang_match:
             lang_code = lang_match.group("lang")
-            region_match = re.search(
-                r"_([A-Z]{2})", url
-            )  # Extract region (e.g., HU, KO)
+            region_match = re.search(r"_([A-Z]{2})", url)  # Extract region
             region = region_match.group(1) if region_match else "Unknown"
             return [(lang_code, region)]
         return [("unknown", "Unknown")]
 
-    if developer == "cantonese" and "hf" in url:
-        # Special case: Cantonese HF models (HuggingFace models)
-        return [("zh", "HK")]
-
     # Generic case: match two-letter language codes with optional region (e.g., en_GB, en-US)
-    lang_match = lang_code_pattern.search(url)
+    lang_match = re.search(r"-(?P<lang>[a-z]{2})([_-][A-Z]{2})?", url)
     if lang_match:
         lang_code = lang_match.group("lang")
         region_match = re.search(r"_([A-Z]{2})", url)  # Extract region (e.g., GB, US)
         region = region_match.group(1) if region_match else "Unknown"
-        return [
-            (lang_code, region)
-        ]  # Return language and region as tuple (lang, country)
+        return [(lang_code, region)]
 
+    # Handle specific known names like LJSpeech
     if "ljs" in name.lower():
         return [("en", "US")]  # LJSpeech is US English by default
 
+    # Default to unknown if no language is found
     return [("unknown", "Unknown")]
 
 
