@@ -13,7 +13,8 @@ tts = GoogleTTS(client)
 
 # # # pausng
 try:
-    ssml_text = tts.ssml.add(f"This is me speaking with Speak function and google")
+    ssml_text = tts.ssml.add(f"This is me speaking with Speak function and google first time")
+    print(ssml_text)
     tts.speak_streamed(ssml_text)
     # Pause after 5 seconds
     time.sleep(5)
@@ -33,7 +34,7 @@ except Exception as e:
 # time.sleep(3)        
 # # Demonstrate saving audio to a file
 try:
-    ssml_text = tts.ssml.add(f"This is me speaking with Speak function and google")
+    ssml_text = tts.ssml.add(f"This is me speaking with Speak function and google with mp3")
     output_file = Path(f"output_google.mp3")
     tts.speak_streamed(ssml_text, str(output_file), audio_format='mp3')
 #     # or you could do

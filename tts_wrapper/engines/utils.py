@@ -24,11 +24,17 @@ def create_temp_filename(suffix="") -> str:
 
 def estimate_word_timings(text: str, wpm: int = 150) -> List[Tuple[float, float, str]]:
     # Remove SSML tags
-    text = re.sub('<[^<]+?>', '', text)
+    text = re.sub('<[^<]+?>', ' ', text)
+    print("Text: ")
+    print(text)
+    print("\n")
     
     # Split text into words, keeping punctuation
     words = re.findall(r'\b[\w\']+\b|[.,!?;]', text)
     
+    print("Words: ")
+    print(words)
+    print("\n")
     words_per_second = wpm / 60
     base_seconds_per_word = 1 / words_per_second
     
