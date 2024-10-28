@@ -197,8 +197,8 @@ class GoogleTTS(AbstractTTS):
                 word = timing[2]
                 logging.info(f"Synthesizing segment {word}")
                 print(f"Synthesizing segment {word}")
-                word_time = timing[1] - timing[0]
-                print(f"timing: {word_time}")
+                word_time = round(timing[1] - timing[0], 4)
+                #print(f"timing: {word_time} seconds")
                 result = self._client.synth(
                     str(word), self._voice, self._lang, include_timepoints=True
                 )
@@ -219,6 +219,7 @@ class GoogleTTS(AbstractTTS):
 
                 elif format.lower() in ["mp3", "flac"]:
                     # Convert PCM to the desired format using _convert_audio
+                    audio_bytes = audio_bytes[44:]
                     pcm_data = np.frombuffer(audio_bytes, dtype=np.int16)
                     converted_audio = self._convert_audio(
                         pcm_data, format, self.audio_rate
@@ -256,6 +257,7 @@ class GoogleTTS(AbstractTTS):
         # Synthesize audio to bytes
         audio_generator = self.synth_to_bytestream(text, format=audio_format)
         audio_bytes = bytes(itertools.chain.from_iterable(audio_generator))
+
         if audio_format == "mp3":
             # Decode MP3 to PCM
             pcm_data = self._convert_mp3_to_pcm(audio_bytes)
@@ -267,6 +269,7 @@ class GoogleTTS(AbstractTTS):
 
         # Playback in a new thread for non-blocking audio
         threading.Thread(
+            print("Playing audio"),
             target=self._play_pcm_stream, args=(pcm_data, channels)
         ).start()
 
