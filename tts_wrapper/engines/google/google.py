@@ -5,11 +5,12 @@ from .client import GoogleClient
 from .ssml import GoogleSSML
 from ...engines.utils import (
     estimate_word_timings,
-)  # Import the timing estimation function
+) # Import the timing estimation function
 import logging
 import numpy as np
 import threading
 import queue
+import itertools
 import sounddevice as sd
 from io import BytesIO
 import re
@@ -174,23 +175,32 @@ class GoogleTTS(AbstractTTS):
         self, text: Any, format: Optional[str] = "wav"
     ) -> Generator[bytes, None, None]:
         """
-        Synthesizes text to an in-memory bytestream in the specified audio format.
-        Yields audio data chunks as they are generated.
-
+        Synthesizes text to an in-memory bytestream and retrieves word timings using
+        AbstractTTS's estimate_word_timings method.
+        
         :param text: The text to synthesize.
-        :param format: The desired audio format (e.g., 'wav', 'mp3', 'flac'). Defaults to 'wav'.
+        :param format: The desired audio format (e.g., 'wav', 'mp3', 'flac').
         :return: A generator yielding bytes objects containing audio data.
         """
         try:
             logging.info(f"[GoogleTTS.synth_to_bytestream] Synthesizing text: {text}")
+            # Generate estimated word timings using the abstract method
+            self.timings = estimate_word_timings(text)
+            
+            ## Split the text into smaller segments (e.g., sentences) for incremental synthesis
+            #text_segments = self._split_text(text)
 
-            # Split the text into smaller segments (e.g., sentences) for incremental synthesis
-            text_segments = self._split_text(text)
-
-            for segment_idx, segment in enumerate(text_segments):
-                logging.info(f"Synthesizing segment {segment_idx}: {segment}")
+            #for segment_idx, segment in enumerate(text_segments):
+        # Generate audio stream data and yield as chunks
+            for timing in self.timings:
+                #logging.info(f"Synthesizing segment {segment_idx}: {segment}")
+                word = timing[2]
+                logging.info(f"Synthesizing segment {word}")
+                print(f"Synthesizing segment {word}")
+                word_time = round(timing[1] - timing[0], 4)
+                #print(f"timing: {word_time} seconds")
                 result = self._client.synth(
-                    str(segment), self._voice, self._lang, include_timepoints=True
+                    str(word), self._voice, self._lang, include_timepoints=True
                 )
                 audio_bytes = result["audio_content"]
 
@@ -209,6 +219,7 @@ class GoogleTTS(AbstractTTS):
 
                 elif format.lower() in ["mp3", "flac"]:
                     # Convert PCM to the desired format using _convert_audio
+                    audio_bytes = audio_bytes[44:]
                     pcm_data = np.frombuffer(audio_bytes, dtype=np.int16)
                     converted_audio = self._convert_audio(
                         pcm_data, format, self.audio_rate
@@ -244,7 +255,8 @@ class GoogleTTS(AbstractTTS):
         :param audio_format: Audio format to save (e.g., 'wav', 'mp3', 'flac').
         """
         # Synthesize audio to bytes
-        audio_bytes = self.synth_to_bytes(text)
+        audio_generator = self.synth_to_bytestream(text, format=audio_format)
+        audio_bytes = bytes(itertools.chain.from_iterable(audio_generator))
 
         if audio_format == "mp3":
             # Decode MP3 to PCM
@@ -257,6 +269,7 @@ class GoogleTTS(AbstractTTS):
 
         # Playback in a new thread for non-blocking audio
         threading.Thread(
+            print("Playing audio"),
             target=self._play_pcm_stream, args=(pcm_data, channels)
         ).start()
 

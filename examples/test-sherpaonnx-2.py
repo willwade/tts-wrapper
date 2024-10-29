@@ -21,17 +21,8 @@ logging.info(f"Voice set to ISO code: {iso_code}")
 
         # Define the text to be synthesized
 text = (
-" Title The Silent Truth "
+" Title: The Silent Truth "
 "The town of Brookhollow was the kind of place where people left their doors unlocked and trusted everyone they met. Tucked away in the rolling hills of the countryside, it was a town where time seemed to stand still. But on a crisp October morning, something sinister shattered the peace. "
-"Chapter 1 A Quiet Morning "
-"Detective Emma Hayes had just finished her morning coffee when the phone rang. It was a local officer from the Brookhollow precinct. Something felt wrong from the tone of his voice. "
-"'Detective Hayes, there's been an incident', Officer Morgan said, his voice tight. 'You need to come to the Harrison estate right away'. "
-"The Harrison estate was the largest property in Brookhollow, home to George Harrison, a well-known philanthropist and businessman. Emma grabbed her coat, knowing instinctively that this wasn’t a routine call. "
-"When she arrived, the estate was cordoned off. Police officers and forensic teams were scattered around the front lawn. Emma approached Officer Morgan, who was standing by the front entrance. "
-"'What's the situation?' she asked. "
-"Morgan gestured towards the house. 'George Harrison. He’s dead. The maid found him this morning, lying in his study. Looks like a murder.' "
-"Emma followed him inside, her mind racing. The air was thick with tension as they entered the study. The room was tastefully decorated, books lined the walls, and a grand mahogany desk stood in the center. But the most striking thing was the body slumped over the desk, a pool of blood soaking the papers beneath George Harrison's hand. A single gunshot to the back of the head. "
-"Emma examined the scene carefully. There were no signs of a struggle, and nothing seemed out of place. It was clean. Too clean. "
 )
 logging.info(f"Text to synthesize: {text}")
 
@@ -61,5 +52,22 @@ try:
     print(f"Audio content saved to {output_file}")
 except Exception as e:
     print(f"Error at saving: {e}")
-#   
+
+def my_callback(word: str, start_time: float, end_time: float):
+    duration = end_time - start_time
+    print(f"Word: '{word}' Started at {start_time:.3f}ms Duration: {duration:.3f}s")
+
+def on_start():
+    print('Speech started')
+
+def on_end():
+    print('Speech ended')
+
+try:
+    text = "Hello, This is a word timing test with sherpaonnx"
+    tts.connect('onStart', on_start)
+    tts.connect('onEnd', on_end)
+    tts.start_playback_with_callbacks(text, callback=my_callback)
+except Exception as e:
+    print(f"Error at callbacks: {e}")   
 # 

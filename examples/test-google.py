@@ -12,13 +12,14 @@ client = GoogleClient(credentials=os.getenv('GOOGLE_CREDS_PATH'))
 tts = GoogleTTS(client)
 
 # # # pausng
-try:
-    ssml_text = tts.ssml.add(f"This is me speaking with Speak function and google")
-    tts.speak_streamed(ssml_text)
-    # Pause after 5 seconds
-    time.sleep(5)
-    tts.pause_audio()
-    print("Pausing..")
+#try:
+#    ssml_text = tts.ssml.add(f"This is me speaking with Speak function and google first time")
+#    print(ssml_text)
+#    tts.speak_streamed(ssml_text)
+#    # Pause after 5 seconds
+#    time.sleep(5)
+#    tts.pause_audio()
+#    print("Pausing..")
 #     # Resume after 3 seconds
 #     time.sleep(0.5)
 #     tts.resume_audio()
@@ -27,20 +28,20 @@ try:
 #     time.sleep(1)
 #     tts.stop_audio()
 #     print("Stopping.")
-except Exception as e:
-    print(f"Error at pausing: {e}")
+#except Exception as e:
+#    print(f"Error at pausing: {e}")
 #   
 # time.sleep(3)        
 # # Demonstrate saving audio to a file
-try:
-    ssml_text = tts.ssml.add(f"This is me speaking with Speak function and google")
-    output_file = Path(f"output_google.mp3")
-    tts.speak_streamed(ssml_text, str(output_file), audio_format='mp3')
+#try:
+#    ssml_text = tts.ssml.add(f"This is me speaking with Speak function and google with mp3")
+#    output_file = Path(f"output_google.mp3")
+#    tts.speak_streamed(ssml_text, str(output_file), audio_format='mp3')
 #     # or you could do
      #tts.speak(ssml_text)
-    print(f"Audio content saved to {output_file}")
-except Exception as e:
-    print(f"Error at saving: {e}")
+#    print(f"Audio content saved to {output_file}")
+#except Exception as e:
+#    print(f"Error at saving: {e}")
 #   
 #       
 # # Change voice and test again if possible
@@ -72,24 +73,24 @@ except Exception as e:
 
 # ## calbacks
 # 
-#def my_callback(word: str, start_time: float, end_time: float):
-#    duration = end_time - start_time
-#    print(f"Word: '{word}' Started at {start_time:.3f}ms Duration: {duration:.3f}s")
+def my_callback(word: str, start_time: float, end_time: float):
+    duration = end_time - start_time
+    print(f"Word: '{word}' Started at {start_time:.3f}ms Duration: {duration:.3f}s")
 
-#def on_start():
-#    print('Speech started')
+def on_start():
+    print('Speech started')
 
-#def on_end():
-#    print('Speech ended')
+def on_end():
+    print('Speech ended')
 
 
-#try:
-#    text = "Hello, This is a word timing test"
-#    tts.connect('onStart', on_start)
-#    tts.connect('onEnd', on_end)
-#    tts.start_playback_with_callbacks(text, callback=my_callback)
-#except Exception as e:
-#    print(f"Error at callbacks: {e}")
+try:
+    text = "Hello, This is a word timing test"
+    tts.connect('onStart', on_start)
+    tts.connect('onEnd', on_end)
+    tts.start_playback_with_callbacks(text, callback=my_callback)
+except Exception as e:
+    print(f"Error at callbacks: {e}")
 
 
 # # volume control test
