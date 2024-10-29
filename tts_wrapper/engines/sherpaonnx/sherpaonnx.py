@@ -195,6 +195,9 @@ class SherpaOnnxTTS(AbstractTTS):
                 f"[SherpaOnnxTTS.synth_to_bytestream] Synthesizing text: {text}"
             )
 
+            # Generate estimated word timings using the abstract method
+            self.timings = estimate_word_timings(text)
+            
             # Buffer to store all audio chunks for conversion
             audio_chunks = []
 
