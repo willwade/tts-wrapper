@@ -4,6 +4,7 @@ import sounddevice as sd  # type: ignore
 import numpy as np  # type: ignore
 import threading
 from threading import Event
+from threading import Condition
 import logging
 import time
 import re
@@ -30,6 +31,8 @@ class AbstractTTS(ABC):
         self.properties = {"volume": "", "rate": "", "pitch": ""}
         self.callbacks = {"onStart": None, "onEnd": None, "started-word": None}
         self.stream_lock = threading.Lock()
+        self.pause_event = None
+        self.current_thread = None
 
     @abstractmethod
     def get_voices(self) -> List[Dict[str, Any]]:
@@ -207,6 +210,32 @@ class AbstractTTS(ABC):
         except Exception as e:
             logging.error(f"Error playing audio: {e}")
 
+    def stream_pausable(self, text: Any):
+        self.pause_event = threading.Event()
+        self.pause_event.set()  # Start in non-paused state
+        current_thread = None
+
+        def wrapped_speak():
+            words = text.split()  # or however you segment your speech
+                
+            for word in words:
+                # Check if we're paused before each word
+                print(word)
+                self.pause_event.wait()
+                # Speak the word
+                self.speak_streamed(word)
+                    # Small delay between words
+                time.sleep(0.1)
+
+        current_thread = threading.Thread(target=wrapped_speak)
+        current_thread.start()
+
+    def pause(self):
+        self.pause_event.clear()
+
+    def resume(self):
+        self.pause_event.set()
+
     def speak_streamed(
         self,
         text: Any,
@@ -239,12 +268,14 @@ class AbstractTTS(ABC):
                     self.stream.close()
                 self.setup_stream()
 
+            print("Start playing audio")
             # Start playback in a separate thread
-            self.play_thread = threading.Thread(target=self._start_stream)
-            self.play_thread.start()
+            #self.play_thread = threading.Thread(target=self._start_stream)
+            #self.play_thread.start()
+            self._start_stream()
 
             # Wait for the playback thread to complete
-            self.play_thread.join()
+            #self.play_thread.join()
 
             # After streaming is finished, save the file if requested
             if save_to_file_path:
