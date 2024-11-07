@@ -20,6 +20,7 @@ def my_callback(word: str, start_time: float, end_time: float):
 
 
 try:
+    tts.set_output_device(2)
     text = "Hello, This is a word timing test"
     ssml_text = (tts.ssml
                  .say_as("Hello,", interpret_as="greeting")

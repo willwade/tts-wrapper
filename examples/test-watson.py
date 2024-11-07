@@ -12,6 +12,7 @@ region = os.getenv('WATSON_REGION')
 instance_id = os.getenv('WATSON_INSTANCE_ID')
 client = WatsonClient(credentials=(api_key, region, instance_id))
 tts = WatsonTTS(client=client)
+tts.set_output_device(2)
 
 # print(client.get_voices())
 # # # pausing
