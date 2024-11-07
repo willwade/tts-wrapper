@@ -20,7 +20,7 @@ class AbstractTTS(ABC):
     def __init__(self):
         self.voice_id = None
         self.stream = None
-        self.audio_rate = 22050
+        self.audio_rate = 44100
         self.audio_bytes = None
         self.playing = Event()
         self.playing.clear()  # Not playing by default
@@ -30,6 +30,21 @@ class AbstractTTS(ABC):
         self.properties = {"volume": "", "rate": "", "pitch": ""}
         self.callbacks = {"onStart": None, "onEnd": None, "started-word": None}
         self.stream_lock = threading.Lock()
+
+        # addition for pause resume
+        #self.sample_rate is audio_rate
+        self.channels = 1
+        self.sample_width = 2
+        self.chunk_size = 1024
+    
+        self.playing = False
+        self.paused = False
+        self.position = 0
+        
+        self.stream_pyaudio = None
+        self.playback_thread = None
+        self.pause_timer = None
+        self.pyaudio = None
 
     @abstractmethod
     def get_voices(self) -> List[Dict[str, Any]]:
@@ -169,6 +184,142 @@ class AbstractTTS(ABC):
           no headers for sounddevice playback.
         """
         pass
+
+    def load_audio(self, audio_bytes):
+        import pyaudio
+        """Load audio bytes into the player"""
+        self.pyaudio = pyaudio.PyAudio()
+        if not audio_bytes:
+            raise ValueError("Audio bytes cannot be empty")        
+        self.audio_bytes = audio_bytes
+        self.position = 0
+    
+    def _create_stream(self):
+        """Create a new audio stream"""
+        if self.stream_pyaudio is not None and not self.stream_pyaudio.is_stopped():
+            self.stream_pyaudio.stop_stream()
+            self.stream_pyaudio.close()
+
+        self.playing = True 
+        try:       
+            self.stream_pyaudio = self.pyaudio.open(
+                format=self.pyaudio.get_format_from_width(self.sample_width),
+                channels=self.channels,
+                rate=self.audio_rate,
+                output=True
+            )
+        except Exception as e:
+            logging.error(f"Failed to create stream: {e}")
+            self.playing = False
+            raise            
+    
+    def _playback_loop(self):
+        """Main playback loop running in separate thread"""
+        try:
+            self._create_stream()
+            while self.playing and self.position < len(self.audio_bytes):
+                if not self.paused:
+                    chunk = self.audio_bytes[self.position:self.position + self.chunk_size]
+                    if chunk:
+                        self.stream_pyaudio.write(chunk)
+                        self.position += len(chunk)
+                    else:
+                        break
+                else:
+                    time.sleep(0.1)  # Reduce CPU usage while paused
+            
+            # Cleanup after playback ends
+            if self.stream_pyaudio and not self.stream_pyaudio.is_stopped():
+                self.stream_pyaudio.stop_stream()
+                self.stream_pyaudio.close()
+            self.playing = False
+        except Exception as e:
+            print(f"Error in playback loop: {e}")
+            self.playing = False
+    
+    def _auto_resume(self):
+        """Helper method to resume after timed pause"""
+        self.paused = False
+        logging.info("Resuming playback after pause")
+    
+    def play(self, duration=None):
+        """Start or resume playback"""
+        if self.audio_bytes is None:
+            raise ValueError("No audio loaded")
+        
+        if not self.playing:            
+            self.playing = True
+            self.paused = False
+            self.playback_thread = threading.Thread(target=self._playback_loop)
+            self.playback_thread.start()
+            time.sleep(float(duration or 0))
+        elif self.paused:
+            self.paused = False
+        
+    
+    def pause(self, duration=None):
+        """
+        Pause playback with optional duration
+        
+        Parameters:
+        duration (float): Number of seconds to pause. If None, pause indefinitely
+        """
+        self.paused = True
+        
+        # Cancel any existing pause timer
+        if self.pause_timer:
+            self.pause_timer.cancel()
+            self.pause_timer = None
+        
+        # If duration specified, create timer for auto-resume
+        if duration is not None:
+            self.pause_timer = threading.Timer(duration, self._auto_resume)
+            self.pause_timer.start()
+            print(f"Pausing for {duration} seconds")
+            time.sleep(float(duration or 0))
+    
+    def resume(self):
+        """Resume playback"""
+        print("Resume playback")
+        if self.playing:
+            # Cancel any existing pause timer
+            if self.pause_timer:
+                self.pause_timer.cancel()
+                self.pause_timer = None
+            self.paused = False
+
+    def stop(self):
+        """Stop playback"""
+        self.playing = False
+        self.paused = False
+        if self.pause_timer:
+            self.pause_timer.cancel()
+            self.pause_timer = None
+        
+        # Stop and close the stream if it exists
+        if self.stream_pyaudio:
+            try:
+                if not self.stream_pyaudio.is_stopped():
+                    self.stream_pyaudio.stop_stream()
+                self.stream_pyaudio.close()
+            except Exception as e:
+                logging.info("Stream already closed")
+
+            self.stream_pyaudio = None
+            
+        if self.playback_thread and self.playback_thread.is_alive():
+            self.playback_thread.join()
+        self.position = 0
+        
+    def cleanup(self):
+        """Clean up resources"""
+        try:
+            self.stop()
+
+            if self.pyaudio:
+                self.pyaudio.terminate()
+        except Exception as e:
+            print(f"Error during cleanup: {e}")
 
     def synth_to_file(
         self, text: Any, filename: str, format: Optional[str] = "wav"
@@ -324,28 +475,28 @@ class AbstractTTS(ABC):
                 self.stream.close()
                 self.stream = None
 
-    def pause_audio(self):
-        self.playing.clear()
+#    def pause_audio(self):
+#        self.playing.clear()
 
-    def resume_audio(self):
-        self.playing.set()
-        if not self.stream:
-            self.setup_stream()
-        if self.stream and not self.stream.active:
-            self.stream.start()
-
-    def stop_audio(self):
-        self.playing.clear()
-        if self.play_thread and self.play_thread.is_alive():
-            self.play_thread.join()
-        with self.stream_lock:
-            if self.stream:
-                self.stream.stop()
-                self.stream.close()
-                self.stream = None
-        for timer in self.timers:
-            timer.cancel()
-        self.timers.clear()
+#    def resume_audio(self):
+#        self.playing.set()
+#        if not self.stream:
+#            self.setup_stream()
+#        if self.stream and not self.stream.active:
+#            self.stream.start()
+#
+#    def stop_audio(self):
+#        self.playing.clear()
+#        if self.play_thread and self.play_thread.is_alive():
+#            self.play_thread.join()
+#        with self.stream_lock:
+#            if self.stream:
+#                self.stream.stop()
+#                self.stream.close()
+#                self.stream = None
+#        for timer in self.timers:
+#            timer.cancel()
+#        self.timers.clear()
 
     def set_timings(self, timings: List[WordTiming]):
         self.timings = []

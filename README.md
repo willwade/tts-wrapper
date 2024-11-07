@@ -127,6 +127,7 @@ pip install py3-tts-wrapper"[google, watson, polly, elevenlabs, microsoft, mms, 
 ```
 
 
+
 ## Basic Usage
 
 ```python
@@ -341,28 +342,41 @@ NB: Each engine has a different way of checking credentials. If they dont have a
 These methods manage audio playback by pausing, resuming, or stopping it.
 NB: Only to be used for speak_streamed
 
+You need to make sure the optional dependency is included for this
 
-```python
-tts.speak_streamed(ssml_text)
-
-tts.pause_audio()
-tts.resume_audio()
-tts.stop_audio()
+```sh
+pip install py3-tts-wrapper[controlaudio,google.. etc
 ```
 
-here's an example of this in use
+then
 
 ```python
-ssml_text = tts.ssml.add('Hello world!')
 
-tts.speak_streamed(ssml_text)
-input("Press enter to pause...")
-tts.pause_audio()
-input("Press enter to resume...")
-tts.resume_audio()
-input("Press enter to stop...")
-tts.stop_audio()
+client = GoogleClient(..)
+tts = GoogleTTS(client)
+try:
+    text = "This is a pause and resume test. The text will be longer, depending on where the pause and resume works"
+    audio_bytes = tts.synth_to_bytes(text)
+    tts.load_audio(audio_bytes)
+    print("Play audio for 3 seconds")
+    tts.play(1)
+    tts.pause(8)
+    tts.resume()
+    time.sleep(6)
+finally:
+    tts.cleanup()
+
 ```
+
+- the pause and resume are in seconds from the start of the audio
+- Please use the cleanup method to ensure the audio is stopped and the audio device is released
+
+NB: to do this we use pyaudio. If you have issues with this you may need to install portaudio19-dev - particularly on linux
+
+```sh
+sudo apt-get install portaudio19-dev
+```
+
 
 ### File Output
 
