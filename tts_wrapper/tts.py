@@ -8,7 +8,6 @@ import logging
 import time
 import re
 from io import BytesIO
-import pyaudio
 
 FileFormat = Union[str, None]
 WordTiming = Union[Tuple[float, str], Tuple[float, float, str]]
@@ -42,10 +41,10 @@ class AbstractTTS(ABC):
         self.paused = False
         self.position = 0
         
-        self.p = pyaudio.PyAudio()
         self.stream_pyaudio = None
         self.playback_thread = None
         self.pause_timer = None
+        self.pyaudio = None
 
     @abstractmethod
     def get_voices(self) -> List[Dict[str, Any]]:
@@ -188,7 +187,11 @@ class AbstractTTS(ABC):
 
     # methods for pause and resume    
     def load_audio(self, audio_bytes):
+        import pyaudio
         """Load audio bytes into the player"""
+        self.pyaudio = pyaudio.PyAudio()
+        if not audio_bytes:
+            raise ValueError("Audio bytes cannot be empty")        
         self.audio_bytes = audio_bytes
         self.position = 0
     
@@ -198,15 +201,18 @@ class AbstractTTS(ABC):
             self.stream_pyaudio.stop_stream()
             self.stream_pyaudio.close()
 
-        self.playing = True        
-        self.stream_pyaudio = self.p.open(
-            format=self.p.get_format_from_width(self.sample_width),
-            channels=self.channels,
-            rate=self.audio_rate,
-            output=True
-        )
-
-
+        self.playing = True 
+        try:       
+            self.stream_pyaudio = self.pyaudio.open(
+                format=self.pyaudio.get_format_from_width(self.sample_width),
+                channels=self.channels,
+                rate=self.audio_rate,
+                output=True
+            )
+        except Exception as e:
+            logging.error(f"Failed to create stream: {e}")
+            self.playing = False
+            raise            
     
     def _playback_loop(self):
         """Main playback loop running in separate thread"""
@@ -311,8 +317,8 @@ class AbstractTTS(ABC):
         try:
             self.stop()
 
-            if self.p:
-                self.p.terminate()
+            if self.pyaudio:
+                self.pyaudio.terminate()
         except Exception as e:
             print(f"Error during cleanup: {e}")
 
