@@ -4982,6 +4982,7 @@ files = [
 ]
 
 [extras]
+controlaudio = ["pyaudio"]
 elevenlabs = ["numpy", "numpy", "requests"]
 google = ["google-cloud-texttospeech"]
 googletrans = ["gTTS"]
@@ -4996,4 +4997,4 @@ witai = ["requests"]
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.10,<3.13"
-content-hash = "4e36c3f1fb1fd864b7a04b6aee6e5593e27b64bad5c1e8abc400d8eaf3292378"
+content-hash = "b71500fc4492cf38d98a25025a4fc6e0ca1e2283ed4f94353bba9a5a17a98334"
