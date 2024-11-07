@@ -448,10 +448,14 @@ class AbstractTTS(ABC):
         Sets the default output sound device by its ID.
         :param device_id: The ID of the device to be set as the default output.
         """
-        print (f"default device: {sd.default.device}")
         try:
+            # Validate the device_id
+            if device_id not in [device['index'] for device in sd.query_devices()]:
+                raise ValueError(f"Invalid device ID: {device_id}")
+
             sd.default.device = device_id
             logging.info(f"Output device set to {sd.query_devices(device_id)['name']}")
-            print(f"Output device set to {sd.query_devices(device_id)['name']}")
+        except ValueError as ve:
+            logging.error(f"Invalid device ID: {ve}")
         except Exception as e:
             logging.error(f"Failed to set output device: {e}")
