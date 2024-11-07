@@ -11,6 +11,10 @@ client = GoogleClient(credentials=os.getenv('GOOGLE_CREDS_PATH'))
 
 tts = GoogleTTS(client)
 
+## test changing sound device ##
+print("Test set output device\n")
+tts.set_output_device(4)
+
 # # # pausng
 #try:
 #    ssml_text = tts.ssml.add(f"This is me speaking with Speak function and google first time")

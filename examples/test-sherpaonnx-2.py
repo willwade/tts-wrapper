@@ -10,6 +10,8 @@ client = SherpaOnnxClient(model_path=None, tokens_path=None)
 # Initialize the SherpaOnnxTTS engine with the client
 tts = SherpaOnnxTTS(client=client)
 
+tts.set_output_device(2)
+
 # Retrieve and display available voices
 voices = tts.get_voices()
 logging.info(f"Available voices: {voices}")

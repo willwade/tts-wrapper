@@ -9,6 +9,7 @@ client = PiperClient()
 tts = PiperTTS(client)
 # voices = tts.get_voices()
 # print(voices)
+tts.set_output_device(2)
 ssml_text = tts.ssml.add(f"Continuing with a new voice using piper!")
 tts.speak(ssml_text) 
 

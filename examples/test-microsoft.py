@@ -11,6 +11,8 @@ load_credentials('credentials.json')
 client = MicrosoftClient(credentials=(os.getenv('MICROSOFT_TOKEN'), os.getenv('MICROSOFT_REGION')))
 tts = MicrosoftTTS(client)
 
+tts.set_output_device(2)
+
 # Set up logging
 logging.basicConfig(level=logging.DEBUG)
 

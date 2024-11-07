@@ -442,3 +442,16 @@ class AbstractTTS(ABC):
             ssml_parts.append(f'<mark name="word{i}"/>{word}')
         ssml_parts.append("</speak>")
         return " ".join(ssml_parts)
+
+    def set_output_device(self, device_id: int):
+        """
+        Sets the default output sound device by its ID.
+        :param device_id: The ID of the device to be set as the default output.
+        """
+        print (f"default device: {sd.default.device}")
+        try:
+            sd.default.device = device_id
+            logging.info(f"Output device set to {sd.query_devices(device_id)['name']}")
+            print(f"Output device set to {sd.query_devices(device_id)['name']}")
+        except Exception as e:
+            logging.error(f"Failed to set output device: {e}")

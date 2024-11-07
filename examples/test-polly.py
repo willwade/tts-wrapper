@@ -12,6 +12,7 @@ tts = PollyTTS(client)
 
  # # pausng
 try:
+    tts.set_output_device(2)
     ssml_text = tts.ssml.add(f"This is me speaking with speak_streamed function and google")
     tts.speak_streamed(ssml_text)
     # Pause after 5 seconds
