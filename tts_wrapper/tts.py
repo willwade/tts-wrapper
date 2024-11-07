@@ -185,7 +185,6 @@ class AbstractTTS(ABC):
         """
         pass
 
-    # methods for pause and resume    
     def load_audio(self, audio_bytes):
         import pyaudio
         """Load audio bytes into the player"""
@@ -241,7 +240,7 @@ class AbstractTTS(ABC):
     def _auto_resume(self):
         """Helper method to resume after timed pause"""
         self.paused = False
-        print("Resuming playback after pause")
+        logging.info("Resuming playback after pause")
     
     def play(self, duration=None):
         """Start or resume playback"""
@@ -321,8 +320,6 @@ class AbstractTTS(ABC):
                 self.pyaudio.terminate()
         except Exception as e:
             print(f"Error during cleanup: {e}")
-
-    # methods for pause and resume
 
     def synth_to_file(
         self, text: Any, filename: str, format: Optional[str] = "wav"
