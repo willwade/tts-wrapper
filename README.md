@@ -59,18 +59,19 @@ _TTS-Wrapper_ simplifies using text-to-speech APIs by providing a unified interf
 
 ### Methods for each engine
 
-| Method                | Description                                  | Available Engines       |
-|-----------------------|----------------------------------------------|-------------------------|
-| `speak()`             | Plays synthesized speech directly.           | All engines             |
-| `synth_to_file()`      | Synthesizes speech and saves it to a file.   | All engines             |
-| `speak_streamed()`     | Streams synthesized speech.                  | All engines             |
-| `set_property()`       | Sets properties like rate, volume, pitch.    | All engines             |
-| `get_voices()`         | Retrieves available voices.                  | All engines             |
-| `connect()`            | Connects callback functions for events.      | Polly, Microsoft, Google, Watson. |
-| `pause_audio()`        | Pauses ongoing speech playback.              | All engines             |
-| `resume_audio()`       | Resumes paused speech playback.              | All engines             |
-| `stop_audio()`         | Stops ongoing speech playback.               | All engines             |
-| `check_credentials()`  | True or False if Credentials are ok          | All engines             |
+| Method                    | Description                                  | Available Engines       |
+|---------------------------|----------------------------------------------|-------------------------|
+| `speak()`                 | Plays synthesized speech directly.           | All engines             |
+| `synth_to_file()`         | Synthesizes speech and saves it to a file.   | All engines             |
+| `speak_streamed()`        | Streams synthesized speech.                  | All engines             |
+| `set_property()`          | Sets properties like rate, volume, pitch.    | All engines             |
+| `get_voices()`            | Retrieves available voices.                  | All engines             |
+| `connect()`               | Connects callback functions for events.      | Polly, Microsoft, Google, Watson. |
+| `pause_audio()`           | Pauses ongoing speech playback.              | All engines             |
+| `resume_audio()`          | Resumes paused speech playback.              | All engines             |
+| `stop_audio()`            | Stops ongoing speech playback.               | All engines             |
+| `set_output_device('id')` | Stops ongoing speech playback.               | All engines             |
+| `check_credentials()`     | True or False if Credentials are ok          | All engines             |
 
 **Notes**:
 
