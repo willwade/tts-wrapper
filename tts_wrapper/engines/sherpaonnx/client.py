@@ -1,22 +1,22 @@
 # client.py
-from typing import Optional, List, Dict, Tuple
-import os
+import bz2
 import json
 import logging
-import threading
-import bz2
+import os
 import tarfile
+import threading
+from typing import Dict, List, Optional, Tuple
 
 try:
     import numpy as np
 except ImportError:
-    logging.error("Please install numpy library to use the SherpaOnnxClient")
+    logging.exception("Please install numpy library to use the SherpaOnnxClient")
     np = None  # type: ignore
 
 try:
     import queue
 except ImportError:
-    logging.error("Please install queue library to use the SherpaOnnxClient")
+    logging.exception("Please install queue library to use the SherpaOnnxClient")
     queue = None  # type: ignore
 
 
@@ -28,14 +28,14 @@ class SherpaOnnxClient:
         self,
         model_path: Optional[str] = None,
         tokens_path: Optional[str] = None,
-    
+
         voice_id: Optional[str] = None,
         model_id: Optional[str] = None,
     ):
         try:
             import sherpa_onnx
         except ImportError:
-            logging.error(
+            logging.exception(
                 "Please install sherpa-onnx library to use the SherpaOnnxClient"
             )
             sherpa_onnx = None  # type: ignore
@@ -43,13 +43,13 @@ class SherpaOnnxClient:
         try:
             import requests
         except ImportError:
-            logging.error("Please install requests library to use the SherpaOnnxClient")
+            logging.exception("Please install requests library to use the SherpaOnnxClient")
             requests = None
 
         try:
             import threading
         except ImportError:
-            logging.error(
+            logging.exception(
                 "Please install threading library to use the SherpaOnnxClient"
             )
             threading = None  # type: ignore
@@ -60,7 +60,7 @@ class SherpaOnnxClient:
             if tokens_path
             else os.path.join(model_path, "tokens.txt") if model_path else None
         )
-        
+
         self.default_lexicon_path = ""
         self.default_dict_dir_path = ""
 
@@ -76,7 +76,7 @@ class SherpaOnnxClient:
                 os.makedirs(self._model_dir, exist_ok=True)
             except Exception as e:
                 raise RuntimeError(
-                    f"Failed to create model directory {self._model_dir}: {str(e)}"
+                    f"Failed to create model directory {self._model_dir}: {e!s}"
                 )
         self.voices_cache = self._load_voices_cache()
         if voice_id:
@@ -118,7 +118,7 @@ class SherpaOnnxClient:
 
         try:
             logging.info("Loading voices JSON file...")
-            with open(cache_file_path, "r") as f:
+            with open(cache_file_path) as f:
                 content = f.read()
                 if not content.strip():  # Check if file is not empty
                     raise ValueError("Cache file is empty")
@@ -132,33 +132,33 @@ class SherpaOnnxClient:
             import requests
         except ImportError:
             raise ImportError("Please install requests library to download files")
-        print(f"Downloading model files from {url} to {destination}")
+        logging.info(f"Downloading model files from {url} to {destination}")
         response = requests.get(url, stream=True)
         response.raise_for_status()
-        print(f"Response status: {response.status_code}")
+        logging.debug(f"Response status: {response.status_code}")
         with open(destination, "wb") as f:
             for chunk in response.iter_content(chunk_size=8192):
                 f.write(chunk)
 
     def _check_files_exist(self, model_path, tokens_path, model_id):
         if not model_id :
-            print("Model Id not defined, using default model\n")
+            logging.info("Model Id not defined, using default model\n")
             model_exists = os.path.exists(model_path) and os.path.getsize(model_path) > 0
             tokens_exists = os.path.exists(tokens_path) and os.path.getsize(tokens_path) > 0
         else:
-            print(f"Checking model with model Id: {model_id} in {model_path} \n")
+            logging.debug(f"Checking model with model Id: {model_id} in {model_path} \n")
             model_file = self._find_file(model_path, "onnx")
             model_file = os.path.join(model_path, model_file)
 
             token_file = self._find_file(model_path, "tokens.txt")
-            print (f"token file: {token_file}")
+            logging.debug (f"token file: {token_file}")
             token_file = os.path.join(model_path, token_file)
-            print (f"model file: {model_file}")
+            logging.debug (f"model file: {model_file}")
 
             model_exists = os.path.exists(model_file) and os.path.getsize(model_file) > 0
             tokens_exists = os.path.exists(token_file) and os.path.getsize(token_file) > 0
-            print (f"model exist: {model_exists}")
-            print (f"token exist: {tokens_exists}")
+            logging.debug (f"model exist: {model_exists}")
+            logging.debug (f"token exist: {tokens_exists}")
         return model_exists and tokens_exists
 
     def _find_file (self, destination_dir, extension):
@@ -173,8 +173,8 @@ class SherpaOnnxClient:
                     if "tokens.txt" in file:
                         return file_path
                     if file_size > 1024*1024 and "lexicon.txt" in file:
-                        return file_path 
-        return ""            
+                        return file_path
+        return ""
 
     def _download_model_and_tokens(self, iso_code, destination_dir, model_id):
         lexicon_path = ""
@@ -187,28 +187,28 @@ class SherpaOnnxClient:
             logging.info(f"Downloading model from {model_url}")
 
             download_path = os.path.join(destination_dir, filename)
-            
+
             self._download_file(model_url, download_path)
             logging.info(f"Model downloaded to {destination_dir}")
-            
+
             logging.info(f"Extracting model and token to {destination_dir}")
-            
-            with bz2.open(download_path, 'rb') as bz2_file:
-                with tarfile.open(fileobj=bz2_file, mode='r:') as tar_file:
+
+            with bz2.open(download_path, "rb") as bz2_file:
+                with tarfile.open(fileobj=bz2_file, mode="r:") as tar_file:
                     tar_file.extractall(destination_dir)
 
-            extracted_dir = filename.split('.tar.bz2')[0]  
+            extracted_dir = filename.split(".tar.bz2")[0]
             destination_dir = os.path.join(destination_dir, extracted_dir)
-            
+
             logging.info(f"Find onnx file in extracted directory: {destination_dir}")
             model_file = self._find_file(destination_dir, "onnx")
 
             model_path = os.path.join(destination_dir, model_file)
-            print(f"model_path in download: {model_path}")
+            logging.info(f"model_path in download: {model_path}")
             tokens_path = os.path.join(destination_dir, "tokens.txt")
             lexicon_path = os.path.join(destination_dir, "lexicon.txt")
             dict_dir = self.get_dict_dir(destination_dir)
-            
+
             if not model_path:
                 raise ValueError(
                     f"Model for model id {model_id} not found in the downloaded file"
@@ -227,21 +227,21 @@ class SherpaOnnxClient:
 
             logging.info(f"Downloading tokens from {tokens_url}")
             self._download_file(tokens_url, tokens_path)
-            logging.info(f"Tokens downloaded to {tokens_path}")    
+            logging.info(f"Tokens downloaded to {tokens_path}")
 
             tokens_path = os.path.join(destination_dir, "tokens.txt")
 
         return model_path, tokens_path, lexicon_path, dict_dir
-    
+
     def get_dict_dir(self, destination_dir: str):
         # Walk through directory tree
         for root, dirs, files in os.walk(destination_dir):
             # Check if any file in current directory has .dict extension
             if any("dict" in file.lower() for file in files):
                 return root
-        
+
         # Return None if no matching directory is found
-        return ""        
+        return ""
 
     #def check_and_download_model(self, iso_code: str) -> Tuple[str, str]:
     def check_and_download_model(self, iso_code:str, model_id: str) -> Tuple[str, str, str, str]:
@@ -270,7 +270,7 @@ class SherpaOnnxClient:
 
         if not self._check_files_exist(model_path, tokens_path, model_id):
             logging.info(
-                f"Downloading model and tokens for {iso_code} because we cant find it"
+                f"Downloading model and tokens for {iso_code} because we can't find it"
             )
             model_path, tokens_path, lexicon_path, dict_dir = self._download_model_and_tokens(
                 iso_code, model_dir, model_id
@@ -293,8 +293,8 @@ class SherpaOnnxClient:
             import sherpa_onnx as sherpa_onnx
 
             # Create the VITS model configuration
-            print(f"default dict dir {self.default_dict_dir_path}")
-            
+            logging.debug(f"default dict dir {self.default_dict_dir_path}")
+
             vits_model_config = sherpa_onnx.OfflineTtsVitsModelConfig(
                 model=self.default_model_path,  # Path to the ONNX model
                 lexicon=self.default_lexicon_path,  # Empty string for lexicon if not used
@@ -341,7 +341,7 @@ class SherpaOnnxClient:
             logging.info(f"SAMPLE {samples}")
             if samples is None:  # End of stream signal
                 break
-            
+
             yield samples
 
     def _stream_audio_to_queue(self, text: str, sid: int = 0, speed: float = 1.0):
@@ -413,7 +413,7 @@ class SherpaOnnxClient:
 
     # Load json for models (Only for SherpaONNX TTS)
     def _load_models(self):
-        with open('merged_models.json', 'r') as file:
+        with open("merged_models.json") as file:
             models_json = json.load(file)
         file.close()
 
