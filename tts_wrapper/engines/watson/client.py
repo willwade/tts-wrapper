@@ -98,10 +98,10 @@ class WatsonClient:
             try:
                 ws.send(json.dumps(message))
             except Exception as e:
-                logging.exception(f"Error sending message: {e}")
+                logging.exception("Error sending message: %s", e)
 
         def on_error(ws, error) -> None:
-            logging.error(f"WebSocket error: {error}")
+            logging.error("WebSocket error: %s", error)
 
         def on_close(ws, status_code, reason) -> None:
             logging.info(
@@ -126,7 +126,7 @@ class WatsonClient:
             return b"".join(audio_data)
 
         except Exception as e:
-            logging.exception(f"Error in WebSocket thread: {e}")
+            logging.exception("Error in WebSocket thread: %s", e)
             return b""
         finally:
             ws.close()

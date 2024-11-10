@@ -80,10 +80,10 @@ class SherpaOnnxClient:
                 raise ImportError(
                     msg,
                 )
-            logging.info(f"Downloading voices JSON file from {self.VOICES_URL}...")
+            logging.info("Downloading voices JSON file from %s...", self.VOICES_URL)
             response = requests.get(self.VOICES_URL)
             response.raise_for_status()
-            logging.info(f"Response status code: {response.status_code}")
+            logging.info("Response status code: %s", response.status_code)
 
             # Check if response is not empty
             if not response.content.strip():
@@ -94,9 +94,9 @@ class SherpaOnnxClient:
             cache_file_path = os.path.join(self._model_dir, self.CACHE_FILE)
             with open(cache_file_path, "w") as f:
                 f.write(response.text)
-                logging.info(f"Voices JSON file written to {cache_file_path}.")
+                logging.info("Voices JSON file written to %s.", cache_file_path)
         except Exception as e:
-            logging.info(f"Failed to download voices JSON file: {e}")
+            logging.info("Failed to download voices JSON file: %s", e)
             raise
 
     def _load_voices_cache(self):
@@ -113,7 +113,7 @@ class SherpaOnnxClient:
                     raise ValueError(msg)
                 return json.loads(content)
         except Exception as e:
-            logging.info(f"Failed to load voices JSON file: {e}")
+            logging.info("Failed to load voices JSON file: %s", e)
             raise
 
     def _download_file(self, url, destination) -> None:
@@ -140,13 +140,13 @@ class SherpaOnnxClient:
         model_path = os.path.join(destination_dir, "model.onnx")
         tokens_path = os.path.join(destination_dir, "tokens.txt")
 
-        logging.info(f"Downloading model from {model_url}")
+        logging.info("Downloading model from %s", model_url)
         self._download_file(model_url, model_path)
-        logging.info(f"Model downloaded to {model_path}")
+        logging.info("Model downloaded to %s", model_path)
 
-        logging.info(f"Downloading tokens from {tokens_url}")
+        logging.info("Downloading tokens from %s", tokens_url)
         self._download_file(tokens_url, tokens_path)
-        logging.info(f"Tokens downloaded to {tokens_path}")
+        logging.info("Tokens downloaded to %s", tokens_path)
 
         return model_path, tokens_path
 
@@ -173,9 +173,9 @@ class SherpaOnnxClient:
             model_path, tokens_path = self._download_model_and_tokens(
                 iso_code, model_dir,
             )
-            logging.info(f"Model and tokens downloaded to {model_dir}")
+            logging.info("Model and tokens downloaded to %s", model_dir)
         else:
-            logging.info(f"Model and tokens already exist for {iso_code}")
+            logging.info("Model and tokens already exist for %s", iso_code)
 
         return model_path, tokens_path
 
@@ -216,7 +216,7 @@ class SherpaOnnxClient:
         self.audio_queue = (
             queue.Queue()
         )  # Reset the queue for the new streaming session
-        logging.info(f"Starting streaming synthesis for text: {text}")
+        logging.info("Starting streaming synthesis for text: %s", text)
 
         # Start generating audio and filling the queue
         threading.Thread(
@@ -227,7 +227,7 @@ class SherpaOnnxClient:
         while True:
             logging.info("While true, process the samples")
             samples = self.audio_queue.get()
-            logging.info(f"SAMPLE {samples}")
+            logging.info("SAMPLE %s", samples)
             if samples is None:  # End of stream signal
                 break
 
@@ -243,14 +243,14 @@ class SherpaOnnxClient:
     def generated_audio_callback(self, samples: np.ndarray, progress: float) -> int:
         """Callback function to handle audio generation."""
         self.audio_queue.put(samples)  # Place generated samples into the queue
-        logging.info(f"Queue in generate_stream: {self.audio_queue.qsize()}")
+        logging.info("Queue in generate_stream: %s", self.audio_queue.qsize())
         return 1  # Continue generating
 
     def synth_streaming(self, text: str, sid: int = 0, speed: float = 1.0) -> None:
         """Generate audio in a streaming fashion using callbacks."""
         self._init_onnx()
         self.audio_queue = queue.Queue()  # Reset the queue for new streaming session
-        logging.info(f"Starting streaming synthesis for text: {text}")
+        logging.info("Starting streaming synthesis for text: %s", text)
         self.tts.generate(
             text, sid=sid, speed=speed, callback=self.generated_audio_callback,
         )
@@ -288,7 +288,7 @@ class SherpaOnnxClient:
         # Ensure the sample rate is set after initializing the TTS engine
         if self.tts:
             self.sample_rate = self.tts.sample_rate
-            logging.info(f"Sample rate set to {self.sample_rate}")
+            logging.info("Sample rate set to %s", self.sample_rate)
         else:
             msg = "Failed to initialize TTS engine with the specified voice."
             raise RuntimeError(

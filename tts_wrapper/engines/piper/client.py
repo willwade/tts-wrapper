@@ -44,7 +44,7 @@ class PiperClient:
         # Set download directory to first data directory by default
         if not download_dir:
             download_dir = os.path.join(os.path.expanduser("~"), ".piper", "data")
-            logging.debug(f"Download directory not provided. Using default: {download_dir}")
+            logging.debug("Download directory not provided. Using default: %s", download_dir)
             try:
                 os.makedirs(download_dir, exist_ok=True)
             except Exception as e:

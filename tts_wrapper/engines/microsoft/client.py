@@ -68,7 +68,7 @@ class MicrosoftClient:
                 response = session.get(url)
                 response.raise_for_status()
         except requests.exceptions.RequestException as e:
-            logging.exception(f"Error fetching voices: {e}")
+            logging.exception("Error fetching voices: %s", e)
             msg = f"Failed to fetch voices; error details: {e}"
             raise Exception(msg)
 

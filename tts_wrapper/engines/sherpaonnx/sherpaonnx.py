@@ -85,7 +85,7 @@ class SherpaOnnxTTS(AbstractTTS):
         if not self._is_ssml(text):
             text = self.ssml.add(text)
             text = str(text)
-        logging.info(f"Synthesizing text: {text}")
+        logging.info("Synthesizing text: %s", text)
         audio_bytes, sample_rate = self._client.synth(text)
         logging.info(
             f"Audio bytes length: {len(audio_bytes)}, Sample rate: {sample_rate}",
@@ -111,7 +111,7 @@ class SherpaOnnxTTS(AbstractTTS):
                 self.playback_finished.wait()
 
         except Exception as e:
-            logging.exception(f"Error during audio playback: {e}")
+            logging.exception("Error during audio playback: %s", e)
             self.audio_killed = True
 
     # Main function to generate audio and stream it while playing
@@ -249,7 +249,7 @@ class SherpaOnnxTTS(AbstractTTS):
                 yield converted_audio
 
         except Exception as e:
-            logging.exception(f"Error in synth_to_bytestream: {e}")
+            logging.exception("Error in synth_to_bytestream: %s", e)
             raise
 
     def generate_audio_chunks(self, text):

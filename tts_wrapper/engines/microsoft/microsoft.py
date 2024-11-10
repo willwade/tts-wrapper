@@ -118,13 +118,13 @@ class MicrosoftTTS(AbstractTTS):
 
         if result.reason == speechsdk.ResultReason.SynthesizingAudioCompleted:
             self.set_timings(word_timings)
-            logging.info(f"Captured {len(word_timings)} word timings")
+            logging.info("Captured %s word timings", len(word_timings))
             return result.audio_data
         if result.reason == speechsdk.ResultReason.Canceled:
             cancellation_details = result.cancellation_details
-            logging.error(f"Speech synthesis canceled: {cancellation_details.reason}")
+            logging.error("Speech synthesis canceled: %s", cancellation_details.reason)
             if cancellation_details.reason == speechsdk.CancellationReason.Error:
-                logging.error(f"Error details: {cancellation_details.error_details}")
+                logging.error("Error details: %s", cancellation_details.error_details)
                 msg = f"Synthesis error: {cancellation_details.error_details}"
                 raise Exception(
                     msg,

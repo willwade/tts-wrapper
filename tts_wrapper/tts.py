@@ -203,7 +203,7 @@ class AbstractTTS(ABC):
                 output=True,
             )
         except Exception as e:
-            logging.exception(f"Failed to create stream: {e}")
+            logging.exception("Failed to create stream: %s", e)
             self.playing = False
             raise
 
@@ -345,7 +345,7 @@ class AbstractTTS(ABC):
             sd.play(audio_data, samplerate=self.audio_rate)
             sd.wait()
         except Exception as e:
-            logging.exception(f"Error playing audio: {e}")
+            logging.exception("Error playing audio: %s", e)
 
     def speak_streamed(
         self,
@@ -400,7 +400,7 @@ class AbstractTTS(ABC):
                 )
 
         except Exception as e:
-            logging.exception(f"Error streaming or saving audio: {e}")
+            logging.exception("Error streaming or saving audio: %s", e)
 
     def setup_stream(self, samplerate=22050, channels=1, dtype="int16") -> None:
         """Sets up the audio stream for playback."""
@@ -415,13 +415,13 @@ class AbstractTTS(ABC):
             )
             self.stream.start()
         except Exception as e:
-            logging.exception(f"Failed to setup audio stream: {e}")
+            logging.exception("Failed to setup audio stream: %s", e)
             raise
 
     def callback(self, outdata, frames, time, status) -> None:
         """Callback for streamed audio playback."""
         if status:
-            logging.warning(f"Sounddevice status: {status}")
+            logging.warning("Sounddevice status: %s", status)
         if self.playing:
             # Each frame is 2 bytes for int16,
             # so frames * 2 gives the number of bytes
@@ -546,7 +546,7 @@ class AbstractTTS(ABC):
                     self.stream.stop()
                     self.stream.close()
         except Exception as e:
-            logging.exception(f"Failed to clean up audio resources: {e}")
+            logging.exception("Failed to clean up audio resources: %s", e)
         finally:
             self.stream = None
 
@@ -588,8 +588,8 @@ class AbstractTTS(ABC):
                 raise ValueError(msg)
 
             sd.default.device = device_id
-            logging.info(f"Output device set to {sd.query_devices(device_id)['name']}")
+            logging.info("Output device set to %s", sd.query_devices(device_id)["name"])
         except ValueError as ve:
-            logging.exception(f"Invalid device ID: {ve}")
+            logging.exception("Invalid device ID: %s", ve)
         except Exception as e:
-            logging.exception(f"Failed to set output device: {e}")
+            logging.exception("Failed to set output device: %s", e)

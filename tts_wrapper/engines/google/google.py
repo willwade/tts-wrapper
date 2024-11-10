@@ -88,7 +88,7 @@ class GoogleTTS(AbstractTTS):
         if not self._is_ssml(text):
             text = self.ssml.add(text)
             text = str(text)
-        logging.info(f"Synthesizing text: {text}")
+        logging.info("Synthesizing text: %s", text)
         result = self._client.synth(
             str(text), self._voice, self._lang, include_timepoints=True,
         )
@@ -184,7 +184,7 @@ class GoogleTTS(AbstractTTS):
         :return: A generator yielding bytes objects containing audio data.
         """
         try:
-            logging.info(f"[GoogleTTS.synth_to_bytestream] Synthesizing text: {text}")
+            logging.info("[GoogleTTS.synth_to_bytestream] Synthesizing text: %s", text)
             # Generate estimated word timings using the abstract method
             self.timings = estimate_word_timings(text)
 
@@ -194,9 +194,9 @@ class GoogleTTS(AbstractTTS):
             #for segment_idx, segment in enumerate(text_segments):
         # Generate audio stream data and yield as chunks
             for timing in self.timings:
-                #logging.info(f"Synthesizing segment {segment_idx}: {segment}")
+                #logging.info("Synthesizing segment {segment_idx}: %s", segment)
                 word = timing[2]
-                logging.info(f"Synthesizing segment {word}")
+                logging.info("Synthesizing segment %s", word)
                 round(timing[1] - timing[0], 4)
                 #print(f"timing: {word_time} seconds")
                 result = self._client.synth(
@@ -238,7 +238,7 @@ class GoogleTTS(AbstractTTS):
                     raise UnsupportedFileFormat(msg)
 
         except Exception as e:
-            logging.exception(f"Error in synth_to_bytestream: {e}")
+            logging.exception("Error in synth_to_bytestream: %s", e)
             raise
 
     def speak_streamed(
@@ -301,5 +301,5 @@ class GoogleTTS(AbstractTTS):
             ):
                 self.playback_finished.wait()
         except Exception as e:
-            logging.exception(f"Error during audio playback: {e}")
+            logging.exception("Error during audio playback: %s", e)
             self.audio_killed = True

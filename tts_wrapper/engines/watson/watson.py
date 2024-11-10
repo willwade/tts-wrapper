@@ -61,7 +61,7 @@ class WatsonTTS(AbstractTTS):
 
             return self.generated_audio
         except Exception as e:
-            logging.exception(f"Error in synth_to_bytes: {e}")
+            logging.exception("Error in synth_to_bytes: %s", e)
             raise
 
     @property
