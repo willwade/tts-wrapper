@@ -1,9 +1,7 @@
 import logging
-from tts_wrapper import SherpaOnnxClient, SherpaOnnxTTS
-import time
-from io import BytesIO
 from pathlib import Path
 
+from tts_wrapper import SherpaOnnxClient, SherpaOnnxTTS
 
 client = SherpaOnnxClient(model_path=None, tokens_path=None)
 
@@ -35,41 +33,36 @@ audio_format = "wav"  # Supported formats: 'wav', 'mp3', 'flac'
 # # # pausng
 try:
     ssml_text = tts.ssml.add(text)
-    print("ssml text")
-    print(ssml_text)
     tts.speak_streamed(ssml_text)
     # Pause after 5 seconds
-except Exception as e:
-    print(f"Error at speak_streamed: {e}")
-#   
-# time.sleep(3)        
+except Exception:
+    pass
+#
+# time.sleep(3)
 # # Demonstrate saving audio to a file
 try:
     text = "Test saving speech to file for sherpaonnx"
     ssml_text = tts.ssml.add(text)
-    output_file = Path(f"output_sherpaonnx.wav")
-    tts.speak_streamed(ssml_text, str(output_file), audio_format='wav')
+    output_file = Path("output_sherpaonnx.wav")
+    tts.speak_streamed(ssml_text, str(output_file), audio_format="wav")
 #     # or you could do
      #tts.speak(ssml_text)
-    print(f"Audio content saved to {output_file}")
-except Exception as e:
-    print(f"Error at saving: {e}")
+except Exception:
+    pass
 
-def my_callback(word: str, start_time: float, end_time: float):
-    duration = end_time - start_time
-    print(f"Word: '{word}' Started at {start_time:.3f}ms Duration: {duration:.3f}s")
+def my_callback(word: str, start_time: float, end_time: float) -> None:
+    end_time - start_time
 
-def on_start():
-    print('Speech started')
+def on_start() -> None:
+    pass
 
-def on_end():
-    print('Speech ended')
+def on_end() -> None:
+    pass
 
 try:
     text = "Hello, This is a word timing test with sherpaonnx"
-    tts.connect('onStart', on_start)
-    tts.connect('onEnd', on_end)
+    tts.connect("onStart", on_start)
+    tts.connect("onEnd", on_end)
     tts.start_playback_with_callbacks(text, callback=my_callback)
-except Exception as e:
-    print(f"Error at callbacks: {e}")   
-# 
+except Exception:
+    pass

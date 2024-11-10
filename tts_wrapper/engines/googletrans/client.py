@@ -1,9 +1,10 @@
 # client.py
-from typing import List, Dict, Any
-from ...exceptions import UnsupportedFileFormat
 from io import BytesIO
-import logging
+from typing import Any, Dict, List
+
 import mp3
+
+from tts_wrapper.exceptions import UnsupportedFileFormat
 
 try:
     from gtts import gTTS
@@ -15,13 +16,11 @@ FORMATS = {"mp3": "mp3", "wav": "wav"}
 
 
 class GoogleTransClient:
-    def __init__(self, voice_id="en-co.uk"):
+    def __init__(self, voice_id="en-co.uk") -> None:
         self.lang, self.tld = self._parse_voice_id(voice_id)
 
     def _mp3_to_wav(self, mp3_fp: BytesIO) -> bytes:
-        """
-        Converts MP3 data to WAV using pymp3 by decoding PCM and writing WAV headers.
-        """
+        """Converts MP3 data to WAV using pymp3 by decoding PCM and writing WAV headers."""
         mp3_fp.seek(0)  # Reset the file pointer
         output = BytesIO()
 
@@ -30,7 +29,8 @@ class GoogleTransClient:
 
         # Ensure that the MP3 file has valid frames
         if not decoder.is_valid():
-            raise ValueError("Invalid MP3 file: No valid MPEG frames found.")
+            msg = "Invalid MP3 file: No valid MPEG frames found."
+            raise ValueError(msg)
 
         # Retrieve MP3 properties
         sample_rate = decoder.get_sample_rate()
@@ -52,11 +52,9 @@ class GoogleTransClient:
         return output.read()
 
     def _create_wav_header(
-        self, output: BytesIO, sample_rate: int, nchannels: int
+        self, output: BytesIO, sample_rate: int, nchannels: int,
     ) -> bytes:
-        """
-        Creates a WAV header based on the MP3 properties (sample rate, channels, etc.).
-        """
+        """Creates a WAV header based on the MP3 properties (sample rate, channels, etc.)."""
         # Set WAV format constants
         num_samples = output.tell() // (
             nchannels * 2
@@ -66,7 +64,7 @@ class GoogleTransClient:
         # Write WAV header
         wav_header.write(b"RIFF")
         wav_header.write(
-            (36 + num_samples * nchannels * 2).to_bytes(4, "little")
+            (36 + num_samples * nchannels * 2).to_bytes(4, "little"),
         )  # Chunk size
         wav_header.write(b"WAVE")
         wav_header.write(b"fmt ")  # Subchunk 1 ID
@@ -81,7 +79,7 @@ class GoogleTransClient:
         wav_header.write((16).to_bytes(2, "little"))  # Bits per sample (16-bit PCM)
         wav_header.write(b"data")  # Subchunk 2 ID
         wav_header.write(
-            (num_samples * nchannels * 2).to_bytes(4, "little")
+            (num_samples * nchannels * 2).to_bytes(4, "little"),
         )  # Subchunk 2 size
 
         return wav_header.getvalue()
@@ -92,13 +90,11 @@ class GoogleTransClient:
         tld = parts[1] if len(parts) > 1 else "com"
         return lang, tld
 
-    def set_voice(self, voice_id: str):
+    def set_voice(self, voice_id: str) -> None:
         self.lang, self.tld = self._parse_voice_id(voice_id)
 
     def synth(self, text: str, target_format: str = "mp3") -> bytes:
-        """
-        Synthesizes text to MP3 or WAV audio bytes.
-        """
+        """Synthesizes text to MP3 or WAV audio bytes."""
         tts = gTTS(text, lang=self.lang, tld=self.tld)
         mp3_fp = BytesIO()
         tts.write_to_fp(mp3_fp)
@@ -106,13 +102,13 @@ class GoogleTransClient:
         if target_format == "mp3":
             return mp3_fp.getvalue()
 
-        elif target_format == "wav":
+        if target_format == "wav":
             # Convert MP3 to WAV (using pymp3 for MP3 and manual WAV writing)
             mp3_fp.seek(0)
             return self._mp3_to_wav(mp3_fp)
 
-        else:
-            raise UnsupportedFileFormat(f"Unsupported format: {target_format}")
+        msg = f"Unsupported format: {target_format}"
+        raise UnsupportedFileFormat(msg)
 
     def get_voices(self) -> List[Dict[str, Any]]:
         # Retrieve available languages from gtts
@@ -136,7 +132,7 @@ class GoogleTransClient:
                             "language_codes": [lang_code],
                             "name": f"{lang_name} ({accent})",
                             "gender": "Unknown",
-                        }
+                        },
                     )
             else:
                 standardized_voices.append(
@@ -145,7 +141,7 @@ class GoogleTransClient:
                         "language_codes": [lang_code],
                         "name": lang_name,
                         "gender": "Unknown",
-                    }
+                    },
                 )
 
         return standardized_voices

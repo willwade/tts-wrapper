@@ -1,10 +1,11 @@
-import os
 import json
+import os
 import re
-import requests
 import tarfile
 from io import BytesIO
+
 import langcodes  # For enriching language data
+import requests
 
 # Regex to validate ISO language codes (1-8 alphanumeric characters)
 iso_code_pattern = re.compile(r"^[a-zA-Z0-9]{1,8}$")
@@ -32,15 +33,13 @@ def handle_special_cases(developer, name, quality, url):
 
 
 def extract_language_code_from_config(config_data):
-    """
-    Extracts language information from the config.json file if available.
+    """Extracts language information from the config.json file if available.
     Returns language code and country information if present.
     """
     if config_data and isinstance(config_data, str):
         try:
             config_data = json.loads(config_data)
         except json.JSONDecodeError:
-            print("Error decoding JSON from config data.")
             return None
 
     if not isinstance(config_data, dict):
@@ -98,27 +97,24 @@ def get_language_data(lang_code: str, region: str):
     return {"lang_code": lang_code, "language_name": "Unknown", "country": region}
 
 
-def save_models(merged_models, filepath="merged_models.json"):
+def save_models(merged_models, filepath="merged_models.json") -> None:
     with open(filepath, "w") as f:
         json.dump(merged_models, f, indent=4)
-    print(f"Saved {len(merged_models)} models to {filepath}")
 
 
 def merge_models(
-    mms_models, published_models, output_file="merged_models.json", force=False
+    mms_models, published_models, output_file="merged_models.json", force=False,
 ):
     # Load existing models if file exists and force flag is not set
     if os.path.exists(output_file) and not force:
-        with open(output_file, "r") as f:
+        with open(output_file) as f:
             merged_models = json.load(f)
-            print("Loaded existing merged models.")
     else:
         merged_models = {}
 
     # Total number of models to process
     total_models = len(mms_models) + len(published_models)
     if total_models == 0:
-        print("No models to merge.")
         return merged_models
 
     # Filter out models with developer 'mms' from published models
@@ -157,14 +153,12 @@ def merge_models(
                 last_saved_index = index + 1  # Update last saved index
 
         # Print progress percentage
-        progress = ((index + 1) / total_models) * 100
-        print(f"Processed {index + 1}/{total_models} models ({progress:.2f}%)")
+        ((index + 1) / total_models) * 100
 
     # Final save at the end if the last model processed wasn't just saved
     if last_saved_index < len(mms_models):
         save_models(merged_models, output_file)
 
-    print("All models have been processed and saved.")
     return merged_models
 
 
@@ -172,9 +166,7 @@ def merge_models(
 # Updated function to prioritize language extraction
 # Function to extract language codes from config or URL
 def extract_language_code_vits(url, name, developer, config_data=None):
-    """
-    Extracts the language code either from the config file or the URL.
-    """
+    """Extracts the language code either from the config file or the URL."""
     # Try extracting from the config.json first if available
     if config_data:
         config_lang = extract_language_code_from_config(config_data)
@@ -217,29 +209,26 @@ def extract_language_code_vits(url, name, developer, config_data=None):
 
 # Read a JSON file from within a .tar.bz2 archive
 def read_file_from_tar_bz2(url, filename_in_archive):
-    print(f"Attempting to download and read from {url}")  # Debugging print
     try:
         response = requests.get(url, stream=True)
         if response.status_code == 200:
             fileobj = BytesIO(response.content)
             with tarfile.open(fileobj=fileobj, mode="r:bz2") as tar:
-                print(f"Extracting from archive {url}")  # Debugging print
                 found_json = False
                 for member in tar.getmembers():
                     if member.name.endswith(".json"):
-                        print(f"Found JSON file: {member.name}")  # Debugging print
                         found_json = True
                         file = tar.extractfile(member)
                         return file.read().decode() if file else None
                 if not found_json:
-                    print(f"No JSON file found in {url}")  # Debugging print
-    except Exception as e:
-        print(f"Error extracting JSON from {url}: {e}")  # Error handling
+                    pass  # Debugging print
+    except Exception:
+        pass  # Error handling
     return None
 
 
 # Function to generate a unique model ID
-def generate_model_id(developer, lang_codes, name, quality):
+def generate_model_id(developer, lang_codes, name, quality) -> str:
     return (
         f"{developer}-{'_'.join(lang_codes)}-{name}-{quality}"
         if quality != "unknown"
@@ -248,7 +237,6 @@ def generate_model_id(developer, lang_codes, name, quality):
 
 
 # Main function for fetching GitHub models
-from io import BytesIO
 
 
 def get_github_release_assets(repo, tag, merged_models, output_file):
@@ -257,11 +245,11 @@ def get_github_release_assets(repo, tag, merged_models, output_file):
     response = requests.get(releases_url, headers=headers)
 
     if response.status_code != 200:
-        raise Exception(f"Failed to fetch release info for tag: {tag}")
+        msg = f"Failed to fetch release info for tag: {tag}"
+        raise Exception(msg)
 
     release_info = response.json()
 
-    assets = []
     for asset in release_info.get("assets", []):
         filename = asset["name"]
         asset_url = asset["browser_download_url"]
@@ -281,15 +269,13 @@ def get_github_release_assets(repo, tag, merged_models, output_file):
 
         # Check if the model has already been processed and saved
         if filename_no_ext in merged_models:
-            print(f"Skipping {filename_no_ext}, already processed.")
             continue
 
         # Read config.json or any other json in the archive
-        print(f"Processing model from URL: {asset_url}")  # Debugging print
         config_data = read_file_from_tar_bz2(asset_url, "config.json")
         if not config_data:
             config_data = read_file_from_tar_bz2(
-                asset_url, "*.json"
+                asset_url, "*.json",
             )  # Fallback to any JSON
 
         # If config_data is not None and is a string, attempt to parse it as JSON
@@ -297,7 +283,6 @@ def get_github_release_assets(repo, tag, merged_models, output_file):
             try:
                 config_data = json.loads(config_data)
             except json.JSONDecodeError:
-                print(f"Error decoding JSON from {asset_url}. Skipping...")
                 config_data = None
 
         # Extract language code, prioritizing config.json, fallback to URL
@@ -325,7 +310,7 @@ def get_github_release_assets(repo, tag, merged_models, output_file):
         )
 
         id = generate_model_id(
-            developer, [code for code, _ in lang_codes_and_regions], name, quality
+            developer, [code for code, _ in lang_codes_and_regions], name, quality,
         )
 
         model_data = {
@@ -348,7 +333,6 @@ def get_github_release_assets(repo, tag, merged_models, output_file):
         # Save after each model is processed
         save_models(merged_models, output_file)
 
-        print(f"Processed {len(merged_models)}/{len(release_info['assets'])} models.")
 
     return merged_models
 
@@ -393,24 +377,21 @@ known_lang_codes = {
 
 
 # Main entry point
-def main():
+def main() -> None:
     output_file = "merged_models.json"
 
     # Step 1: Load existing models or start fresh
     try:
-        with open(output_file, "r") as f:
+        with open(output_file) as f:
             merged_models = json.load(f)
-            print(f"Loaded {len(merged_models)} existing models.")
     except FileNotFoundError:
         merged_models = {}
-        print("No existing models found. Starting fresh.")
 
     # Step 2: Fetch GitHub models (VITS, Piper, etc.)
     repo = "k2-fsa/sherpa-onnx"
     tag = "tts-models"
-    published_models = get_github_release_assets(repo, tag, merged_models, output_file)
+    get_github_release_assets(repo, tag, merged_models, output_file)
 
-    print("All models have been processed and saved.")
 
 
 if __name__ == "__main__":

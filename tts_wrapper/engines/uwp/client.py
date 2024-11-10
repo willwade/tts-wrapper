@@ -1,6 +1,5 @@
 import asyncio
-from typing import List, Dict, Any, Optional
-from ...exceptions import ModuleNotInstalled
+from typing import Any, Dict, List, Optional
 
 try:
     from winrt.windows.media.speechsynthesis import SpeechSynthesizer
@@ -13,16 +12,14 @@ except ImportError:
 
 class UWPClient:
     def __init__(self) -> None:
-        print("Initializing UWPClient...")
         self._synthesizer = SpeechSynthesizer()
         voice = None  # Define the variable "voice"
         lang = None  # Define the variable "lang"
         if voice:
             self.set_voice(voice, lang)
 
-    def set_voice(self, voice_id: str, lang_id: Optional[str] = None):
-        """
-        Sets the voice for the TTS engine and updates the SSML configuration accordingly.
+    def set_voice(self, voice_id: str, lang_id: Optional[str] = None) -> None:
+        """Sets the voice for the TTS engine and updates the SSML configuration accordingly.
 
         @param voice_id: The ID of the voice to be used for synthesis.
         """

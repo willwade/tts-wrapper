@@ -1,8 +1,8 @@
 from typing import Any, List
-from ...exceptions import UnsupportedFileFormat
-from ...tts import AbstractTTS, FileFormat
+
+from tts_wrapper.tts import AbstractTTS, FileFormat
+
 from .client import UWPClient
-from .ssml import UWPSSML
 
 
 class UWPTTS(AbstractTTS):

@@ -1,18 +1,17 @@
-from tts_wrapper import GoogleTTS, GoogleClient
-import json
-import time
-from pathlib import Path
 import os
-from load_credentials import load_credentials
-# Load credentials
-load_credentials('credentials.json')
 
-client = GoogleClient(credentials=os.getenv('GOOGLE_CREDS_PATH'))
+from load_credentials import load_credentials
+
+from tts_wrapper import GoogleClient, GoogleTTS
+
+# Load credentials
+load_credentials("credentials.json")
+
+client = GoogleClient(credentials=os.getenv("GOOGLE_CREDS_PATH"))
 
 tts = GoogleTTS(client)
 
 ## test changing sound device ##
-print("Test set output device\n")
 tts.set_output_device(4)
 
 # # # pausng
@@ -34,8 +33,8 @@ tts.set_output_device(4)
 #     print("Stopping.")
 #except Exception as e:
 #    print(f"Error at pausing: {e}")
-#   
-# time.sleep(3)        
+#
+# time.sleep(3)
 # # Demonstrate saving audio to a file
 #try:
 #    ssml_text = tts.ssml.add(f"This is me speaking with Speak function and google with mp3")
@@ -46,14 +45,14 @@ tts.set_output_device(4)
 #    print(f"Audio content saved to {output_file}")
 #except Exception as e:
 #    print(f"Error at saving: {e}")
-#   
-#       
+#
+#
 # # Change voice and test again if possible
 # try:
 #     voices = tts.get_voices()
 # except Exception as e:
 #     print(f"Error at getting voices: {e}")
-# 
+#
 # print('Getting voices')
 # for voice in voices[:4]:  # Show details for first four voices
 #     language_codes = voice.get('language_codes', [])
@@ -76,25 +75,24 @@ tts.set_output_device(4)
 #     tts.speak_streamed(ssml_text_part2)
 
 # ## calbacks
-# 
-def my_callback(word: str, start_time: float, end_time: float):
-    duration = end_time - start_time
-    print(f"Word: '{word}' Started at {start_time:.3f}ms Duration: {duration:.3f}s")
+#
+def my_callback(word: str, start_time: float, end_time: float) -> None:
+    end_time - start_time
 
-def on_start():
-    print('Speech started')
+def on_start() -> None:
+    pass
 
-def on_end():
-    print('Speech ended')
+def on_end() -> None:
+    pass
 
 
 try:
     text = "Hello, This is a word timing test"
-    tts.connect('onStart', on_start)
-    tts.connect('onEnd', on_end)
+    tts.connect("onStart", on_start)
+    tts.connect("onEnd", on_end)
     tts.start_playback_with_callbacks(text, callback=my_callback)
-except Exception as e:
-    print(f"Error at callbacks: {e}")
+except Exception:
+    pass
 
 
 # # volume control test
@@ -109,7 +107,7 @@ except Exception as e:
 #     print("ssml_test: ", ssml_text)
 #     tts.speak_streamed(ssml_text)
 #     time.sleep(3)
-#     
+#
 #     #clear ssml so the previous text is not repeated
 #     tts.ssml.clear_ssml()
 #     tts.set_property("volume", "100")
@@ -120,19 +118,19 @@ except Exception as e:
 #     print("ssml_test: ", ssml_text)
 #     tts.speak_streamed(ssml_text)
 #     time.sleep(3)
-# 
+#
 #     tts.ssml.clear_ssml()
 #     tts.set_property("volume", "10")
 #     print("Setting volume at 10")
 #     text_read = f"The current volume is at 10"
-#     text_with_prosody = tts.construct_prosody_tag(text_read)        
+#     text_with_prosody = tts.construct_prosody_tag(text_read)
 #     ssml_text = tts.ssml.add(text_with_prosody)
 #     tts.speak_streamed(ssml_text)
 #     time.sleep(3)
-# 
+#
 # except Exception as e:
 #     print(f"Error at setting volume: {e}")
-# 
+#
 # # pitch control test
 # print("Pitch control is from x-low, low, medium, high, x-high")
 # text_read = ""
@@ -147,7 +145,7 @@ except Exception as e:
 #     print("ssml_test: ", ssml_text)
 #     tts.speak_streamed(ssml_text)
 #     time.sleep(5)
-#     
+#
 #     #clear ssml so the previous text is not repeated
 #     tts.ssml.clear_ssml()
 #     tts.set_property("pitch", "x-high")
@@ -158,18 +156,18 @@ except Exception as e:
 #     print("ssml_test: ", ssml_text)
 #     tts.speak_streamed(ssml_text)
 #     time.sleep(5)
-# 
+#
 #     tts.ssml.clear_ssml()
 #     tts.set_property("pitch", "x-low")
 #     print("Setting pitch at EXTRA LOW")
 #     text_read = f"The current pitch at EXTRA LOW"
-#     text_with_prosody = tts.construct_prosody_tag(text_read)        
+#     text_with_prosody = tts.construct_prosody_tag(text_read)
 #     ssml_text = tts.ssml.add(text_with_prosody)
 #     tts.speak_streamed(ssml_text)
 #     time.sleep(5)
 # except Exception as e:
-#     print(f"Error at setting pitch: {e}")   
-# 
+#     print(f"Error at setting pitch: {e}")
+#
 # # rate control test
 # print("Rate setting is from x-slow, slow, medium, fast, x-fast")
 # text_read = ""
@@ -184,7 +182,7 @@ except Exception as e:
 #     print("ssml_test: ", ssml_text)
 #     tts.speak_streamed(ssml_text)
 #     time.sleep(5)
-#     
+#
 #     #clear ssml so the previous text is not repeated
 #     tts.ssml.clear_ssml()
 #     tts.set_property("rate", "x-fast")
@@ -195,14 +193,14 @@ except Exception as e:
 #     print("ssml_test: ", ssml_text)
 #     tts.speak_streamed(ssml_text)
 #     time.sleep(5)
-# 
+#
 #     tts.ssml.clear_ssml()
 #     tts.set_property("rate", "x-slow")
 #     print("Setting rate at EXTRA SLOW")
 #     text_read = f"The current rate at EXTRA SLOW"
-#     text_with_prosody = tts.construct_prosody_tag(text_read)        
+#     text_with_prosody = tts.construct_prosody_tag(text_read)
 #     ssml_text = tts.ssml.add(text_with_prosody)
 #     tts.speak_streamed(ssml_text)
 #     time.sleep(5)
 # except Exception as e:
-#     print(f"Error at setting pitch: {e}")  
+#     print(f"Error at setting pitch: {e}")

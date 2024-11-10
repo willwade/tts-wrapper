@@ -1,15 +1,16 @@
-from tts_wrapper import MicrosoftTTS, MicrosoftClient
-import json
-import time
-from pathlib import Path
-import os
-from load_credentials import load_credentials
 import logging
+import os
+import sys
+import time
+
+from load_credentials import load_credentials
+
+from tts_wrapper import MicrosoftClient, MicrosoftTTS
 
 # Load credentials
 load_credentials("credentials.json")
 client = MicrosoftClient(
-    credentials=(os.getenv("MICROSOFT_TOKEN"), os.getenv("MICROSOFT_REGION"))
+    credentials=(os.getenv("MICROSOFT_TOKEN"), os.getenv("MICROSOFT_REGION")),
 )
 tts = MicrosoftTTS(client)
 
@@ -18,7 +19,7 @@ logging.basicConfig(level=logging.DEBUG)
 # set timing on this
 
 
-def on_start():
+def on_start() -> None:
     first_word_time = time.time()
     logging.info(f"First word spoken after {first_word_time - start_time:.2f} seconds")
 
@@ -29,12 +30,11 @@ tts.set_property("volume", "100")
 tts.ssml.clear_ssml()
 tts.set_property("rate", "medium")
 
-text_read = f"Hello, this is a streamed test"
+text_read = "Hello, this is a streamed test"
 text_with_prosody = tts.construct_prosody_tag(text_read)
 ssml_text = tts.ssml.add(text_with_prosody)
 tts.pause_audio()
 time.sleep(1)
-print("ssml_test: ", ssml_text)
 
 start_time = time.time()
 tts.speak_streamed(ssml_text)
@@ -50,7 +50,6 @@ bytestream = tts.synth_to_bytestream(ssml_text)
 # Save the audio bytestream to a file
 with open("output_testazure.mp3", "wb") as f:
     f.write(bytestream.read())
-print("Audio saved to output.mp3")
 end_time = time.time()
 logging.info(f"bytestream method took {end_time - start_time:.2f} seconds")
-exit()
+sys.exit()

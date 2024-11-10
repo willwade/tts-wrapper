@@ -1,5 +1,7 @@
-from tts_wrapper import GoogleTransClient, GoogleTransTTS
 import time
+
+from tts_wrapper import GoogleTransClient, GoogleTransTTS
+
 try:
     voice_id = "en-co.uk"  # Example voice ID for UK English
     client = GoogleTransClient(voice_id)
@@ -19,12 +21,10 @@ try:
     start_time = time.time()
     tts.speak(text)
     synthesis_time = time.time()
-    print(f"Synthesis time: {synthesis_time - start_time:.3f} seconds")
     text = "Hello, This is a word timing test"
     start_time = time.time()
     tts.synth_to_file(text, "test.mp3", "mp3")
     synthesis_time = time.time()
-    print(f"Synthesis time: {synthesis_time - start_time:.3f} seconds")
 
-except Exception as e:
-    print(f"Error: {e}")
+except Exception:
+    pass

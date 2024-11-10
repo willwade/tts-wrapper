@@ -1,9 +1,11 @@
-from typing import Optional, Tuple, Dict, List, Any
-from ...exceptions import ModuleNotInstalled
-from ..utils import create_temp_filename
 import os
 import platform
+from typing import Any, Dict, List, Optional, Tuple
+
 import soundfile as sf
+
+from tts_wrapper.engines.utils import create_temp_filename
+from tts_wrapper.exceptions import ModuleNotInstalled
 
 Credentials = Tuple[str]
 
@@ -15,7 +17,8 @@ class SAPIClient:
         try:
             import pyttsx3  # type: ignore
         except ImportError:
-            raise ModuleNotInstalled("pyttsx3")
+            msg = "pyttsx3"
+            raise ModuleNotInstalled(msg)
             pyttsx3 = None
 
         # Determine the default driver based on the platform
@@ -28,7 +31,8 @@ class SAPIClient:
             elif self._system == "Linux":
                 driver = "espeak"
             else:
-                raise ValueError("Unsupported operating system")
+                msg = "Unsupported operating system"
+                raise ValueError(msg)
 
         try:
             self._client = pyttsx3.init(driver)
@@ -46,8 +50,9 @@ class SAPIClient:
                 "voice": default_voice,
             }
         except Exception as e:
+            msg = f"Failed to initialize pyttsx3 with driver '{driver}': {e}"
             raise RuntimeError(
-                f"Failed to initialize pyttsx3 with driver '{driver}': {e}"
+                msg,
             )
 
     def synth(self, text: str) -> bytes:
@@ -60,7 +65,7 @@ class SAPIClient:
             # Use soundfile to read AIFF and write to WAV
             temp_aiff = temp_filename.replace(".wav", ".aiff")
             os.rename(
-                temp_filename, temp_aiff
+                temp_filename, temp_aiff,
             )  # Rename .wav to .aiff, as macOS uses AIFF internally
 
             data, samplerate = sf.read(temp_aiff)
@@ -97,30 +102,30 @@ class SAPIClient:
         gender = gender.lower()
         if "male" in gender:
             return "Male"
-        elif "female" in gender:
+        if "female" in gender:
             return "Female"
-        elif "neutral" in gender or "unknown" in gender:
+        if "neutral" in gender or "unknown" in gender:
             return "Neutral"
-        else:
-            return "Unknown"
+        return "Unknown"
 
-    def set_voice(self, voice_id: str):
+    def set_voice(self, voice_id: str) -> None:
         """Sets the voice based on the provided voice_id."""
         voices = self.get_voices()
         matching_voice = next(
-            (voice for voice in voices if voice["id"] == voice_id), None
+            (voice for voice in voices if voice["id"] == voice_id), None,
         )
 
         if matching_voice:
             self._client.setProperty("voice", matching_voice["id"])
         else:
-            raise ValueError(f"Voice with ID '{voice_id}' not found.")
+            msg = f"Voice with ID '{voice_id}' not found."
+            raise ValueError(msg)
 
     def get_property(self, property_name):
         """Get the value of a TTS property."""
         return self.properties.get(property_name, None)
 
-    def set_property(self, property_name, value):
+    def set_property(self, property_name, value) -> None:
         """Set the value of a TTS property."""
         self.properties[property_name] = value
 

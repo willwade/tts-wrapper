@@ -1,25 +1,25 @@
 # test-googletts.py
 
 import logging
-from tts_wrapper import GoogleClient, GoogleTTS
-import time
-from io import BytesIO
 import os
-from pathlib import Path
+
 from load_credentials import load_credentials
+
+from tts_wrapper import GoogleClient, GoogleTTS
+
 # Load credentials
-load_credentials('credentials.json')
+load_credentials("credentials.json")
 import wave
 
 
-def main():
+def main() -> None:
     # Configure logging to display informational messages
-    logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+    logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 
     try:
         # Path to your Google Cloud service account JSON credentials
 
-        client = GoogleClient(credentials=os.getenv('GOOGLE_CREDS_PATH'))        
+        client = GoogleClient(credentials=os.getenv("GOOGLE_CREDS_PATH"))
 
         # Initialize the GoogleTTS engine with the client
         tts = GoogleTTS(client=client)
@@ -44,9 +44,9 @@ def main():
         output_file_bytestream = "output_streamed_google.wav"  # Change to 'mp3' or 'flac' as needed
         audio_format = "wav"  # Supported formats: 'wav', 'mp3', 'flac'
 
-        if audio_format.lower() == 'wav':
+        if audio_format.lower() == "wav":
             # Initialize WAV file
-            with wave.open(output_file_bytestream, 'wb') as wf:
+            with wave.open(output_file_bytestream, "wb") as wf:
                 wf.setnchannels(1)  # Mono
                 wf.setsampwidth(2)  # 16-bit PCM
                 wf.setframerate(tts.audio_rate)
@@ -68,7 +68,7 @@ def main():
         logging.info(f"Audio successfully saved to {output_file_speak_streamed} in wav format via speak_streamed.")
 
     except Exception as e:
-        logging.error(f"An error occurred during synthesis: {e}")
+        logging.exception(f"An error occurred during synthesis: {e}")
 
 if __name__ == "__main__":
     main()

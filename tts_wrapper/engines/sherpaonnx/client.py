@@ -1,20 +1,20 @@
 # client.py
-from typing import Optional, List, Dict, Tuple
-import os
 import json
 import logging
+import os
 import threading
+from typing import Dict, List, Optional, Tuple
 
 try:
     import numpy as np
 except ImportError:
-    logging.error("Please install numpy library to use the SherpaOnnxClient")
+    logging.exception("Please install numpy library to use the SherpaOnnxClient")
     np = None  # type: ignore
 
 try:
     import queue
 except ImportError:
-    logging.error("Please install queue library to use the SherpaOnnxClient")
+    logging.exception("Please install queue library to use the SherpaOnnxClient")
     queue = None  # type: ignore
 
 
@@ -27,28 +27,25 @@ class SherpaOnnxClient:
         model_path: Optional[str] = None,
         tokens_path: Optional[str] = None,
         voice_id: Optional[str] = None,
-    ):
+    ) -> None:
         try:
             import sherpa_onnx
         except ImportError:
-            logging.error(
-                "Please install sherpa-onnx library to use the SherpaOnnxClient"
+            logging.exception(
+                "Please install sherpa-onnx library to use the SherpaOnnxClient",
             )
-            sherpa_onnx = None  # type: ignore
 
         try:
             import requests
         except ImportError:
-            logging.error("Please install requests library to use the SherpaOnnxClient")
-            requests = None
+            logging.exception("Please install requests library to use the SherpaOnnxClient")
 
         try:
             import threading
         except ImportError:
-            logging.error(
-                "Please install threading library to use the SherpaOnnxClient"
+            logging.exception(
+                "Please install threading library to use the SherpaOnnxClient",
             )
-            threading = None  # type: ignore
 
         self.default_model_path = model_path
         self.default_tokens_path = (
@@ -63,8 +60,9 @@ class SherpaOnnxClient:
             try:
                 os.makedirs(self._model_dir, exist_ok=True)
             except Exception as e:
+                msg = f"Failed to create model directory {self._model_dir}: {e!s}"
                 raise RuntimeError(
-                    f"Failed to create model directory {self._model_dir}: {str(e)}"
+                    msg,
                 )
         self.voices_cache = self._load_voices_cache()
         if voice_id:
@@ -73,13 +71,14 @@ class SherpaOnnxClient:
         self.tts = None
         self.sample_rate = None
 
-    def _download_voices(self):
+    def _download_voices(self) -> None:
         try:
             try:
                 import requests
             except ImportError:
+                msg = "Please install requests library to download voices JSON file"
                 raise ImportError(
-                    "Please install requests library to download voices JSON file"
+                    msg,
                 )
             logging.info(f"Downloading voices JSON file from {self.VOICES_URL}...")
             response = requests.get(self.VOICES_URL)
@@ -88,7 +87,8 @@ class SherpaOnnxClient:
 
             # Check if response is not empty
             if not response.content.strip():
-                raise ValueError("Downloaded JSON is empty")
+                msg = "Downloaded JSON is empty"
+                raise ValueError(msg)
 
             # Write the response to the file
             cache_file_path = os.path.join(self._model_dir, self.CACHE_FILE)
@@ -106,20 +106,22 @@ class SherpaOnnxClient:
 
         try:
             logging.info("Loading voices JSON file...")
-            with open(cache_file_path, "r") as f:
+            with open(cache_file_path) as f:
                 content = f.read()
                 if not content.strip():  # Check if file is not empty
-                    raise ValueError("Cache file is empty")
+                    msg = "Cache file is empty"
+                    raise ValueError(msg)
                 return json.loads(content)
         except Exception as e:
             logging.info(f"Failed to load voices JSON file: {e}")
             raise
 
-    def _download_file(self, url, destination):
+    def _download_file(self, url, destination) -> None:
         try:
             import requests
         except ImportError:
-            raise ImportError("Please install requests library to download files")
+            msg = "Please install requests library to download files"
+            raise ImportError(msg)
         response = requests.get(url, stream=True)
         response.raise_for_status()
         with open(destination, "wb") as f:
@@ -151,8 +153,9 @@ class SherpaOnnxClient:
     def check_and_download_model(self, iso_code: str) -> Tuple[str, str]:
         voice = next((v for v in self.voices_cache if v["Iso Code"] == iso_code), None)
         if not voice:
+            msg = f"Voice with ISO code {iso_code} not found in the voices cache"
             raise ValueError(
-                f"Voice with ISO code {iso_code} not found in the voices cache"
+                msg,
             )
 
         model_dir = os.path.join(self._model_dir, iso_code)
@@ -165,10 +168,10 @@ class SherpaOnnxClient:
 
         if not self._check_files_exist(model_path, tokens_path):
             logging.info(
-                f"Downloading model and tokens for {iso_code} because we cant find it"
+                f"Downloading model and tokens for {iso_code} because we cant find it",
             )
             model_path, tokens_path = self._download_model_and_tokens(
-                iso_code, model_dir
+                iso_code, model_dir,
             )
             logging.info(f"Model and tokens downloaded to {model_dir}")
         else:
@@ -176,9 +179,9 @@ class SherpaOnnxClient:
 
         return model_path, tokens_path
 
-    def _init_onnx(self):
+    def _init_onnx(self) -> None:
         if not self.tts:
-            import sherpa_onnx as sherpa_onnx
+            import sherpa_onnx
 
             # Create the VITS model configuration
             vits_model_config = sherpa_onnx.OfflineTtsVitsModelConfig(
@@ -217,7 +220,7 @@ class SherpaOnnxClient:
 
         # Start generating audio and filling the queue
         threading.Thread(
-            target=self._stream_audio_to_queue, args=(text, sid, speed)
+            target=self._stream_audio_to_queue, args=(text, sid, speed),
         ).start()
 
         # Yield audio chunks as they are produced
@@ -227,29 +230,29 @@ class SherpaOnnxClient:
             logging.info(f"SAMPLE {samples}")
             if samples is None:  # End of stream signal
                 break
-            
+
             yield samples
 
-    def _stream_audio_to_queue(self, text: str, sid: int = 0, speed: float = 1.0):
+    def _stream_audio_to_queue(self, text: str, sid: int = 0, speed: float = 1.0) -> None:
         """Internal method to generate audio and place chunks in the queue."""
         self.tts.generate(
-            text, sid=sid, speed=speed, callback=self.generated_audio_callback
+            text, sid=sid, speed=speed, callback=self.generated_audio_callback,
         )
         self.audio_queue.put(None)  # Signal the end of audio generation
 
-    def generated_audio_callback(self, samples: np.ndarray, progress: float):
+    def generated_audio_callback(self, samples: np.ndarray, progress: float) -> int:
         """Callback function to handle audio generation."""
         self.audio_queue.put(samples)  # Place generated samples into the queue
         logging.info(f"Queue in generate_stream: {self.audio_queue.qsize()}")
         return 1  # Continue generating
 
-    def synth_streaming(self, text: str, sid: int = 0, speed: float = 1.0):
+    def synth_streaming(self, text: str, sid: int = 0, speed: float = 1.0) -> None:
         """Generate audio in a streaming fashion using callbacks."""
         self._init_onnx()
         self.audio_queue = queue.Queue()  # Reset the queue for new streaming session
         logging.info(f"Starting streaming synthesis for text: {text}")
         self.tts.generate(
-            text, sid=sid, speed=speed, callback=self.generated_audio_callback
+            text, sid=sid, speed=speed, callback=self.generated_audio_callback,
         )
         self.audio_queue.put(None)  # Signal the end of generation
 
@@ -258,7 +261,8 @@ class SherpaOnnxClient:
         self._init_onnx()
         audio = self.tts.generate(text, sid=sid, speed=speed)
         if len(audio.samples) == 0:
-            raise ValueError("Error in generating audio")
+            msg = "Error in generating audio"
+            raise ValueError(msg)
         audio_bytes = self._convert_samples_to_bytes(audio.samples)
         return audio_bytes, self.sample_rate
 
@@ -273,7 +277,7 @@ class SherpaOnnxClient:
             for voice in self.voices_cache
         ]
 
-    def set_voice(self, iso_code: str):
+    def set_voice(self, iso_code: str) -> None:
         model_path, tokens_path = self.check_and_download_model(iso_code)
         self.default_model_path = model_path
         self.default_tokens_path = tokens_path
@@ -286,8 +290,9 @@ class SherpaOnnxClient:
             self.sample_rate = self.tts.sample_rate
             logging.info(f"Sample rate set to {self.sample_rate}")
         else:
+            msg = "Failed to initialize TTS engine with the specified voice."
             raise RuntimeError(
-                "Failed to initialize TTS engine with the specified voice."
+                msg,
             )
 
     def _convert_samples_to_bytes(self, samples: np.ndarray) -> bytes:

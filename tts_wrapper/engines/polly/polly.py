@@ -1,6 +1,7 @@
-from typing import Any, List, Optional, Dict, Tuple
-from ...exceptions import UnsupportedFileFormat
-from ...tts import AbstractTTS, FileFormat
+from typing import Any, Dict, List, Optional, Tuple
+
+from tts_wrapper.tts import AbstractTTS
+
 from . import PollyClient, PollySSML
 
 
@@ -10,7 +11,7 @@ class PollyTTS(AbstractTTS):
         client: PollyClient,
         lang: Optional[str] = None,
         voice: Optional[str] = None,
-    ):
+    ) -> None:
         super().__init__()
         self._client = client
         self.set_voice(voice or "Joanna", lang or "en-US")
@@ -37,7 +38,7 @@ class PollyTTS(AbstractTTS):
         return self.generated_audio
 
     def _process_word_timings(
-        self, word_timings: List[Tuple[float, str]]
+        self, word_timings: List[Tuple[float, str]],
     ) -> List[Tuple[float, float, str]]:
         processed_timings = []
         audio_duration = self.get_audio_duration()
@@ -47,7 +48,7 @@ class PollyTTS(AbstractTTS):
                 end = word_timings[i + 1][0]
             else:
                 end = min(
-                    start + 0.5, audio_duration
+                    start + 0.5, audio_duration,
                 )  # Use the lesser of 0.5s or remaining audio duration
             processed_timings.append((start, end, word))
 
@@ -65,7 +66,7 @@ class PollyTTS(AbstractTTS):
     def get_voices(self) -> List[Dict[str, Any]]:
         return self._client.get_voices()
 
-    def set_voice(self, voice_id: str, lang_id: str):
+    def set_voice(self, voice_id: str, lang_id: str) -> None:
         super().set_voice(voice_id)
         self._voice = voice_id
         self._lang = lang_id
@@ -79,9 +80,8 @@ class PollyTTS(AbstractTTS):
             properties.append(f'volume="{volume_in_words}"')
 
         prosody_content = " ".join(properties)
-        text_with_tag = f"<prosody {prosody_content}>{text}</prosody>"
+        return f"<prosody {prosody_content}>{text}</prosody>"
 
-        return text_with_tag
 
     def mapped_to_predefined_word(self, volume: str) -> str:
         volume_in_float = float(volume)
@@ -97,3 +97,4 @@ class PollyTTS(AbstractTTS):
             return "loud"
         if 81 <= volume_in_float <= 100:
             return "x-loud"
+        return None

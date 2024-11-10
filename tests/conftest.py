@@ -1,5 +1,4 @@
 import os
-from typing import Callable
 
 import filetype  # type: ignore
 import pytest
@@ -14,7 +13,7 @@ def load_resp_wav():
 
 class Helpers:
     @staticmethod
-    def check_audio_file(path, format="wav"):
+    def check_audio_file(path, format="wav") -> None:
         assert os.path.exists(path), f"{path} does not exists"
         assert os.path.getsize(path) > 1024
         assert filetype.guess_extension(path) == format

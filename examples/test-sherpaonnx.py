@@ -1,13 +1,13 @@
 # test_synth_to_bytestream.py
 
 import logging
-from tts_wrapper import SherpaOnnxClient, SherpaOnnxTTS
-import time
-from io import BytesIO
 
-def main():
+from tts_wrapper import SherpaOnnxClient, SherpaOnnxTTS
+
+
+def main() -> None:
     # Configure logging to display informational messages
-    logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+    logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 
     try:
         # Initialize the SherpaOnnxClient
@@ -49,7 +49,7 @@ def main():
         logging.info(f"Audio successfully saved to {output_file} in {audio_format} format.")
 
     except Exception as e:
-        logging.error(f"An error occurred during synthesis: {e}")
+        logging.exception(f"An error occurred during synthesis: {e}")
 
 if __name__ == "__main__":
     main()

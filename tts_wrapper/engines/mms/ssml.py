@@ -1,4 +1,5 @@
-from ...ssml import BaseSSMLRoot, SSMLNode
+from tts_wrapper.ssml import BaseSSMLRoot, SSMLNode
+
 
 class MMSSSML(BaseSSMLRoot):
     def __init__(self) -> None:
@@ -9,5 +10,5 @@ class MMSSSML(BaseSSMLRoot):
         # MMS doesn't support SSML, so we just return the text content
         return "".join(str(c) for c in self._inner._children)
 
-    def clear_ssml(self):
+    def clear_ssml(self) -> None:
         pass

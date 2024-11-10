@@ -1,19 +1,20 @@
 # engine.py
 
-from typing import Any, List, Optional, Dict, Generator
-from ...exceptions import UnsupportedFileFormat
-from ...tts import AbstractTTS, FileFormat
+import logging
+import queue
+import threading
+from typing import Any, Dict, Generator, List, Optional
+
+import numpy as np
+import sounddevice as sd
+
+from tts_wrapper.engines.utils import (
+    estimate_word_timings,  # Import the timing estimation function
+)
+from tts_wrapper.tts import AbstractTTS
+
 from .client import SherpaOnnxClient
 from .ssml import SherpaOnnxSSML
-from ...engines.utils import (
-    estimate_word_timings,
-)  # Import the timing estimation function
-import logging
-import numpy as np
-import threading
-import queue
-import sounddevice as sd
-import time
 
 
 class SherpaOnnxTTS(AbstractTTS):
@@ -22,7 +23,7 @@ class SherpaOnnxTTS(AbstractTTS):
         client: SherpaOnnxClient,
         lang: Optional[str] = None,
         voice: Optional[str] = None,
-    ):
+    ) -> None:
         super().__init__()
         self._client = client
         if voice:
@@ -36,8 +37,8 @@ class SherpaOnnxTTS(AbstractTTS):
 
     # Audio playback callback, called continuously to stream audio from the buffer
     def play_audio_callback(
-        self, outdata: np.ndarray, frames: int, time, status: sd.CallbackFlags
-    ):
+        self, outdata: np.ndarray, frames: int, time, status: sd.CallbackFlags,
+    ) -> None:
 
         if self.audio_killed or (
             self.audio_started and self.audio_buffer.empty() and self.audio_stopped
@@ -73,7 +74,7 @@ class SherpaOnnxTTS(AbstractTTS):
     def get_voices(self) -> List[Dict[str, Any]]:
         return self._client.get_voices()
 
-    def set_voice(self, voice_id: str, lang_id: Optional[str] = None):
+    def set_voice(self, voice_id: str, lang_id: Optional[str] = None) -> None:
         self._client.set_voice(voice_id)
         self.audio_rate = (
             self._client.sample_rate
@@ -87,7 +88,7 @@ class SherpaOnnxTTS(AbstractTTS):
         logging.info(f"Synthesizing text: {text}")
         audio_bytes, sample_rate = self._client.synth(text)
         logging.info(
-            f"Audio bytes length: {len(audio_bytes)}, Sample rate: {sample_rate}"
+            f"Audio bytes length: {len(audio_bytes)}, Sample rate: {sample_rate}",
         )
         self.audio_rate = sample_rate
 
@@ -96,7 +97,7 @@ class SherpaOnnxTTS(AbstractTTS):
 
         return audio_bytes
 
-    def play_audio(self):
+    def play_audio(self) -> None:
         try:
             logging.info("STARTING PLAY AUDIO")
             with sd.OutputStream(
@@ -110,7 +111,7 @@ class SherpaOnnxTTS(AbstractTTS):
                 self.playback_finished.wait()
 
         except Exception as e:
-            logging.error(f"Error during audio playback: {e}")
+            logging.exception(f"Error during audio playback: {e}")
             self.audio_killed = True
 
     # Main function to generate audio and stream it while playing
@@ -135,8 +136,8 @@ class SherpaOnnxTTS(AbstractTTS):
         all_audio_chunks = []
 
         # Simulate audio generation in chunks from the text
-        for chunk_idx, audio_chunk in enumerate(
-            self.synth_to_bytestream(str(text), format=audio_format)
+        for _chunk_idx, audio_chunk in enumerate(
+            self.synth_to_bytestream(str(text), format=audio_format),
         ):
             # Add audio samples to the buffer for streaming
             samples = (
@@ -163,27 +164,26 @@ class SherpaOnnxTTS(AbstractTTS):
         # Save the audio after playback finishes if save_to_file_path is provided
         if save_to_file_path:
             logging.info(
-                f"Saving audio to file: {save_to_file_path} in format: {audio_format}"
+                f"Saving audio to file: {save_to_file_path} in format: {audio_format}",
             )
             # Combine all chunks into one audio array
             full_audio = np.concatenate(all_audio_chunks, axis=0)
 
             # Convert audio and save to the specified file format
             converted_audio = self._convert_audio(
-                full_audio, audio_format, self.audio_rate
+                full_audio, audio_format, self.audio_rate,
             )
             with open(save_to_file_path, "wb") as f:
                 f.write(converted_audio)
 
             logging.info(
-                f"Audio successfully saved to {save_to_file_path} in {audio_format} format."
+                f"Audio successfully saved to {save_to_file_path} in {audio_format} format.",
             )
 
     def synth_to_bytestream(
-        self, text: Any, format: Optional[str] = "wav"
+        self, text: Any, format: Optional[str] = "wav",
     ) -> Generator[bytes, None, None]:
-        """
-        Synthesizes text to an in-memory bytestream in the specified audio format.
+        """Synthesizes text to an in-memory bytestream in the specified audio format.
         Yields audio data chunks as they are generated.
 
         :param text: The text to synthesize.
@@ -192,21 +192,21 @@ class SherpaOnnxTTS(AbstractTTS):
         """
         try:
             logging.info(
-                f"[SherpaOnnxTTS.synth_to_bytestream] Synthesizing text: {text}"
+                f"[SherpaOnnxTTS.synth_to_bytestream] Synthesizing text: {text}",
             )
 
             # Generate estimated word timings using the abstract method
             self.timings = estimate_word_timings(text)
-            
+
             # Buffer to store all audio chunks for conversion
             audio_chunks = []
 
             # Iterate over generated audio chunks
             for chunk_idx, (progress, samples) in enumerate(
-                self.generate_audio_chunks(text)
+                self.generate_audio_chunks(text),
             ):
                 logging.info(
-                    f"Processing audio chunk {chunk_idx} with progress {progress}"
+                    f"Processing audio chunk {chunk_idx} with progress {progress}",
                 )
 
                 # Collect audio chunks for conversion
@@ -217,10 +217,10 @@ class SherpaOnnxTTS(AbstractTTS):
 
                 # Convert PCM data to the desired audio format
                 converted_audio = self._convert_audio(
-                    current_audio, format, self.audio_rate
+                    current_audio, format, self.audio_rate,
                 )
                 logging.info(
-                    f"Converted audio chunk {chunk_idx} length: {len(converted_audio)} bytes in format: {format}"
+                    f"Converted audio chunk {chunk_idx} length: {len(converted_audio)} bytes in format: {format}",
                 )
 
                 if converted_audio[:4] == b"RIFF":
@@ -237,10 +237,10 @@ class SherpaOnnxTTS(AbstractTTS):
             if audio_chunks:
                 current_audio = np.concatenate(audio_chunks, axis=0)
                 converted_audio = self._convert_audio(
-                    current_audio, format, self.audio_rate
+                    current_audio, format, self.audio_rate,
                 )
                 logging.info(
-                    f"Final converted audio length: {len(converted_audio)} bytes in format: {format}"
+                    f"Final converted audio length: {len(converted_audio)} bytes in format: {format}",
                 )
                 if format == "wav" and converted_audio[:4] == b"RIFF":
                     logging.info("Stripping wav header from bytestream")
@@ -249,7 +249,7 @@ class SherpaOnnxTTS(AbstractTTS):
                 yield converted_audio
 
         except Exception as e:
-            logging.error(f"Error in synth_to_bytestream: {e}")
+            logging.exception(f"Error in synth_to_bytestream: {e}")
             raise
 
     def generate_audio_chunks(self, text):
@@ -260,7 +260,7 @@ class SherpaOnnxTTS(AbstractTTS):
                 samples = samples.astype(np.float32)
 
             logging.info(
-                f"Audio chunk max value: {np.max(samples)}, min value: {np.min(samples)}"
+                f"Audio chunk max value: {np.max(samples)}, min value: {np.min(samples)}",
             )
             total_samples += len(samples)
             progress = total_samples / (self.audio_rate * 3)  # Simulate progress

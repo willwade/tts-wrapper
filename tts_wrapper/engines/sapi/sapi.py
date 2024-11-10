@@ -1,6 +1,7 @@
-from typing import Any, List, Optional, Literal
-from ...exceptions import UnsupportedFileFormat
-from ...tts import AbstractTTS, FileFormat
+from typing import Any, List, Optional
+
+from tts_wrapper.tts import AbstractTTS, FileFormat
+
 from . import SAPIClient
 from .ssml import SAPISSML
 
@@ -14,7 +15,7 @@ class SAPITTS(AbstractTTS):
         super().__init__()
         self._client = client
 
-    def set_voice(self, voice_id: str, lang_id: Optional[str] = None):
+    def set_voice(self, voice_id: str, lang_id: Optional[str] = None) -> None:
         """Set the TTS voice by ID and optionally set the language ID."""
         self._client.set_voice(voice_id)
 
@@ -55,24 +56,22 @@ class SAPITTS(AbstractTTS):
             properties.append(f'pitch="{pitch}"')
 
         prosody_content = " ".join(properties)
-        text_with_tag = f"<prosody {prosody_content}>{text}</prosody>"
+        return f"<prosody {prosody_content}>{text}</prosody>"
 
-        return text_with_tag
 
     def _map_volume_to_predefined_word(self, volume: str) -> str:
         """Maps volume to predefined descriptive terms."""
         volume_in_float = float(volume)
         if volume_in_float == 0:
             return "silent"
-        elif 1 <= volume_in_float <= 20:
+        if 1 <= volume_in_float <= 20:
             return "x-soft"
-        elif 21 <= volume_in_float <= 40:
+        if 21 <= volume_in_float <= 40:
             return "soft"
-        elif 41 <= volume_in_float <= 60:
+        if 41 <= volume_in_float <= 60:
             return "medium"
-        elif 61 <= volume_in_float <= 80:
+        if 61 <= volume_in_float <= 80:
             return "loud"
-        elif 81 <= volume_in_float <= 100:
+        if 81 <= volume_in_float <= 100:
             return "x-loud"
-        else:
-            return "medium"
+        return "medium"
