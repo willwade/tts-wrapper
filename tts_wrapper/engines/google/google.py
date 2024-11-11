@@ -176,7 +176,7 @@ class GoogleTTS(AbstractTTS):
     def synth_to_bytestream(
         self, text: Any, format: Optional[str] = "wav",
     ) -> Generator[bytes, None, None]:
-        """Synthesizes text to an in-memory bytestream and retrieves word timings using
+        """Synthesizes text to an in-memory bytestream and retrieves word timings using.
 
         AbstractTTS's estimate_word_timings method.
 
@@ -184,7 +184,6 @@ class GoogleTTS(AbstractTTS):
         :param format: The desired audio format (e.g., 'wav', 'mp3', 'flac').
         :return: A generator yielding bytes objects containing audio data.
         """
-
         try:
             logging.info("[GoogleTTS.synth_to_bytestream] Synthesizing text: %s", text)
             # Generate estimated word timings using the abstract method
@@ -257,7 +256,6 @@ class GoogleTTS(AbstractTTS):
         :param save_to_file_path: Path to save the audio file (optional).
         :param audio_format: Audio format to save (e.g., 'wav', 'mp3', 'flac').
         """
-
         # Synthesize audio to bytes
         audio_generator = self.synth_to_bytestream(text, format=audio_format)
         audio_bytes = bytes(itertools.chain.from_iterable(audio_generator))
@@ -284,7 +282,6 @@ class GoogleTTS(AbstractTTS):
 
     def _play_pcm_stream(self, pcm_data: bytes, channels: int) -> None:
         """Streams PCM data using sounddevice."""
-
         audio_data = np.frombuffer(pcm_data, dtype=np.int16).reshape(-1, channels)
         with sd.OutputStream(
             samplerate=self.audio_rate,
@@ -295,7 +292,6 @@ class GoogleTTS(AbstractTTS):
 
     def play_audio(self) -> None:
         """Plays audio from the audio_buffer using sounddevice."""
-
         try:
             logging.info("Starting audio playback thread...")
             with sd.OutputStream(

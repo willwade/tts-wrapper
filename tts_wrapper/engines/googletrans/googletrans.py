@@ -21,7 +21,6 @@ class GoogleTransTTS(AbstractTTS):
 
         The output is always raw PCM data (int16) with no headers.
         """
-
         # Get the MP3 data from GoogleTransClient
         mp3_data = self.client.synth(text)
 
