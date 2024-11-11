@@ -1,13 +1,13 @@
 import os
 import platform
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Optional
 
 import soundfile as sf
 
 from tts_wrapper.engines.utils import create_temp_filename
 from tts_wrapper.exceptions import ModuleNotInstalled
 
-Credentials = Tuple[str]
+Credentials = tuple[str]
 
 FORMATS = {"wav": "wav"}
 
@@ -78,7 +78,7 @@ class SAPIClient:
         os.remove(temp_filename)
         return content
 
-    def get_voices(self) -> List[Dict[str, Any]]:
+    def get_voices(self) -> list[dict[str, Any]]:
         """Fetches available voices and returns a standardized list of voice properties."""
         voices = self._client.getProperty("voices")
         standardized_voices = []

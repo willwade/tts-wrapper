@@ -1,6 +1,6 @@
 # client.py
 from io import BytesIO
-from typing import Any, Dict, List
+from typing import Any
 
 import mp3
 
@@ -110,7 +110,7 @@ class GoogleTransClient:
         msg = f"Unsupported format: {target_format}"
         raise UnsupportedFileFormat(msg)
 
-    def get_voices(self) -> List[Dict[str, Any]]:
+    def get_voices(self) -> list[dict[str, Any]]:
         # Retrieve available languages from gtts
         languages = tts_langs()
         standardized_voices = []

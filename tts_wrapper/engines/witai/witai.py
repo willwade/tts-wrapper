@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Optional
+from typing import Any, Optional
 
 from tts_wrapper.engines.utils import (
     estimate_word_timings,  # Import the timing estimation function
@@ -38,7 +38,7 @@ class WitAiTTS(AbstractTTS):
         """Returns an instance of the WitSSML class for constructing SSML strings."""
         return WitAiSSML()
 
-    def get_voices(self) -> List[Dict[str, Any]]:
+    def get_voices(self) -> list[dict[str, Any]]:
         """Retrieves a list of available voices from the Wit.ai service."""
         return self._client.get_voices()
 

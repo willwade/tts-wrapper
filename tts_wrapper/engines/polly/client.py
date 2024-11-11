@@ -1,10 +1,10 @@
 import json
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Optional
 
 from tts_wrapper.engines.utils import process_wav
 from tts_wrapper.exceptions import ModuleNotInstalled
 
-Credentials = Tuple[str, str, str]
+Credentials = tuple[str, str, str]
 
 FORMATS = {
     "wav": "pcm",
@@ -50,13 +50,13 @@ class PollyClient:
 
     def synth_with_timings(
         self, ssml: str, voice: str,
-    ) -> Tuple[bytes, List[Tuple[float, str]]]:
+    ) -> tuple[bytes, list[tuple[float, str]]]:
         audio_data, word_timings = self._synth_with_marks(ssml, voice)
         return audio_data, word_timings
 
     def _synth_with_marks(
         self, ssml: str, voice: str,
-    ) -> Tuple[bytes, List[Tuple[float, str]]]:
+    ) -> tuple[bytes, list[tuple[float, str]]]:
         # Get speech marks
         marks_response = self._client.synthesize_speech(
             Engine="neural",
@@ -91,7 +91,7 @@ class PollyClient:
 
         return audio_data, word_timings
 
-    def get_voices(self) -> List[Dict[str, Any]]:
+    def get_voices(self) -> list[dict[str, Any]]:
         """Fetches available voices from Amazon Polly."""
         response = self._client.describe_voices()
         voices = response.get("Voices", [])

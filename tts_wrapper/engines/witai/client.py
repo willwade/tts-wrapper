@@ -1,4 +1,4 @@
-from typing import Any, Dict, List
+from typing import Any
 
 import requests
 
@@ -31,7 +31,7 @@ class WitAiClient:
         }
         return formats.get(format, "audio/raw")  # Default to PCM if unspecified
 
-    def get_voices(self) -> List[Dict[str, Any]]:
+    def get_voices(self) -> list[dict[str, Any]]:
         """Fetches available voices from Wit.ai."""
         headers = {"Authorization": f"Bearer {self.token}"}
         try:

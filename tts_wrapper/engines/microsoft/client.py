@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Optional
 
 from tts_wrapper.exceptions import ModuleNotInstalled
 
@@ -13,7 +13,7 @@ except ImportError:
     speechsdk = None  # type: ignore
 
 
-Credentials = Tuple[str, Optional[str]]
+Credentials = tuple[str, Optional[str]]
 
 FORMATS = {"wav": "Riff24Khz16BitMonoPcm"}
 
@@ -50,7 +50,7 @@ class MicrosoftClient:
         except Exception:
             return False
 
-    def get_available_voices(self) -> List[Dict[str, Any]]:
+    def get_available_voices(self) -> list[dict[str, Any]]:
         """Fetches available voices from Microsoft Azure TTS service using REST API with optimized connection handling."""
         import requests
 

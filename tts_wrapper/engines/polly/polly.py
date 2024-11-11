@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Optional
 
 from tts_wrapper.tts import AbstractTTS
 
@@ -40,8 +40,8 @@ class PollyTTS(AbstractTTS):
         return self.generated_audio
 
     def _process_word_timings(
-        self, word_timings: List[Tuple[float, str]],
-    ) -> List[Tuple[float, float, str]]:
+        self, word_timings: list[tuple[float, str]],
+    ) -> list[tuple[float, float, str]]:
         processed_timings = []
         audio_duration = self.get_audio_duration()
 
@@ -65,7 +65,7 @@ class PollyTTS(AbstractTTS):
     def ssml(self) -> "PollySSML":
         return PollySSML()
 
-    def get_voices(self) -> List[Dict[str, Any]]:
+    def get_voices(self) -> list[dict[str, Any]]:
         return self._client.get_voices()
 
     def set_voice(self, voice_id: str, lang_id: str) -> None:

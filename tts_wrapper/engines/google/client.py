@@ -1,5 +1,5 @@
 import struct
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Optional, Union
 
 from google.cloud import texttospeech_v1beta1 as texttospeech
 from google.oauth2 import service_account
@@ -8,7 +8,7 @@ from tts_wrapper.exceptions import ModuleNotInstalled
 
 
 class GoogleClient:
-    def __init__(self, credentials: Union[str, Dict]) -> None:
+    def __init__(self, credentials: Union[str, dict]) -> None:
         """Initialize the GoogleClient with credentials. Accepts either a file path or a dictionary.
 
         :param credentials: The credentials for Google Cloud, can be a file path (str) or a dictionary.
@@ -66,7 +66,7 @@ class GoogleClient:
         voice: Optional[str] = None,
         lang: Optional[str] = None,
         include_timepoints: bool = False,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         self._initialize_client()
 
         s_input = self.texttospeech.SynthesisInput(ssml=ssml)
@@ -131,7 +131,7 @@ class GoogleClient:
         return num_samples / sample_rate
 
 
-    def get_voices(self) -> List[Dict[str, Any]]:
+    def get_voices(self) -> list[dict[str, Any]]:
         """Fetches available voices from Google Cloud Text-to-Speech service."""
         self._initialize_client()
 

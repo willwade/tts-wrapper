@@ -3,8 +3,9 @@ import logging
 import queue
 import re
 import threading
+from collections.abc import Generator
 from io import BytesIO
-from typing import Any, Dict, Generator, List, Optional, Tuple
+from typing import Any, Optional
 
 import numpy as np
 import sounddevice as sd
@@ -74,7 +75,7 @@ class GoogleTTS(AbstractTTS):
         if n < frames:
             outdata[n:, 0] = 0
 
-    def get_voices(self) -> List[Dict[str, Any]]:
+    def get_voices(self) -> list[dict[str, Any]]:
         return self._client.get_voices()
 
     def set_voice(self, voice_id: str, lang_id: Optional[str] = None) -> None:
@@ -104,8 +105,8 @@ class GoogleTTS(AbstractTTS):
         return self.generated_audio
 
     def _process_word_timings(
-        self, timepoints: List[Dict[str, Any]],
-    ) -> List[Tuple[float, float, str]]:
+        self, timepoints: list[dict[str, Any]],
+    ) -> list[tuple[float, float, str]]:
         processed_timings = []
         audio_duration = self.get_audio_duration()
 
@@ -169,7 +170,7 @@ class GoogleTTS(AbstractTTS):
             return "x-loud"
         return None
 
-    def _split_text(self, text: str) -> List[str]:
+    def _split_text(self, text: str) -> list[str]:
         # Simple sentence splitter based on punctuation.
         return re.split(r"(?<=[.!?]) +", text)
 

@@ -1,4 +1,4 @@
-from typing import Any, List, Optional
+from typing import Any, Optional
 
 from tts_wrapper.tts import AbstractTTS, FileFormat
 
@@ -8,7 +8,7 @@ from .ssml import SAPISSML
 
 class SAPITTS(AbstractTTS):
     @classmethod
-    def supported_formats(cls) -> List[FileFormat]:
+    def supported_formats(cls) -> list[FileFormat]:
         return ["wav"]
 
     def __init__(self, client: SAPIClient) -> None:

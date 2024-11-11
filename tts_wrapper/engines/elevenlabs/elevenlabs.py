@@ -1,5 +1,5 @@
 import re
-from typing import Any, Dict, List, Optional
+from typing import Any, Optional
 
 from tts_wrapper.tts import AbstractTTS
 
@@ -84,7 +84,7 @@ class ElevenLabsTTS(AbstractTTS):
 
         return float(match.group(1))
 
-    def get_voices(self) -> List[Dict[str, Any]]:
+    def get_voices(self) -> list[dict[str, Any]]:
         return self._client.get_voices()
 
     def construct_prosody_tag(self, text: str) -> str:

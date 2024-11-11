@@ -1,6 +1,5 @@
 import base64
 import json
-from typing import List, Tuple
 
 import requests
 
@@ -24,7 +23,7 @@ class ElevenLabsClient:
 
     def synth(
         self, text: str, voice_id: str,
-    ) -> Tuple[bytes, List[Tuple[float, float, str]]]:
+    ) -> tuple[bytes, list[tuple[float, float, str]]]:
         url = f"{self.base_url}/v1/text-to-speech/{voice_id}/stream/with-timestamps"
         headers = {
             "Content-Type": "application/json",

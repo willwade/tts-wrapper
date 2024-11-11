@@ -5,7 +5,6 @@ import string
 import tempfile
 import wave
 from io import BytesIO
-from typing import List, Tuple
 
 
 def process_wav(raw: bytes) -> bytes:
@@ -22,7 +21,7 @@ def create_temp_filename(suffix="") -> str:
         tempfile.gettempdir(), f"{tempfile.gettempprefix()}_{random_seq}{suffix}",
     )
 
-def estimate_word_timings(text: str, wpm: int = 150) -> List[Tuple[float, float, str]]:
+def estimate_word_timings(text: str, wpm: int = 150) -> list[tuple[float, float, str]]:
     # Remove SSML tags
     text = re.sub("<[^<]+?>", " ", text)
 

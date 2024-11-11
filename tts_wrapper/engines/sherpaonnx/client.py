@@ -3,7 +3,7 @@ import json
 import logging
 import os
 import threading
-from typing import Dict, List, Optional, Tuple
+from typing import Optional
 
 try:
     import numpy as np
@@ -150,7 +150,7 @@ class SherpaOnnxClient:
 
         return model_path, tokens_path
 
-    def check_and_download_model(self, iso_code: str) -> Tuple[str, str]:
+    def check_and_download_model(self, iso_code: str) -> tuple[str, str]:
         voice = next((v for v in self.voices_cache if v["Iso Code"] == iso_code), None)
         if not voice:
             msg = f"Voice with ISO code {iso_code} not found in the voices cache"
@@ -256,7 +256,7 @@ class SherpaOnnxClient:
         )
         self.audio_queue.put(None)  # Signal the end of generation
 
-    def synth(self, text: str, sid: int = 0, speed: float = 1.0) -> Tuple[bytes, int]:
+    def synth(self, text: str, sid: int = 0, speed: float = 1.0) -> tuple[bytes, int]:
         """Generate the full audio without streaming."""
         self._init_onnx()
         audio = self.tts.generate(text, sid=sid, speed=speed)
@@ -266,7 +266,7 @@ class SherpaOnnxClient:
         audio_bytes = self._convert_samples_to_bytes(audio.samples)
         return audio_bytes, self.sample_rate
 
-    def get_voices(self) -> List[Dict[str, str]]:
+    def get_voices(self) -> list[dict[str, str]]:
         return [
             {
                 "id": voice["Iso Code"],

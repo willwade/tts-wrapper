@@ -1,5 +1,5 @@
 # The MS SpeechSDK can do a lot of our base class - and better. So lets overrride that
-from typing import Any, Dict, List, Optional
+from typing import Any, Optional
 
 from tts_wrapper.tts import AbstractTTS
 
@@ -52,7 +52,7 @@ class MicrosoftTTS(AbstractTTS):
     def ssml(self) -> "MicrosoftSSML":
         return self._ssml
 
-    def get_voices(self) -> List[Dict[str, Any]]:
+    def get_voices(self) -> list[dict[str, Any]]:
         return self._client.get_available_voices()
 
     def set_voice(self, voice_id: str, lang_id: str) -> None:

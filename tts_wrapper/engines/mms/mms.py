@@ -1,5 +1,5 @@
 import re
-from typing import Any, Dict, List, Optional
+from typing import Any, Optional
 
 from tts_wrapper.tts import AbstractTTS
 
@@ -112,5 +112,5 @@ class MMSTTS(AbstractTTS):
     def ssml(self) -> MMSSSML:
         return MMSSSML()
 
-    def get_voices(self) -> List[Dict[str, Any]]:
+    def get_voices(self) -> list[dict[str, Any]]:
         return self._client.get_voices()

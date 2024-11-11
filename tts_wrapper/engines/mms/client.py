@@ -1,7 +1,7 @@
 import json
 import os
 import tempfile
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Optional, Union
 
 from tts_wrapper.exceptions import (
     ModelNotFound,
@@ -10,7 +10,7 @@ from tts_wrapper.exceptions import (
 
 
 class MMSClient:
-    def __init__(self, params: Optional[Union[str, Tuple[Optional[str], str]]] = None) -> None:
+    def __init__(self, params: Optional[Union[str, tuple[Optional[str], str]]] = None) -> None:
         self._using_temp_dir = False
 
         if isinstance(params, tuple):
@@ -63,7 +63,7 @@ class MMSClient:
             except Exception as download_error:
                 raise ModelNotFound(lang, str(download_error))
 
-    def synth(self, text: str, voice: str, lang: str) -> Dict[str, Any]:
+    def synth(self, text: str, voice: str, lang: str) -> dict[str, Any]:
         # Ensure the TTS model is initialized for the correct language
         self._initialize_tts(lang)
 
@@ -104,7 +104,7 @@ class MMSClient:
             # Do not unlink the file for debugging purposes
             os.unlink(temp_file.name)
 
-    def get_voices(self, ignore_cache: bool = False) -> List[Dict[str, Any]]:
+    def get_voices(self, ignore_cache: bool = False) -> list[dict[str, Any]]:
         url = "https://dl.fbaipublicfiles.com/mms/tts/all-tts-languages.html"
         cache_file = os.path.join(tempfile.gettempdir(), "mms_voices_cache.json")
 

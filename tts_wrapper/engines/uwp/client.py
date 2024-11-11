@@ -1,5 +1,5 @@
 import asyncio
-from typing import Any, Dict, List, Optional
+from typing import Any, Optional
 
 try:
     from winrt.windows.media.speechsynthesis import SpeechSynthesizer
@@ -32,7 +32,7 @@ class UWPClient:
         if lang_id:
             self._synthesizer.options.speaking_language = lang_id
 
-    def get_voices(self) -> List[Dict[str, Any]]:
+    def get_voices(self) -> list[dict[str, Any]]:
         """Returns a list of available voices with standardized keys."""
         voices = self._synthesizer.all_voices
         standardized_voices = []

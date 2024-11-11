@@ -2,11 +2,11 @@ import json
 import logging
 import struct
 import threading
-from typing import Any, Dict, List, Tuple
+from typing import Any
 
 from tts_wrapper.exceptions import ModuleNotInstalled
 
-Credentials = Tuple[str, str, str]  # api_key, region, instance_id
+Credentials = tuple[str, str, str]  # api_key, region, instance_id
 
 # FORMATS = {"wav": "audio/wav", "mp3": "audio/mp3"}
 
@@ -155,7 +155,7 @@ class WatsonClient:
         return num_samples / sample_rate
 
 
-    def get_voices(self) -> List[Dict[str, Any]]:
+    def get_voices(self) -> list[dict[str, Any]]:
         self._initialize_ibm_watson()
         voice_data = self._client.list_voices().get_result()
         voices = voice_data["voices"]

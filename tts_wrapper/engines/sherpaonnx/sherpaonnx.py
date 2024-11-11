@@ -3,7 +3,8 @@
 import logging
 import queue
 import threading
-from typing import Any, Dict, Generator, List, Optional
+from collections.abc import Generator
+from typing import Any, Optional
 
 import numpy as np
 import sounddevice as sd
@@ -71,7 +72,7 @@ class SherpaOnnxTTS(AbstractTTS):
         if n < frames:
             outdata[n:, 0] = 0
 
-    def get_voices(self) -> List[Dict[str, Any]]:
+    def get_voices(self) -> list[dict[str, Any]]:
         return self._client.get_voices()
 
     def set_voice(self, voice_id: str, lang_id: Optional[str] = None) -> None:

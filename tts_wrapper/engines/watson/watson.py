@@ -1,5 +1,5 @@
 import logging
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Optional
 
 from tts_wrapper.tts import AbstractTTS
 
@@ -27,8 +27,8 @@ class WatsonTTS(AbstractTTS):
         return 0.0
 
     def _process_word_timings(
-        self, word_timings: List[Tuple[float, str]],
-    ) -> List[Tuple[float, float, str]]:
+        self, word_timings: list[tuple[float, str]],
+    ) -> list[tuple[float, float, str]]:
         processed_timings = []
         audio_duration = self.get_audio_duration()
 
@@ -68,7 +68,7 @@ class WatsonTTS(AbstractTTS):
     def ssml(self) -> WatsonSSML:
         return WatsonSSML()
 
-    def get_voices(self) -> List[Dict[str, Any]]:
+    def get_voices(self) -> list[dict[str, Any]]:
         """Retrieves a list of available voices from the Watson TTS service."""
         return self._client.get_voices()
 

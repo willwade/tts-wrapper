@@ -1,4 +1,4 @@
-from typing import Any, List
+from typing import Any
 
 from tts_wrapper.tts import AbstractTTS, FileFormat
 
@@ -19,7 +19,7 @@ class UWPTTS(AbstractTTS):
 
         return audio_bytes
 
-    def get_voices(self) -> List[str]:
+    def get_voices(self) -> list[str]:
         return self._client.get_voices()
 
     def construct_prosody_tag(self, text: str) -> str:

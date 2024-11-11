@@ -1,7 +1,7 @@
 import logging
 import os
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Optional
 
 from tts_wrapper.exceptions import ModuleNotInstalled
 
@@ -22,7 +22,7 @@ except ImportError as e:
     logging.debug("Piper TTS not installed:", e)
 
 
-Credentials = Tuple[str]
+Credentials = tuple[str]
 
 #FORMATS = {
 #    "wav": "pcm",
@@ -91,7 +91,7 @@ class PiperClient:
             logger.exception(f"Error synthesizing speech: {e}")
             raise
 
-    def get_voices(self) -> List[Dict[str, Any]]:
+    def get_voices(self) -> list[dict[str, Any]]:
         try:
             voices = []
             for voice_id, voice_data in self.voices_info.items():
