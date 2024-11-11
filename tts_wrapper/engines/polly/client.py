@@ -16,6 +16,7 @@ class PollyClient:
     def __init__(
         self,
         credentials: Optional[Credentials] = None,
+        verify_ssl: bool = True,
     ) -> None:
         try:
             import boto3
@@ -34,7 +35,7 @@ class PollyClient:
                 aws_secret_access_key=aws_access_key,
                 region_name=region,
             )
-        self._client = boto_session.client("polly")
+        self._client = boto_session.client("polly", verify=verify_ssl)
 
     def synth(self, ssml: str, voice: str) -> bytes:
         raw = self._client.synthesize_speech(
