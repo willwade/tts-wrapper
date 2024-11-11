@@ -110,7 +110,7 @@ class ElevenLabsTTS(AbstractTTS):
 
     @property
     def ssml(self)  -> "ElevenLabsSSMLRoot":
-        from .ssml import ElevenLabsSSMLRoot # pylint: disable=import-outside-toplevel
+        from .ssml import ElevenLabsSSMLRoot  # pylint: disable=import-outside-toplevel
         return ElevenLabsSSMLRoot()
 
     def set_voice(self, voice_id: str, lang_id: Optional[str] = None) -> None:
