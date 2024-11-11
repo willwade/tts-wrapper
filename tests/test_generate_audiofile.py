@@ -153,7 +153,7 @@ class ClientManager:
             if tts_instance.check_credentials():
                 tts_instances[name] = tts_instance
             else:
-                pass
+                print(f"Skipping {name}: missing or invalid credentials.")
         return tts_instances
 
 
