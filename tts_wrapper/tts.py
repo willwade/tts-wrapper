@@ -14,8 +14,10 @@ WordTiming = Union[Tuple[float, str], Tuple[float, float, str]]
 
 
 class AbstractTTS(ABC):
-    """Abstract class (ABC) for text-to-speech functionalities,
-    including synthesis and playback."""
+    """Abstract class (ABC) for text-to-speech functionalities.
+
+    This class includes methods for synthesis and playback.
+    """
 
     def __init__(self):
         self.voice_id = None
@@ -37,8 +39,8 @@ class AbstractTTS(ABC):
         pass
 
     def check_credentials(self) -> bool:
-        """
-        Verifies that the provided credentials are valid by calling get_voices.
+        """Verifies that the provided credentials are valid by calling get_voices.
+        
         This method should be implemented by the child classes to handle the
           specific credential checks.
         Also try not to use get_voices. It can be wasteful in credits/bandwidth
@@ -61,8 +63,8 @@ class AbstractTTS(ABC):
         self.lang = lang
 
     def _convert_mp3_to_pcm(self, mp3_data: bytes) -> bytes:
-        """
-        Convert MP3 data to raw PCM data.
+        """Convert MP3 data to raw PCM data.
+        
         :param mp3_data: MP3 audio data as bytes.
         :return: Raw PCM data as bytes (int16).
         """
@@ -74,8 +76,8 @@ class AbstractTTS(ABC):
         return pcm_data.tobytes()
 
     def _strip_wav_header(self, wav_data: bytes) -> bytes:
-        """
-        Strip the WAV header from the audio data to return raw PCM.
+        """Strip the WAV header from the audio data to return raw PCM.
+        
         WAV headers are typically 44 bytes,
         so we slice the data after the header.
         """
@@ -83,6 +85,7 @@ class AbstractTTS(ABC):
 
     def _infer_channels_from_pcm(self, pcm_data: np.ndarray) -> int:
         """
+        
         Infer the number of channels from the PCM data.
 
         :param pcm_data: PCM data as a numpy array.
@@ -98,8 +101,8 @@ class AbstractTTS(ABC):
     def _convert_audio(
         self, pcm_data: np.ndarray, target_format: str, sample_rate: int
     ) -> bytes:
-        """
-        Convert raw PCM data to a specified audio format.
+        """Convert raw PCM data to a specified audio format.
+        
         :param pcm_data: Raw PCM audio data (assumed to be in int16 format).
         :param target_format: Target format (e.g., 'mp3', 'flac').
         :param sample_rate: Sample rate of the audio data.
@@ -163,7 +166,8 @@ class AbstractTTS(ABC):
 
     @abstractmethod
     def synth_to_bytes(self, text: Any) -> bytes:
-        """
+        """Transform text to audio bytes.
+
         Transforms written text to audio bytes on supported formats.
         This method should return raw PCM data with
           no headers for sounddevice playback.
@@ -173,8 +177,8 @@ class AbstractTTS(ABC):
     def synth_to_file(
         self, text: Any, filename: str, format: Optional[str] = "wav"
     ) -> None:
-        """
-        Synthesizes text to audio and saves it to a file.
+        """Synthesizes text to audio and saves it to a file.
+
         :param text: The text to synthesize.
         :param filename: The file where the audio will be saved.
         :param format: The format to save the file in (e.g., 'wav', 'mp3').
@@ -195,8 +199,8 @@ class AbstractTTS(ABC):
         self.synth_to_file(text, filename, format)
 
     def speak(self, text: Any) -> None:
-        """
-        Synthesize text and play it back using sounddevice.
+        """Synthesize text and play it back using sounddevice.
+        
         :param text: The text to synthesize and play.
         """
         try:
@@ -213,8 +217,8 @@ class AbstractTTS(ABC):
         save_to_file_path: Optional[str] = None,
         audio_format: Optional[str] = "wav",
     ) -> None:
-        """
-        Synthesize text and stream it for playback using sounddevice.
+        """Synthesize text and stream it for playback using sounddevice.
+        
         Optionally save the audio to a file after playback completes.
 
         :param text: The text to synthesize and stream.
