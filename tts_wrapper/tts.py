@@ -436,25 +436,20 @@ class AbstractTTS(ABC):
             logging.exception("Failed to set up audio stream")
             raise
 
-    def callback(self, outdata, frames, time, status) -> None:
-        """Callback for streamed audio playback."""
+    def callback(self, outdata: np.ndarray, frames: int, status: Any) -> None:
+        """Handle streamed audio playback as a callback."""
         if status:
             logging.warning("Sounddevice status: %s", status)
         if self.playing:
-            # Each frame is 2 bytes for int16,
-            # so frames * 2 gives the number of bytes
+            # Each frame is 2 bytes for int16, so frames * 2 gives the number of bytes
             end_position = self.position + frames * 2
-            data = self.audio_bytes[self.position : end_position]
+            data = self.audio_bytes[self.position: end_position]
             if len(data) < frames * 2:
                 # Not enough data to fill outdata, zero-pad it
                 outdata.fill(0)
-                outdata[: len(data) // 2] = np.frombuffer(data, dtype="int16").reshape(
-                    -1, 1,
-                )
+                outdata[: len(data) // 2] = np.frombuffer(data, dtype="int16").reshape(-1, 1)
             else:
-                outdata[:] = np.frombuffer(data, dtype="int16").reshape(
-                    outdata.shape,
-                )
+                outdata[:] = np.frombuffer(data, dtype="int16").reshape(outdata.shape)
             self.position = end_position
 
             if self.position >= len(self.audio_bytes):
@@ -462,7 +457,7 @@ class AbstractTTS(ABC):
                 self.playing.clear()
         else:
             outdata.fill(0)
-
+            
     def _start_stream(self) -> None:
         """Starts the audio stream."""
         with self.stream_lock:
