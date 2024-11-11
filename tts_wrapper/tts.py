@@ -5,7 +5,7 @@ import time
 from abc import ABC, abstractmethod
 from io import BytesIO
 from threading import Event
-from typing import Any, Callable, Dict, List, Optional, Tuple, Union
+from typing import Any, Callable, Dict, List, NoReturn, Optional, Tuple, Union
 
 import numpy as np  # type: ignore
 import sounddevice as sd  # type: ignore
@@ -594,18 +594,23 @@ class AbstractTTS(ABC):
         return " ".join(ssml_parts)
 
     def set_output_device(self, device_id: int) -> None:
-        """Sets the default output sound device by its ID.
+        """Set the default output sound device by its ID.
+
         :param device_id: The ID of the device to be set as the default output.
         """
+        def raise_invalid_device_error(device_id) -> NoReturn:
+            """Raise a ValueError with a message about the invalid device ID."""
+            msg = f"Invalid device ID: {device_id}"
+            raise ValueError(msg)
+
         try:
             # Validate the device_id
             if device_id not in [device["index"] for device in sd.query_devices()]:
-                msg = f"Invalid device ID: {device_id}"
-                raise ValueError(msg)
+                raise_invalid_device_error(device_id)
 
             sd.default.device = device_id
             logging.info("Output device set to %s", sd.query_devices(device_id)["name"])
-        except ValueError as ve:
-            logging.exception("Invalid device ID: %s", ve)
-        except Exception as e:
-            logging.exception("Failed to set output device: %s", e)
+        except ValueError:
+            logging.exception("Invalid device ID")
+        except Exception:
+            logging.exception("Failed to set output device")
