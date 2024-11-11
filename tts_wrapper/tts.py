@@ -28,10 +28,12 @@ from .ssml import AbstractSSMLNode
 FileFormat = Union[str, None]
 WordTiming = Union[tuple[float, str], tuple[float, float, str]]
 SSML = Union[str, AbstractSSMLNode]
+PropertyType = Union[None, float, str]
 
 TIMING_TUPLE_LENGTH_TWO = 2
 TIMING_TUPLE_LENGTH_THREE = 3
 STEREO_CHANNELS = 2
+SIXTEEN_BIT_PCM_SIZE = 2
 
 class AbstractTTS(ABC):
     """Abstract class (ABC) for text-to-speech functionalities,.
@@ -107,7 +109,7 @@ class AbstractTTS(ABC):
         :param mp3_data: MP3 audio data as bytes.
         :return: Raw PCM data as bytes (int16).
         """
-        from soundfile import read  # type: ignore
+        from soundfile import read  # type: ignore[attr-defined]
 
         # Use soundfile to read MP3 data
         mp3_fp = BytesIO(mp3_data)
@@ -155,7 +157,7 @@ class AbstractTTS(ABC):
         # Create an in-memory file object
         output = BytesIO()
         if target_format in ("flac", "wav"):
-            from soundfile import write as sf_write  # type: ignore
+            from soundfile import write as sf_write  # type: ignore[attr-defined]
             sf_write(
                 output, pcm_data, samplerate=sample_rate, format=target_format.upper(),
             )
@@ -163,20 +165,15 @@ class AbstractTTS(ABC):
             return output.read()
         if target_format == "mp3":
             # Infer number of channels from the shape of the PCM data
-            import mp3  # type: ignore
+            import mp3  # type: ignore[attr-defined]
 
             nchannels = self._infer_channels_from_pcm(pcm_data)
             # Ensure sample size is 16-bit PCM
             sample_size = pcm_data.dtype.itemsize
-            if sample_size != 2:
-                msg = (
-                    f"Only PCM 16-bit sample size is supported "
-                    f"(input audio: {sample_size * 8}-bit)"
-                )
-                raise ValueError(
-                    msg,
-                )
-            # Convert to bytes
+            if sample_size != SIXTEEN_BIT_PCM_SIZE:
+                msg = "Only PCM 16-bit sample size is supported"
+                raise ValueError(msg)
+
             pcm_bytes = pcm_data.tobytes()
 
             # Create an in-memory file object for MP3 output
@@ -211,7 +208,7 @@ class AbstractTTS(ABC):
           no headers for sounddevice playback.
         """
 
-    def load_audio(self, audio_bytes) -> None:
+    def load_audio(self, audio_bytes: bytes) -> None:
         """Load audio bytes into the player.
 
         Parameters
@@ -294,7 +291,7 @@ class AbstractTTS(ABC):
             self.paused = False
 
 
-    def pause(self, duration: Optional[float] = None) -> None:
+    def pause(self, duration: float | None = None) -> None:
         """Pause playback with optional duration.
 
         Parameters
@@ -359,7 +356,7 @@ class AbstractTTS(ABC):
             logging.warning("Error during cleanup: %s", e)
 
     def synth_to_file(
-        self, text: Any, filename: str, audio_format: str | None = "wav",
+        self, text: str | SSML, filename: str, audio_format: str | None = "wav",
     ) -> None:
         """Synthesizes text to audio and saves it to a file.
 
@@ -480,7 +477,8 @@ class AbstractTTS(ABC):
             logging.exception("Failed to set up audio stream")
             raise
 
-    def callback(self, outdata: np.ndarray, frames: int, status: Any) -> None:
+    def callback(
+            self, outdata: np.ndarray, frames: int, status: sd.CallbackFlags) -> None:
         """Handle streamed audio playback as a callback."""
         if status:
             logging.warning("Sounddevice status: %s", status)
@@ -620,7 +618,7 @@ class AbstractTTS(ABC):
         """Clean up resources when the object is deleted."""
         self.finish()
 
-    def get_property(self, property_name: str) -> Any | None:
+    def get_property(self, property_name: str) -> PropertyType:
         """Retrieve the value of a specified property for the TTS engine.
 
         Parameters
