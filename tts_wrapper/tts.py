@@ -1,18 +1,37 @@
+"""Provides an abstract text-to-speech (TTS) class.
+
+with methods for synthesis, playback, and property management.
+Designed to be extended by specific TTS engine implementations.
+"""
+
+from __future__ import annotations
+
+# Standard Library Imports
 import logging
 import re
 import threading
 import time
 from abc import ABC, abstractmethod
 from io import BytesIO
+from pathlib import Path
 from threading import Event
-from typing import Any, Callable, Dict, List, NoReturn, Optional, Tuple, Union
+from typing import Any, Callable, NoReturn, Union
 
-import numpy as np  # type: ignore
-import sounddevice as sd  # type: ignore
+# Third-Party Imports
+import numpy as np  # type: ignore[attr-defined]
+import sounddevice as sd  # type: ignore[attr-defined]
 
+# Local Imports
+from .ssml import AbstractSSMLNode
+
+# Type Definitions and Constants
 FileFormat = Union[str, None]
-WordTiming = Union[Tuple[float, str], Tuple[float, float, str]]
+WordTiming = Union[tuple[float, str], tuple[float, float, str]]
+SSML = Union[str, AbstractSSMLNode]
 
+TIMING_TUPLE_LENGTH_TWO = 2
+TIMING_TUPLE_LENGTH_THREE = 3
+STEREO_CHANNELS = 2
 
 class AbstractTTS(ABC):
     """Abstract class (ABC) for text-to-speech functionalities,.
@@ -21,6 +40,7 @@ class AbstractTTS(ABC):
     """
 
     def __init__(self) -> None:
+        """Initialize the TTS engine with default values."""
         self.voice_id = None
         self.stream = None
         self.audio_rate = 44100
@@ -50,24 +70,34 @@ class AbstractTTS(ABC):
         self.pyaudio = None
 
     @abstractmethod
-    def get_voices(self) -> List[Dict[str, Any]]:
-        """Retrieves a list of available voices from the TTS service."""
+    def get_voices(self) -> list[dict[str, Any]]:
+        """Retrieve a list of available voices from the TTS service."""
 
     def check_credentials(self) -> bool:
-        """Verifies that the provided credentials are valid by calling get_voices.
+        """Verify that the provided credentials are valid by calling get_voices.
 
         This method should be implemented by the child classes to handle the
           specific credential checks.
         Also try not to use get_voices. It can be wasteful in credits/bandwidth.
         """
         try:
-            # Attempt to retrieve voices to validate credentials
             voices = self.get_voices()
             return bool(voices)
-        except Exception:
+        except (ConnectionError, ValueError):
             return False
 
     def set_voice(self, voice_id: str, lang: str = "en-US") -> None:
+        """Set the voice for the TTS engine.
+
+        Parameters
+        ----------
+        voice_id : str
+            The ID of the voice to be used for synthesis.
+
+        lang : str
+            The language code for the voice to be used for synthesis.
+
+        """
         self.voice_id = voice_id
         self.lang = lang
 
@@ -100,7 +130,7 @@ class AbstractTTS(ABC):
         """
         if pcm_data.ndim == 1:
             return 1  # Mono audio
-        if pcm_data.ndim == 2:
+        if pcm_data.ndim == STEREO_CHANNELS:
             return pcm_data.shape[1]  # Stereo or multi-channel
         msg = "Unsupported PCM data format"
         raise ValueError(msg)
@@ -125,9 +155,8 @@ class AbstractTTS(ABC):
         # Create an in-memory file object
         output = BytesIO()
         if target_format in ("flac", "wav"):
-            from soundfile import write  # Lazy import
-
-            write(
+            from soundfile import write as sf_write  # type: ignore
+            sf_write(
                 output, pcm_data, samplerate=sample_rate, format=target_format.upper(),
             )
             output.seek(0)
@@ -159,7 +188,6 @@ class AbstractTTS(ABC):
             encoder.set_sample_rate(sample_rate)
             encoder.set_channels(nchannels)
             encoder.set_quality(5)  # Adjust quality: 2 = highest, 7 = fastest
-            # encoder.set_mod(mp3.MODE_STEREO if nchannels == 2 else mp3.MODE_SINGLE_CHANNEL)   # noqa: E501
 
             # Write PCM data in chunks
             chunk_size = 8000 * nchannels * sample_size
@@ -176,17 +204,23 @@ class AbstractTTS(ABC):
         raise ValueError(msg)
 
     @abstractmethod
-    def synth_to_bytes(self, text: Any) -> bytes:
-        """Transforms written text to audio bytes on supported formats.
+    def synth_to_bytes(self, text: str | SSML) -> bytes:
+        """Transform written text to audio bytes on supported formats.
 
         This method should return raw PCM data with
           no headers for sounddevice playback.
         """
 
     def load_audio(self, audio_bytes) -> None:
-        import pyaudio
-        """Load audio bytes into the player"""
+        """Load audio bytes into the player.
 
+        Parameters
+        ----------
+        audio_bytes : bytes
+            The audio data to be loaded into the player.
+
+        """
+        import pyaudio
         self.pyaudio = pyaudio.PyAudio()
         if not audio_bytes:
             msg = "Audio bytes cannot be empty"
@@ -208,18 +242,20 @@ class AbstractTTS(ABC):
                 rate=self.audio_rate,
                 output=True,
             )
-        except Exception as e:
-            logging.exception("Failed to create stream: %s", e)
+        except Exception:
+            logging.exception("Failed to create stream")
             self.playing = False
             raise
 
     def _playback_loop(self) -> None:
-        """Main playback loop running in separate thread."""
+        """Run main playback loop in a separate thread."""
         try:
             self._create_stream()
             while self.playing and self.position < len(self.audio_bytes):
                 if not self.paused:
-                    chunk = self.audio_bytes[self.position:self.position + self.chunk_size]
+                    chunk = self.audio_bytes[
+                        self.position : self.position + self.chunk_size
+                    ]
                     if chunk:
                         self.stream_pyaudio.write(chunk)
                         self.position += len(chunk)
@@ -233,15 +269,16 @@ class AbstractTTS(ABC):
                 self.stream_pyaudio.stop_stream()
                 self.stream_pyaudio.close()
             self.playing = False
-        except Exception:
+        except OSError:
+            # Handle stream-related exceptions gracefully
             self.playing = False
 
     def _auto_resume(self) -> None:
-        """Helper method to resume after timed pause."""
+        """Resume audio after timed pause."""
         self.paused = False
         logging.info("Resuming playback after pause")
 
-    def play(self, duration=None) -> None:
+    def play(self, duration: float | None = None) -> None:
         """Start or resume playback."""
         if self.audio_bytes is None:
             msg = "No audio loaded"
@@ -257,12 +294,13 @@ class AbstractTTS(ABC):
             self.paused = False
 
 
-    def pause(self, duration=None) -> None:
+    def pause(self, duration: Optional[float] = None) -> None:
         """Pause playback with optional duration.
 
         Parameters
         ----------
-        duration (float): Number of seconds to pause. If None, pause indefinitely
+        duration: (Optional[float])
+            Number of seconds to pause. If None, pause indefinitely
 
         """
         self.paused = True
@@ -301,8 +339,8 @@ class AbstractTTS(ABC):
                 if not self.stream_pyaudio.is_stopped():
                     self.stream_pyaudio.stop_stream()
                 self.stream_pyaudio.close()
-            except Exception:
-                logging.info("Stream already closed")
+            except OSError as e:  # Use specific exceptions if available
+                logging.info("Stream already closed or encountered an error: %s", e)
 
             self.stream_pyaudio = None
 
@@ -317,11 +355,11 @@ class AbstractTTS(ABC):
 
             if self.pyaudio:
                 self.pyaudio.terminate()
-        except Exception:
-            pass
+        except OSError as e:  # Specify more likely exceptions if possible
+            logging.warning("Error during cleanup: %s", e)
 
     def synth_to_file(
-        self, text: Any, filename: str, format: Optional[str] = "wav",
+        self, text: Any, filename: str, audio_format: str | None = "wav",
     ) -> None:
         """Synthesizes text to audio and saves it to a file.
 
@@ -330,19 +368,19 @@ class AbstractTTS(ABC):
         :param format: The format to save the file in (e.g., 'wav', 'mp3').
         """
         # Ensure format is not None
-        format_to_use = format if format is not None else "wav"
+        format_to_use = audio_format if audio_format is not None else "wav"
         audio_bytes = self.synth_to_bytes(text)  # Always request raw PCM data
         pcm_data = np.frombuffer(audio_bytes, dtype=np.int16)
         converted_audio = self._convert_audio(pcm_data, format_to_use, self.audio_rate)
 
-        with open(filename, "wb") as file:
+        with Path(filename).open("wb") as file:
             file.write(converted_audio)
 
-    def synth(self, text: str, filename: str, format: Optional[str] = "wav") -> None:
+    def synth(self, text: str, filename: str, audio_format: str | None = "wav") -> None:
         """Alias for synth_to_file method."""
-        self.synth_to_file(text, filename, format)
+        self.synth_to_file(text, filename, audio_format)
 
-    def speak(self, text: Any) -> None:
+    def speak(self, text: str | SSML) -> None:
         """Synthesize text and play it back using sounddevice.
 
         :param text: The text to synthesize and play.
@@ -352,14 +390,14 @@ class AbstractTTS(ABC):
             audio_data = np.frombuffer(audio_bytes, dtype=np.int16)
             sd.play(audio_data, samplerate=self.audio_rate)
             sd.wait()
-        except Exception as e:
-            logging.exception("Error playing audio: %s", e)
+        except Exception:
+            logging.exception("Error playing audio")
 
     def speak_streamed(
         self,
-        text: Any,
-        save_to_file_path: Optional[str] = None,
-        audio_format: Optional[str] = "wav",
+        text: str,
+        save_to_file_path: str | None = None,
+        audio_format: str | None = "wav",
     ) -> None:
         """Synthesize text and stream it for playback using sounddevice.
 
@@ -402,24 +440,30 @@ class AbstractTTS(ABC):
                     pcm_data, audio_format, self.audio_rate,
                 )
 
-                with open(save_to_file_path, "wb") as f:
+                with Path(save_to_file_path).open("wb") as f:
                     f.write(converted_audio)
                 logging.info(
-                    f"Audio saved to {save_to_file_path} in {audio_format} format.",
+                    "Audio saved to %s in %s format.",
+                    save_to_file_path,
+                    audio_format,
                 )
 
-        except Exception as e:
-            logging.exception("Error streaming or saving audio: %s", e)
+        except Exception:
+            logging.exception("Error streaming or saving audio")
 
 
-    def setup_stream(self, samplerate: int = 22050, channels: int = 1, dtype: Union[str, int] = "int16") -> None:
+    def setup_stream(self, samplerate: int = 22050,
+                     channels: int = 1, dtype: str | int = "int16") -> None:
         """Set up the audio stream for playback.
 
         Parameters
         ----------
-        - samplerate (int): The sample rate for the audio stream. Defaults to 22050.
-        - channels (int): The number of audio channels. Defaults to 1.
-        - dtype (Union[str, int]): The data type for audio samples. Defaults to "int16".
+        samplerate : int
+            The sample rate for the audio stream. Defaults to 22050.
+        channels : int
+            The number of audio channels. Defaults to 1.
+        dtype : Union[str, int]
+            The data type for audio samples. Defaults to "int16".
 
         """
         try:
@@ -447,7 +491,10 @@ class AbstractTTS(ABC):
             if len(data) < frames * 2:
                 # Not enough data to fill outdata, zero-pad it
                 outdata.fill(0)
-                outdata[: len(data) // 2] = np.frombuffer(data, dtype="int16").reshape(-1, 1)
+                outdata[: len(data) // 2] = (
+                            np.frombuffer(data, dtype="int16")
+                            .reshape(-1, 1)
+                        )
             else:
                 outdata[:] = np.frombuffer(data, dtype="int16").reshape(outdata.shape)
             self.position = end_position
@@ -457,9 +504,9 @@ class AbstractTTS(ABC):
                 self.playing.clear()
         else:
             outdata.fill(0)
-            
+
     def _start_stream(self) -> None:
-        """Starts the audio stream."""
+        """Start the audio stream."""
         with self.stream_lock:
             if self.stream:
                 self.stream.start()
@@ -470,57 +517,76 @@ class AbstractTTS(ABC):
                 self.stream.close()
                 self.stream = None
 
-    def set_timings(self, timings: List[WordTiming]) -> None:
+    def set_timings(self, timings: list[WordTiming]) -> None:
+        """Set the word timings for the spoken text."""
         self.timings = []
         total_duration = self.get_audio_duration()
 
         for i, timing in enumerate(timings):
-            if len(timing) == 2:
+            if len(timing) == TIMING_TUPLE_LENGTH_TWO:
                 start_time, word = timing
                 if i < len(timings) - 1:
                     end_time = (
                         timings[i + 1][0]
-                        if len(timings[i + 1]) == 2
+                        if len(timings[i + 1]) == TIMING_TUPLE_LENGTH_TWO
                         else timings[i + 1][1]
                     )
                 else:
                     end_time = total_duration
                 self.timings.append((start_time, end_time, word))
-            elif len(timing) == 3:
+            elif len(timing) == TIMING_TUPLE_LENGTH_THREE:
                 self.timings.append(timing)
             else:
                 msg = f"Invalid timing format: {timing}"
                 raise ValueError(msg)
 
-    def get_timings(self) -> List[Tuple[float, float, str]]:
+    def get_timings(self) -> list[tuple[float, float, str]]:
+        """Retrieve the word timings for the spoken text."""
         return self.timings
 
     def get_audio_duration(self) -> float:
+        """Calculate the duration of the audio.
+
+        Calculate the duration of the audio based
+        on the number of samples and sample rate.
+        """
         if self.timings:
             return self.timings[-1][1]
         return 0.0
 
     def on_word_callback(self, word: str, start_time: float, end_time: float) -> None:
+        """Trigger a callback when a word is spoken during playback.
+
+        :param word: The word being spoken.
+        :param start_time: The start time of the word in seconds.
+        :param end_time: The end time of the word in seconds.
+        """
         logging.info(
-            f"Word spoken: {word}, Start: {start_time:.3f}s, End: {end_time:.3f}s",
+            "Word spoken: %s, Start: %.3fs, End: %.3fs", word, start_time, end_time,
         )
 
     def connect(self, event_name: str, callback: Callable) -> None:
+        """Connect a callback function to an event."""
         if event_name in self.callbacks:
             self.callbacks[event_name] = callback
 
-    def _trigger_callback(self, event_name: str, *args) -> None:
+    def _trigger_callback(self, event_name: str, *args: tuple[Any, ...]) -> None:
+        """Trigger the specified callback event with optional arguments."""
         if event_name in self.callbacks and self.callbacks[event_name] is not None:
             self.callbacks[event_name](*args)
 
-    def start_playback_with_callbacks(self, text: str, callback: Optional[Callable] = None) -> None:
+    def start_playback_with_callbacks(
+            self, text: str, callback: Callable | None = None) -> None:
         """Start playback of the given text with callbacks triggered at each word.
 
         Parameters
         ----------
-        - text (str): The text to be spoken.
-        - callback (Optional[Callable]): A callback function to invoke at each word with arguments (word, start, end).
-                                        If None, `self.on_word_callback` is used.
+        text : str
+            The text to be spoken.
+        callback : Callable, optional
+            A callback function to invoke at each word
+            with arguments (word, start, end).
+            If None, `self.on_word_callback` is used.
 
         """
         if callback is None:
@@ -535,10 +601,11 @@ class AbstractTTS(ABC):
                 timer = threading.Timer(delay, callback, args=(word, start, end))
                 timer.start()
                 self.timers.append(timer)
-        except (ValueError, TypeError) as e:
-            logging.exception("Error in start_playback_with_callbacks: %s", e)
+        except (ValueError, TypeError):
+            logging.exception("Error in start_playback_with_callbacks")
 
     def finish(self) -> None:
+        """Clean up resources and stop the audio stream."""
         try:
             with self.stream_lock:
                 if self.stream:
@@ -550,31 +617,39 @@ class AbstractTTS(ABC):
             self.stream = None
 
     def __del__(self) -> None:
+        """Clean up resources when the object is deleted."""
         self.finish()
 
-    def get_property(self, property_name):
+    def get_property(self, property_name: str) -> Any | None:
         """Retrieve the value of a specified property for the TTS engine.
 
         Parameters
         ----------
-        - property_name (str): The name of the property to retrieve. Expected values may include "rate", "volume", or "pitch".
+        property_name : str
+            The name of the property to retrieve.
+            Expected values may include "rate", "volume", or "pitch".
 
         Returns
         -------
-        - The value of the specified property if it exists; otherwise, returns None.
+        Optional[Any]
+            The value of the specified property if it exists; otherwise, returns None.
 
         """
         return self.properties.get(property_name, None)
 
-    def set_property(self, property_name, value) -> None:
+    def set_property(self, property_name: str, value: float | str) -> None:
         """Set a property for the TTS engine and update its internal state.
 
         Parameters
         ----------
-        - property_name (str): The name of the property to set. Expected values are "rate", "volume", or "pitch".
-        - value: The value to assign to the specified property.
+        property_name : str
+            The name of the property to set.
+            Expected values are "rate", "volume", or "pitch".
+        value : float | str
+            The value to assign to the specified property.
 
-        Updates the corresponding internal variable (_rate, _volume, or _pitch) based on the property name.
+        Updates the corresponding internal variable (_rate, _volume, or _pitch)
+        based on the property name.
 
         """
         self.properties[property_name] = value
@@ -603,7 +678,7 @@ class AbstractTTS(ABC):
         :param device_id: The ID of the device to be set as the default output.
         """
 
-        def raise_invalid_device_error(device_id) -> NoReturn:
+        def raise_invalid_device_error(device_id: int) -> NoReturn:
             """Raise a ValueError with a message about the invalid device ID."""
             msg = f"Invalid device ID: {device_id}"
             raise ValueError(msg)

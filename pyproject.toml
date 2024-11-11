@@ -75,3 +75,7 @@ enable = true
 markers = [
     "synthetic: mark a test as synthetic"
 ]
+
+[tool.ruff]
+target-version = "py39"
+line-length = 88
