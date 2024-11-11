@@ -402,8 +402,17 @@ class AbstractTTS(ABC):
         except Exception as e:
             logging.exception("Error streaming or saving audio: %s", e)
 
-    def setup_stream(self, samplerate=22050, channels=1, dtype="int16") -> None:
-        """Sets up the audio stream for playback."""
+
+    def setup_stream(self, samplerate: int = 22050, channels: int = 1, dtype: Union[str, int] = "int16") -> None:
+        """Set up the audio stream for playback.
+
+        Parameters
+        ----------
+        - samplerate (int): The sample rate for the audio stream. Defaults to 22050.
+        - channels (int): The number of audio channels. Defaults to 1.
+        - dtype (Union[str, int]): The data type for audio samples. Defaults to "int16".
+
+        """
         try:
             if self.stream is not None:
                 self.stream.close()
@@ -414,8 +423,8 @@ class AbstractTTS(ABC):
                 callback=self.callback,
             )
             self.stream.start()
-        except Exception as e:
-            logging.exception("Failed to setup audio stream: %s", e)
+        except Exception:
+            logging.exception("Failed to set up audio stream")
             raise
 
     def callback(self, outdata, frames, time, status) -> None:
@@ -456,29 +465,6 @@ class AbstractTTS(ABC):
                 self.stream.stop()
                 self.stream.close()
                 self.stream = None
-
-#    def pause_audio(self):
-#        self.playing.clear()
-
-#    def resume_audio(self):
-#        self.playing.set()
-#        if not self.stream:
-#            self.setup_stream()
-#        if self.stream and not self.stream.active:
-#            self.stream.start()
-#
-#    def stop_audio(self):
-#        self.playing.clear()
-#        if self.play_thread and self.play_thread.is_alive():
-#            self.play_thread.join()
-#        with self.stream_lock:
-#            if self.stream:
-#                self.stream.stop()
-#                self.stream.close()
-#                self.stream = None
-#        for timer in self.timers:
-#            timer.cancel()
-#        self.timers.clear()
 
     def set_timings(self, timings: List[WordTiming]) -> None:
         self.timings = []
@@ -523,21 +509,30 @@ class AbstractTTS(ABC):
         if event_name in self.callbacks and self.callbacks[event_name] is not None:
             self.callbacks[event_name](*args)
 
-    def start_playback_with_callbacks(self, text: str, callback=None) -> None:
+    def start_playback_with_callbacks(self, text: str, callback: Optional[Callable] = None) -> None:
+        """Start playback of the given text with callbacks triggered at each word.
+
+        Parameters
+        ----------
+        - text (str): The text to be spoken.
+        - callback (Optional[Callable]): A callback function to invoke at each word with arguments (word, start, end).
+                                        If None, `self.on_word_callback` is used.
+
+        """
         if callback is None:
             callback = self.on_word_callback
 
         self.speak_streamed(text)
         start_time = time.time()
 
-        for start, end, word in self.timings:
-            try:
+        try:
+            for start, end, word in self.timings:
                 delay = max(0, start - (time.time() - start_time))
                 timer = threading.Timer(delay, callback, args=(word, start, end))
                 timer.start()
                 self.timers.append(timer)
-            except (ValueError, TypeError) as e:
-                logging.exception("Error in start_playback_with_callbacks: %s", e)
+        except (ValueError, TypeError) as e:
+            logging.exception("Error in start_playback_with_callbacks: %s", e)
 
     def finish(self) -> None:
         try:
@@ -545,8 +540,8 @@ class AbstractTTS(ABC):
                 if self.stream:
                     self.stream.stop()
                     self.stream.close()
-        except Exception as e:
-            logging.exception("Failed to clean up audio resources: %s", e)
+        except Exception:
+            logging.exception("Failed to clean up audio resources")
         finally:
             self.stream = None
 
@@ -554,9 +549,30 @@ class AbstractTTS(ABC):
         self.finish()
 
     def get_property(self, property_name):
+        """Retrieve the value of a specified property for the TTS engine.
+
+        Parameters
+        ----------
+        - property_name (str): The name of the property to retrieve. Expected values may include "rate", "volume", or "pitch".
+
+        Returns
+        -------
+        - The value of the specified property if it exists; otherwise, returns None.
+
+        """
         return self.properties.get(property_name, None)
 
     def set_property(self, property_name, value) -> None:
+        """Set a property for the TTS engine and update its internal state.
+
+        Parameters
+        ----------
+        - property_name (str): The name of the property to set. Expected values are "rate", "volume", or "pitch".
+        - value: The value to assign to the specified property.
+
+        Updates the corresponding internal variable (_rate, _volume, or _pitch) based on the property name.
+
+        """
         self.properties[property_name] = value
 
         if property_name == "rate":
