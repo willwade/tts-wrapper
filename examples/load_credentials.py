@@ -5,10 +5,12 @@ import platform
 
 def load_credentials(public_json_file="credentials.json") -> None:
     """Load credentials from a public JSON file and optionally from a private JSON file,
+
     and set them as environment variables.
 
     :param public_json_file: Path to the public JSON file containing the credentials.
     """
+
     # Construct the path to the private JSON file
     private_json_file = public_json_file.replace(".json", "-private.json")
 

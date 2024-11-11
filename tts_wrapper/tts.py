@@ -16,6 +16,7 @@ WordTiming = Union[Tuple[float, str], Tuple[float, float, str]]
 
 class AbstractTTS(ABC):
     """Abstract class (ABC) for text-to-speech functionalities,
+
     including synthesis and playback.
     """
 
@@ -54,10 +55,12 @@ class AbstractTTS(ABC):
 
     def check_credentials(self) -> bool:
         """Verifies that the provided credentials are valid by calling get_voices.
+
         This method should be implemented by the child classes to handle the
           specific credential checks.
         Also try not to use get_voices. It can be wasteful in credits/bandwidth.
         """
+
         try:
             # Attempt to retrieve voices to validate credentials
             voices = self.get_voices()
@@ -71,9 +74,11 @@ class AbstractTTS(ABC):
 
     def _convert_mp3_to_pcm(self, mp3_data: bytes) -> bytes:
         """Convert MP3 data to raw PCM data.
+
         :param mp3_data: MP3 audio data as bytes.
         :return: Raw PCM data as bytes (int16).
         """
+
         from soundfile import read  # type: ignore
 
         # Use soundfile to read MP3 data
@@ -83,9 +88,11 @@ class AbstractTTS(ABC):
 
     def _strip_wav_header(self, wav_data: bytes) -> bytes:
         """Strip the WAV header from the audio data to return raw PCM.
+
         WAV headers are typically 44 bytes,
         so we slice the data after the header.
         """
+
         return wav_data[44:]
 
     def _infer_channels_from_pcm(self, pcm_data: np.ndarray) -> int:
@@ -94,6 +101,7 @@ class AbstractTTS(ABC):
         :param pcm_data: PCM data as a numpy array.
         :return: Number of channels (1 for mono, 2 for stereo).
         """
+
         if pcm_data.ndim == 1:
             return 1  # Mono audio
         if pcm_data.ndim == 2:
@@ -105,11 +113,13 @@ class AbstractTTS(ABC):
         self, pcm_data: np.ndarray, target_format: str, sample_rate: int,
     ) -> bytes:
         """Convert raw PCM data to a specified audio format.
+
         :param pcm_data: Raw PCM audio data (assumed to be in int16 format).
         :param target_format: Target format (e.g., 'mp3', 'flac').
         :param sample_rate: Sample rate of the audio data.
         :return: Converted audio data as bytes.
         """
+
         # Set default format if target_format is None
         if target_format is None:
             target_format = "wav"
@@ -173,6 +183,7 @@ class AbstractTTS(ABC):
     @abstractmethod
     def synth_to_bytes(self, text: Any) -> bytes:
         """Transforms written text to audio bytes on supported formats.
+
         This method should return raw PCM data with
           no headers for sounddevice playback.
         """
@@ -190,6 +201,7 @@ class AbstractTTS(ABC):
 
     def _create_stream(self) -> None:
         """Create a new audio stream."""
+
         if self.stream_pyaudio is not None and not self.stream_pyaudio.is_stopped():
             self.stream_pyaudio.stop_stream()
             self.stream_pyaudio.close()
@@ -209,6 +221,7 @@ class AbstractTTS(ABC):
 
     def _playback_loop(self) -> None:
         """Main playback loop running in separate thread."""
+
         try:
             self._create_stream()
             while self.playing and self.position < len(self.audio_bytes):
@@ -232,11 +245,13 @@ class AbstractTTS(ABC):
 
     def _auto_resume(self) -> None:
         """Helper method to resume after timed pause."""
+
         self.paused = False
         logging.info("Resuming playback after pause")
 
     def play(self, duration=None) -> None:
         """Start or resume playback."""
+
         if self.audio_bytes is None:
             msg = "No audio loaded"
             raise ValueError(msg)
@@ -259,6 +274,7 @@ class AbstractTTS(ABC):
         duration (float): Number of seconds to pause. If None, pause indefinitely
 
         """
+
         self.paused = True
 
         # Cancel any existing pause timer
@@ -274,6 +290,7 @@ class AbstractTTS(ABC):
 
     def resume(self) -> None:
         """Resume playback."""
+
         if self.playing:
             # Cancel any existing pause timer
             if self.pause_timer:
@@ -283,6 +300,7 @@ class AbstractTTS(ABC):
 
     def stop(self) -> None:
         """Stop playback."""
+
         self.playing = False
         self.paused = False
         if self.pause_timer:
@@ -306,6 +324,7 @@ class AbstractTTS(ABC):
 
     def cleanup(self) -> None:
         """Clean up resources."""
+
         try:
             self.stop()
 
@@ -318,10 +337,12 @@ class AbstractTTS(ABC):
         self, text: Any, filename: str, format: Optional[str] = "wav",
     ) -> None:
         """Synthesizes text to audio and saves it to a file.
+
         :param text: The text to synthesize.
         :param filename: The file where the audio will be saved.
         :param format: The format to save the file in (e.g., 'wav', 'mp3').
         """
+
         # Ensure format is not None
         format_to_use = format if format is not None else "wav"
         audio_bytes = self.synth_to_bytes(text)  # Always request raw PCM data
@@ -333,12 +354,15 @@ class AbstractTTS(ABC):
 
     def synth(self, text: str, filename: str, format: Optional[str] = "wav") -> None:
         """Alias for synth_to_file method."""
+
         self.synth_to_file(text, filename, format)
 
     def speak(self, text: Any) -> None:
         """Synthesize text and play it back using sounddevice.
+
         :param text: The text to synthesize and play.
         """
+
         try:
             audio_bytes = self.synth_to_bytes(text)
             audio_data = np.frombuffer(audio_bytes, dtype=np.int16)
@@ -354,12 +378,14 @@ class AbstractTTS(ABC):
         audio_format: Optional[str] = "wav",
     ) -> None:
         """Synthesize text and stream it for playback using sounddevice.
+
         Optionally save the audio to a file after playback completes.
 
         :param text: The text to synthesize and stream.
         :param save_to_file_path: Path to save the audio file (optional).
         :param audio_format: Audio format to save (e.g., 'wav', 'mp3', 'flac').
         """
+
         try:
             # Synthesize audio to bytes for playback
             audio_bytes = self.synth_to_bytes(text)
@@ -413,6 +439,7 @@ class AbstractTTS(ABC):
         - dtype (Union[str, int]): The data type for audio samples. Defaults to "int16".
 
         """
+
         try:
             if self.stream is not None:
                 self.stream.close()
@@ -429,6 +456,7 @@ class AbstractTTS(ABC):
 
     def callback(self, outdata, frames, time, status) -> None:
         """Callback for streamed audio playback."""
+
         if status:
             logging.warning("Sounddevice status: %s", status)
         if self.playing:
@@ -456,6 +484,7 @@ class AbstractTTS(ABC):
 
     def _start_stream(self) -> None:
         """Starts the audio stream."""
+
         with self.stream_lock:
             if self.stream:
                 self.stream.start()
@@ -519,6 +548,7 @@ class AbstractTTS(ABC):
                                         If None, `self.on_word_callback` is used.
 
         """
+
         if callback is None:
             callback = self.on_word_callback
 
@@ -560,6 +590,7 @@ class AbstractTTS(ABC):
         - The value of the specified property if it exists; otherwise, returns None.
 
         """
+
         return self.properties.get(property_name, None)
 
     def set_property(self, property_name, value) -> None:
@@ -573,6 +604,7 @@ class AbstractTTS(ABC):
         Updates the corresponding internal variable (_rate, _volume, or _pitch) based on the property name.
 
         """
+
         self.properties[property_name] = value
 
         if property_name == "rate":
@@ -598,8 +630,10 @@ class AbstractTTS(ABC):
 
         :param device_id: The ID of the device to be set as the default output.
         """
+
         def raise_invalid_device_error(device_id) -> NoReturn:
             """Raise a ValueError with a message about the invalid device ID."""
+
             msg = f"Invalid device ID: {device_id}"
             raise ValueError(msg)
 
