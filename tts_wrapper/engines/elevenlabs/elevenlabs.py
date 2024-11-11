@@ -3,7 +3,7 @@ from typing import Any, Dict, List, Optional
 
 from tts_wrapper.tts import AbstractTTS
 
-from . import ElevenLabsClient, ElevenLabsSSMLRoot
+from . import ElevenLabsClient
 
 
 class ElevenLabsTTS(AbstractTTS):
@@ -109,7 +109,8 @@ class ElevenLabsTTS(AbstractTTS):
 
 
     @property
-    def ssml(self) -> ElevenLabsSSMLRoot:
+    def ssml(self)  -> "ElevenLabsSSMLRoot":
+        from .ssml import ElevenLabsSSMLRoot # pylint: disable=import-outside-toplevel
         return ElevenLabsSSMLRoot()
 
     def set_voice(self, voice_id: str, lang_id: Optional[str] = None) -> None:

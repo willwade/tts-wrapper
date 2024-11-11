@@ -3,7 +3,7 @@ from typing import Any, Dict, List, Optional
 
 from tts_wrapper.tts import AbstractTTS
 
-from . import MicrosoftClient, MicrosoftSSML
+from . import MicrosoftClient
 from .client import FORMATS
 
 try:
@@ -29,6 +29,8 @@ class MicrosoftTTS(AbstractTTS):
         super().__init__()
         self._client = client
         self.set_voice(voice or "en-US-JennyNeural", lang or "en-US")
+
+        from .ssml import MicrosoftSSML
         self._ssml = MicrosoftSSML(self._lang, self._voice)
 
         # Ensure we're requesting word boundary information
@@ -47,8 +49,8 @@ class MicrosoftTTS(AbstractTTS):
         return 0.0
 
     @property
-    def ssml(self) -> MicrosoftSSML:
-        return MicrosoftSSML(self._lang, self._voice)
+    def ssml(self) -> "MicrosoftSSML":
+        return self._ssml
 
     def get_voices(self) -> List[Dict[str, Any]]:
         return self._client.get_available_voices()
@@ -141,7 +143,3 @@ class MicrosoftTTS(AbstractTTS):
 
     def _is_ssml(self, ssml):
         return "<speak" in str(ssml)
-
-    @property
-    def ssml(self) -> MicrosoftSSML:
-        return self._ssml

@@ -2,7 +2,7 @@ from typing import Any, Dict, List, Optional, Tuple
 
 from tts_wrapper.tts import AbstractTTS
 
-from . import PollyClient, PollySSML
+from . import PollyClient
 
 
 class PollyTTS(AbstractTTS):
@@ -15,6 +15,8 @@ class PollyTTS(AbstractTTS):
         super().__init__()
         self._client = client
         self.set_voice(voice or "Joanna", lang or "en-US")
+        from .ssml import PollySSML
+        self._ssml = PollySSML()
         self.audio_rate = 16000
 
     def synth_to_bytes(self, text: Any) -> bytes:
@@ -60,7 +62,7 @@ class PollyTTS(AbstractTTS):
         return 0.0
 
     @property
-    def ssml(self) -> PollySSML:
+    def ssml(self) -> "PollySSML":
         return PollySSML()
 
     def get_voices(self) -> List[Dict[str, Any]]:
