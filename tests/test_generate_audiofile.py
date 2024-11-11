@@ -201,7 +201,7 @@ class TestFileCreation(unittest.TestCase):
         :param engine_name: The name of the TTS engine.
         :param ssml_text: The SSML text to be synthesized.
         """
-        tts_instance = self.tts_instances.get(engine_name)
+        tts_instance = self.__class__.tts_instances.get(engine_name) 
         if tts_instance:
             tts_instance.speak_streamed(ssml_text, self.file_names[engine_name], "wav")
             self.assertTrue(Path(self.file_names[engine_name]).exists())
