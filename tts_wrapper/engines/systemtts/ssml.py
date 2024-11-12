@@ -10,12 +10,12 @@ class SystemTTSSSMLNode(SSMLNode):
 class SystemTTSSSML(BaseSSMLRoot):
     def __init__(self) -> None:
         super().__init__()
-        self._inner = SAPISSMLNode(
+        self._inner = SystemTTSSSMLNode(
             "speak",
         )  # The tag is irrelevant but kept for compatibility
 
     def __str__(self) -> str:
-        # Use the overridden __str__ method of SAPISSMLNode
+        # Use the overridden __str__ method of SystemTTSSSMLNode
         return str(self._inner)
 
     def clear_ssml(self) -> None:

@@ -33,8 +33,8 @@ time.sleep(3)
 #
 # # Demonstrate saving audio to a file
 try:
-    ssml_text = tts.ssml.add("This is me speaking with Speak function and SAPI")
-    output_file = Path("output_sapi.mp3")
+    ssml_text = tts.ssml.add("This is me speaking with Speak function and SystemTTS")
+    output_file = Path("output_systemtts.mp3")
     #tts.synth(ssml_text, str(output_file), format='wav')
     tts.speak_streamed(ssml_text, output_file, audio_format="mp3")
     # or you could do

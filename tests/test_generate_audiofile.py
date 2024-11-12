@@ -5,7 +5,7 @@ from pathlib import Path
 import pytest
 
 from tts_wrapper import (
-    SAPITTS,
+    SystemTTS,
     ElevenLabsClient,
     ElevenLabsTTS,
     GoogleClient,
@@ -16,7 +16,7 @@ from tts_wrapper import (
     MicrosoftTTS,
     PollyClient,
     PollyTTS,
-    SAPIClient,
+    SystemTTSClient,
     SherpaOnnxClient,
     SherpaOnnxTTS,
     WatsonClient,
@@ -26,7 +26,7 @@ from tts_wrapper import (
 )
 
 services = ["polly", "google", "microsoft", "watson", "elevenlabs",
-            "witai", "googletrans", "sherpaonnx", "sapi"]
+            "witai", "googletrans", "sherpaonnx", "systemtts"]
 
 TTS_CLIENTS = {
     "polly": {
@@ -67,9 +67,9 @@ TTS_CLIENTS = {
         "client_lambda": lambda: SherpaOnnxClient(model_path=None, tokens_path=None),
         "class": SherpaOnnxTTS,
     },
-    "sapi": {
-        "client_lambda": lambda: SAPIClient(),
-        "class": SAPITTS,
+    "systemtts": {
+        "client_lambda": lambda: SystemTTSClient(),
+        "class": SystemTTS,
     },
 }
 
@@ -135,7 +135,7 @@ class TestFileCreation(unittest.TestCase):
             "sherpaonnx": "sherpaonnx-test.wav",
             "watson": "watson-test.wav",
             "witai": "witai-test.wav",
-            "sapi": "sapi-test.wav",
+            "systemtts": "systemtts-test.wav",
         }
 
     def tearDown(self) -> None:
@@ -179,8 +179,8 @@ class TestFileCreation(unittest.TestCase):
     def test_witai_audio_creation(self) -> None:
         self._test_audio_creation("witai", "This is a test using Wit.ai TTS.")
 
-    def test_sapi_audio_creation(self) -> None:
-        self._test_audio_creation("sapi", "This is a test using SAPI TTS.")
+    def test_systemtts_audio_creation(self) -> None:
+        self._test_audio_creation("systemtts", "This is a test using System TTS.")
 
     @pytest.mark.skipif(not os.getenv("ELEVENLABS_API_KEY"), reason="ElevenLabs credentials not set")
     def test_elevenlabs_audio_creation(self) -> None:
