@@ -693,3 +693,4 @@ class AbstractTTS(ABC):
             logging.exception("Invalid device ID")
         except Exception:
             logging.exception("Failed to set output device")
+
