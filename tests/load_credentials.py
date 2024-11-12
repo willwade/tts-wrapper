@@ -5,6 +5,26 @@ import json
 import os
 from pathlib import Path
 
+REQUIRED_ENV_VARS = {
+    "polly": ["POLLY_REGION", "POLLY_AWS_KEY_ID", "POLLY_AWS_ACCESS_KEY"],
+    "google": ["GOOGLE_SA_PATH", "GOOGLE_SA_FILE_B64"],
+    "microsoft": ["MICROSOFT_TOKEN", "MICROSOFT_REGION"],
+    "watson": ["WATSON_API_KEY", "WATSON_REGION", "WATSON_INSTANCE_ID"],
+    "elevenlabs": ["ELEVENLABS_API_KEY"],
+    "witai": ["WITAI_TOKEN"],
+}
+
+def check_required_env_vars() -> None:
+    """Check that all required environment variables are set."""
+    missing_vars = []
+    for vars in REQUIRED_ENV_VARS.values():
+        for var in vars:
+            if not os.getenv(var):
+                missing_vars.append(var)
+    if missing_vars:
+        msg = f"Missing required environment variables: {', '.join(missing_vars)}"
+        raise RuntimeError(msg)
+
 
 def load_credentials(public_json_file: str = "credentials.json") -> None:
     """Load credentials from a JSON file if not already set in environment variables.
@@ -13,6 +33,7 @@ def load_credentials(public_json_file: str = "credentials.json") -> None:
     ----------
     public_json_file : str
         The path to the public JSON file with credentials.
+
     """
     # Decode Google credentials if set
     decode_google_creds()
@@ -28,7 +49,8 @@ def load_credentials(public_json_file: str = "credentials.json") -> None:
         json_file = public_json_file
     else:
         # If neither JSON file exists, rely solely on environment variables
-        print("Warning: No credential file found. Relying solely on environment variables.")
+        # Check that all required environment variables are set
+        check_required_env_vars()
         return  # Exit early if no files are found
 
     # Load from JSON only if the environment variables are not already set

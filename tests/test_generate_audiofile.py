@@ -117,12 +117,6 @@ class TestFileCreation(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls) -> None:
-        required_env_vars = ["GOOGLE_SA_PATH", "WATSON_API_KEY", "MICROSOFT_TOKEN", "POLLY_REGION"]
-        missing_vars = [var for var in required_env_vars if var not in os.environ]
-        if missing_vars:
-            msg = f"Missing required environment variables: {', '.join(missing_vars)}"
-            raise RuntimeError(msg)
-
         cls.manager = ClientManager()
         cls.tts_instances = cls.manager.create_tts_instances(TTS_CLIENTS)
         cls.success_count = 0
