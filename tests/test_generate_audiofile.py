@@ -156,7 +156,6 @@ class ClientManager:
                 print(f"Skipping {name}: missing or invalid credentials.")
         return tts_instances
 
-
 class TestFileCreation(unittest.TestCase):
     """
     Unit tests for TTS audio file creation.
