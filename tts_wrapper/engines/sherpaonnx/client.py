@@ -112,7 +112,7 @@ class SherpaOnnxClient:
 
             # Write the response to the file
             cache_file_path = os.path.join(self._model_dir, self.CACHE_FILE)
-            with open(cache_file_path, "w") as f:
+            with Path(cache_file_path).open("w") as f:
                 f.write(response.text)
                 logging.info("Voices JSON file written to %s,", cache_file_path)
         except Exception as e:
@@ -144,7 +144,7 @@ class SherpaOnnxClient:
             msg = "Please install requests library to download files"
             raise ImportError(msg)
         logging.info("Downloading model files from %s to %s", url, destination)
-        response = requests.get(url, stream=True)
+        response = requests.get(url, stream=True, timeout=10)
         response.raise_for_status()
         logging.debug("Response status: %s", response.status_code)
         with Path(destination).open("wb") as f:
@@ -239,7 +239,7 @@ class SherpaOnnxClient:
         return model_path, tokens_path, str(lexicon_path), dict_dir
 
     def get_dict_dir(self, destination_dir: str) -> str:
-        """ Get dict_dir from extracted model """
+        """Get dict_dir from extracted model."""
         # Walk through directory tree
         for root, _dirs, files in os.walk(destination_dir):
             # Check if any file in current directory has .dict extension
@@ -422,7 +422,7 @@ class SherpaOnnxClient:
 
 
     def _load_models(self):
-        with open('merged_models.json', 'r') as file:
+        with open("merged_models.json") as file:
             models_json = json.load(file)
         file.close()
 
