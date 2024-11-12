@@ -7,6 +7,7 @@ import json
 import logging
 import os
 import tarfile
+import importlib
 import threading
 from pathlib import Path
 from typing import Any
@@ -32,65 +33,46 @@ class SherpaOnnxClient:
     MODELS_FILE = "merged_models.json"
 
     def __init__(
+            self,
+            model_path: str | None = None,
+            tokens_path: str | None = None,
+            voice_id: str | None = None,
+            model_id: str | None = None,
+        ) -> None:
+            """Initiate class."""
+            if importlib.util.find_spec("sherpa_onnx") is None:
+                logging.exception("Please install sherpa-onnx library to use the SherpaOnnxClient")
 
-        self,
-        model_path: str | None = None,
-        tokens_path: str | None = None,
+            if importlib.util.find_spec("requests") is None:
+                logging.exception("Please install requests library to use the SherpaOnnxClient")
 
-        voice_id: str | None = None,
-        model_id: str | None = None,
-    ) -> None:
-        """Initiate class."""
-        try:
-            import sherpa_onnx
-        except ImportError:
-            logging.exception(
-                "Please install sherpa-onnx library to use the SherpaOnnxClient",
+            if importlib.util.find_spec("threading") is None:
+                logging.exception("Please install threading library to use the SherpaOnnxClient")
+
+            self.default_model_path = model_path
+            self.default_tokens_path = (
+                tokens_path
+                if tokens_path
+                else Path(model_path) / "tokens.txt" if model_path else None
             )
 
-        try:
-            import requests
-        except ImportError:
-            logging.exception("Please install requests library to use the SherpaOnnxClient")
+            self._model_dir = model_path if model_path else Path("~/mms_models").expanduser()
+            self._model_id = model_id
+            if model_id:
+                self._model_dir = Path(self._model_dir) / model_id
+            if not Path(self._model_dir).exists():
+                try:
+                    Path(self._model_dir).mkdir(parents=True)
+                except OSError as e:
+                    msg = f"Failed to create model directory {self._model_dir}: {e!s}"
+                    raise RuntimeError(msg) from e
 
-        try:
-            import threading
-        except ImportError:
-            logging.exception(
-                "Please install threading library to use the SherpaOnnxClient",
-            )
-
-        self.default_model_path = model_path
-        self.default_tokens_path = (
-            tokens_path
-            if tokens_path
-            else Path(model_path) / "tokens.txt" if model_path else None
-        )
-
-        self.default_lexicon_path = ""
-        self.default_dict_dir_path = ""
-
-        self._model_dir = (
-            model_path if model_path else Path("~/mms_models").expanduser()
-        )
-        self._model_id = model_id
-        if model_id:
-            #self._model_dir = os.path.join(self._model_dir, model_id)
-            self._model_dir = Path(self._model_dir) / model_id
-        if not Path(self._model_dir).exists():
-            try:
-                Path(self._model_dir).mkdir(parents=True)
-            except Exception as e:
-                msg = f"Failed to create model directory {self._model_dir}: {e!s}"
-                raise RuntimeError(
-                    msg,
-                )
-        self.voices_cache = self._load_voices_cache()
-        if voice_id:
-            self.set_voice(voice_id)
-        self.audio_queue = queue.Queue()
-        self.tts = None
-        self.sample_rate = None
+            self.voices_cache = self._load_voices_cache()
+            if voice_id:
+                self.set_voice(voice_id)
+            self.audio_queue = queue.Queue()  # Ensure `queue` is imported
+            self.tts = None
+            self.sample_rate = None
 
     def _download_voices(self) -> None:
         try:
@@ -252,6 +234,16 @@ class SherpaOnnxClient:
         return ""
 
     def check_and_download_model(self, iso_code:str, model_id: str) -> tuple[str, str, str, str]:
+        """Check if model and tokens exist, and download if not.
+
+        Parameters
+        ----------
+        iso_code : str
+            The ISO code of the language.
+        model_id : str
+            The model ID to download.
+
+        """
         lexicon_path = ""
         dict_dir = ""
         voice = next((v for v in self.voices_cache if v["Iso Code"] == iso_code), None)

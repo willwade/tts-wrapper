@@ -3,7 +3,7 @@ from typing import Any, Optional
 from tts_wrapper.tts import AbstractTTS
 
 from . import PollyClient
-from .ssml import PollySSML 
+from .ssml import PollySSML
 
 
 class PollyTTS(AbstractTTS):
@@ -16,7 +16,7 @@ class PollyTTS(AbstractTTS):
         super().__init__()
         self._client = client
         self.set_voice(voice or "Joanna", lang or "en-US")
-        self._ssml = PollySSML() 
+        self._ssml = PollySSML()
         self.audio_rate = 16000
 
     def synth_to_bytes(self, text: Any) -> bytes:
