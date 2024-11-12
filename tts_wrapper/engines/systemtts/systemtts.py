@@ -2,16 +2,16 @@ from typing import Any, Optional
 
 from tts_wrapper.tts import AbstractTTS, FileFormat
 
-from . import SAPIClient
-from .ssml import SAPISSML
+from . import SystemTTSClient
+from .ssml import SystemTTSSSML
 
 
-class SAPITTS(AbstractTTS):
+class SystemTTS(AbstractTTS):
     @classmethod
     def supported_formats(cls) -> list[FileFormat]:
         return ["wav"]
 
-    def __init__(self, client: SAPIClient) -> None:
+    def __init__(self, client: SystemTTSClient) -> None:
         super().__init__()
         self._client = client
 
@@ -23,8 +23,8 @@ class SAPITTS(AbstractTTS):
         return self._client.synth(str(text))
 
     @property
-    def ssml(self) -> SAPISSML:
-        return SAPISSML()
+    def ssml(self) -> SystemTTSSSML:
+        return SystemTTSSSML()
 
     def get_voices(self):
         return self._client.get_voices()

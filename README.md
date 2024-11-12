@@ -25,7 +25,7 @@ _TTS-Wrapper_ simplifies using text-to-speech APIs by providing a unified interf
 - UWP (WinRT) Speech system (win 10+)
 - Sherpa-Onnx (focusing on MMS models for now)
 - gTTS (GoogleTranslation TTS.)
-- eSpeak/SAPI (Microsoft Speech API)/NSSS
+- eSpeak/SAPI/NSSS (Microsoft Speech API)/NSSS
 
 
 ## Features
@@ -243,12 +243,12 @@ tts = UWPTTS(client)
 ### SAPI/eSpeak/NSSS
 
 ```python
-from tts_wrapper import SAPIClient, SAPITTS
-client = SAPIClient('espeak') # eSpeak
-client = SAPIClient('sapi') #SAPI
-client = SAPIClient('nsss') #NSSS MacOS
+from tts_wrapper import SystemTTSClient, SystemTTS
+client = SystemTTSClient('espeak') # eSpeak
+client = SystemTTSClient('sapi') #SAPI
+client = SystemTTSClient('nsss') #NSSS MacOS
 # Initialize the TTS engine
-tts = SAPITTS(client)
+tts = SystemTTSClient(client)
 ```
 
 **Just note: We cant do word timings in this.**

@@ -12,7 +12,7 @@ Credentials = tuple[str]
 FORMATS = {"wav": "wav"}
 
 
-class SAPIClient:
+class SystemTTSClient:
     def __init__(self, driver: Optional[str] = None) -> None:
         try:
             import pyttsx3  # type: ignore
