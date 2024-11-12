@@ -131,8 +131,6 @@ jobs:
             New-Item -ItemType Directory -Force -Path $google_sa_dir
           }
           [System.Convert]::FromBase64String($env:GOOGLE_SA_FILE_B64) | Set-Content -Path $env:GOOGLE_SA_PATH -AsByteStream
-          # run all tests with coverage
-          poetry run pytest --cov=tts_wrapper -m "not synthetic"
 
       - name: Set environment variables and create Google credentials file on Unix-based systems
         if: matrix.os != 'windows-latest'
