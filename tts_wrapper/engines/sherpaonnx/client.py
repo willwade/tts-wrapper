@@ -1,4 +1,5 @@
-# client.py
+"""SherpaOnnxClient class for TTS."""
+
 from __future__ import annotations
 
 import bz2
@@ -97,22 +98,24 @@ class SherpaOnnxClient:
                 import requests
             except ImportError:
                 msg = "Please install requests library to download voices JSON file"
-                raise ImportError(
-                    msg,
-                )
+                raise ImportError(msg) from None
+
             logging.info("Downloading voices JSON file from (%s)...", self.VOICES_URL)
-            response = requests.get(self.VOICES_URL)
+            response = requests.get(self.VOICES_URL, timeout=10)
             response.raise_for_status()
             logging.info("Response status code: %s", response.status_code)
 
             # Check if response is not empty
-            if not response.content.strip():
-                msg = "Downloaded JSON is empty"
-                raise ValueError(msg)
+            def _raise_if_empty(content: bytes) -> None:
+                if not content.strip():
+                    msg = "Downloaded JSON is empty"
+                    raise ValueError(msg)
+
+            _raise_if_empty(response.content)
 
             # Write the response to the file
-            cache_file_path = os.path.join(self._model_dir, self.CACHE_FILE)
-            with Path(cache_file_path).open("w") as f:
+            cache_file_path = Path(self._model_dir) / self.CACHE_FILE
+            with cache_file_path.open("w") as f:
                 f.write(response.text)
                 logging.info("Voices JSON file written to %s,", cache_file_path)
         except Exception as e:
@@ -121,7 +124,6 @@ class SherpaOnnxClient:
 
     def _load_voices_cache(self) -> list[dict[str, Any]]:
         cache_file_path = Path(self._model_dir) / self.CACHE_FILE
-        #cache_file_path = os.path.join(self._model_dir, self.CACHE_FILE)
         if not cache_file_path.exists():
             self._download_voices()
 
@@ -249,7 +251,6 @@ class SherpaOnnxClient:
         # Return None if no matching directory is found
         return ""
 
-    #def check_and_download_model(self, iso_code: str) -> Tuple[str, str]:
     def check_and_download_model(self, iso_code:str, model_id: str) -> tuple[str, str, str, str]:
         lexicon_path = ""
         dict_dir = ""
@@ -421,8 +422,8 @@ class SherpaOnnxClient:
         return (samples * 32767).astype(np.int16).tobytes()
 
 
-    def _load_models(self):
-        with open("merged_models.json") as file:
+    def _load_models(self) -> dict[str, Any]:
+        with Path("merged_models.json").open() as file:
             models_json = json.load(file)
         file.close()
 
