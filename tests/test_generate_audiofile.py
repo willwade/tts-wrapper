@@ -37,7 +37,7 @@ TTS_CLIENTS = {
     "google": {
         "client": GoogleClient,
         "class": GoogleTTS,
-        "credential_keys": ["GOOGLE_CREDS_PATH"],
+        "credential_keys": ["GOOGLE_SA_PATH"],
     },
     "microsoft": {
         "client": MicrosoftClient,
@@ -119,7 +119,7 @@ class TestFileCreation(unittest.TestCase):
     def setUpClass(cls) -> None:
         print("GOOGLE_SA_PATH:", os.getenv("GOOGLE_SA_PATH"))
         print("File exists:", Path(os.getenv("GOOGLE_SA_PATH", "")).exists())
-        
+
         cls.manager = ClientManager()
         cls.tts_instances = cls.manager.create_tts_instances(TTS_CLIENTS)
         cls.success_count = 0
