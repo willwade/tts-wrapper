@@ -102,6 +102,10 @@ def decode_google_creds() -> None:
             decoded_creds = base64.b64decode(google_b64_creds).decode("utf-8")
             with creds_path.open("w") as f:
                 f.write(decoded_creds)
+            if creds_path.exists() and creds_path.stat().st_size > 0:
+                print(f"Google Service Account JSON created successfully at: {google_creds_path}")
+            else:
+                raise ValueError("Failed to create the Google Service Account file.")
         except (OSError, ValueError) as e:
             msg = "Failed to decode or save GOOGLE_SA_FILE_B64"
             raise ValueError(msg) from e
