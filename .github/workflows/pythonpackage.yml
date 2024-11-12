@@ -123,38 +123,6 @@ jobs:
           poetry install -E google -E watson -E polly -E microsoft -E googletrans -E witai -E elevenlabs
           poetry run postinstall
 
-      - name: Set environment variables and create Google credentials file on Windows
-        if: matrix.os == 'windows-latest'
-        run: |
-          $google_sa_dir = [System.IO.Path]::GetDirectoryName($env:GOOGLE_SA_PATH)
-          if (-not (Test-Path -Path $google_sa_dir)) {
-            New-Item -ItemType Directory -Force -Path $google_sa_dir
-          }
-          [System.Convert]::FromBase64String($env:GOOGLE_SA_FILE_B64) | Set-Content -Path $env:GOOGLE_SA_PATH -AsByteStream
-
-      - name: Set environment variables and create Google credentials file on Unix-based systems
-        if: matrix.os != 'windows-latest'
-        run: |
-          mkdir -p $(dirname "$GOOGLE_SA_PATH")
-          echo "$GOOGLE_SA_FILE_B64" | base64 --decode > "$GOOGLE_SA_PATH"
-
-      - name: Verify Google SA Path
-        run: |
-          echo "GOOGLE_SA_PATH is set to: $GOOGLE_SA_PATH"
-          if [[ -f "$GOOGLE_SA_PATH" ]]; then
-            echo "Google credentials file created at $GOOGLE_SA_PATH"
-          else
-            echo "Error: Google credentials file not created at $GOOGLE_SA_PATH"
-            exit 1
-          fi
-
-      - name: Set permissions for Google SA file
-        if: matrix.os != 'windows-latest'
-        run: chmod 644 "$GOOGLE_SA_PATH"
-
-      - name: Verify Google SA Path Content
-        run: cat "$GOOGLE_SA_PATH"
-        
       - name: Run tests with coverage
         run: poetry run pytest --cov=tts_wrapper -m "not synthetic"
 

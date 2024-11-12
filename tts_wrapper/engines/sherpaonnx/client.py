@@ -3,11 +3,11 @@
 from __future__ import annotations
 
 import bz2
+import importlib
 import json
 import logging
 import os
 import tarfile
-import importlib
 import threading
 from pathlib import Path
 from typing import Any

@@ -1,10 +1,8 @@
-"""This module contains unit tests for TTS audio file creation."""
-
-import json
 import os
-import pytest
 import unittest
 from pathlib import Path
+
+import pytest
 
 from tts_wrapper import (
     SAPITTS,
@@ -28,7 +26,7 @@ from tts_wrapper import (
 )
 
 services = ["polly", "google", "microsoft", "watson", "elevenlabs",
-             "witai", "googletrans", "sherpaonnx", "sapi"]
+            "witai", "googletrans", "sherpaonnx", "sapi"]
 
 TTS_CLIENTS = {
     "polly": {
@@ -78,45 +76,16 @@ TTS_CLIENTS = {
 class ClientManager:
     """Manage the creation and configuration of TTS clients."""
 
-    def __init__(self, credentials_file: str = "credentials-private.json") -> None:
-        """Initialize the ClientManager with the given credentials file.
-
-        :param credentials_file: Path to the JSON file containing credentials.
-        """
-        self.credentials_file = credentials_file
-        self.credentials = self.load_credentials()
-
-    def load_credentials(self) -> dict:
-        """Load credentials from the JSON file and environment variables.
-
-        :return: A dictionary of credentials.
-        """
-        json_vars = {}
-        if Path(self.credentials_file).exists():
-            with Path(self.credentials_file).open() as file:
-                data = json.load(file)
-                for service, creds in data.items():
-                    for key, value in creds.items():
-                        env_var = f"{service.upper()}_{key.upper()}"
-                        json_vars[env_var] = value
-        return json_vars
+    def __init__(self) -> None:
+        self.credentials = {}  # Store any loaded credentials if needed
 
     def get_credential(self, key: str) -> str:
-        """Retrieve a credential value by key.
-
-        :param key: The key of the credential.
-        :return: The value of the credential.
-        """
-        return self.credentials.get(key) or os.getenv(key)
+        """Retrieve a credential value by key from environment variables."""
+        return os.getenv(key)
 
     def create_dynamic_client(self, config: dict) -> object:
-        """Create a dynamic TTS client based on the provided configuration.
-
-        :param config: The configuration dictionary for the TTS client.
-        :return: An instance of the TTS client.
-        """
+        """Create a dynamic TTS client based on the provided configuration."""
         if "client_lambda" in config:
-            # For clients with predefined lambda functions
             return config["client_lambda"]()
         if "client" in config:
             client_class = config["client"]
@@ -133,11 +102,7 @@ class ClientManager:
         raise ValueError(msg)
 
     def create_tts_instances(self, client_configs: dict) -> dict:
-        """Create TTS instances for all configured clients.
-
-        :param client_configs: A dictionary of client configurations.
-        :return: A dictionary of TTS instances.
-        """
+        """Create TTS instances for all configured clients."""
         tts_instances = {}
         for name, config in client_configs.items():
             client = self.create_dynamic_client(config)
@@ -145,8 +110,6 @@ class ClientManager:
             tts_instance = tts_class(client)
             if tts_instance.check_credentials():
                 tts_instances[name] = tts_instance
-            else:
-                pass
         return tts_instances
 
 class TestFileCreation(unittest.TestCase):
@@ -154,18 +117,18 @@ class TestFileCreation(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls) -> None:
-        """Set up the test class by initializing the ClientManager and TTS instances."""
         required_env_vars = ["GOOGLE_SA_PATH", "WATSON_API_KEY", "MICROSOFT_TOKEN", "POLLY_REGION"]
         missing_vars = [var for var in required_env_vars if var not in os.environ]
         if missing_vars:
-            raise RuntimeError(f"Missing required environment variables: {', '.join(missing_vars)}")
+            msg = f"Missing required environment variables: {', '.join(missing_vars)}"
+            raise RuntimeError(msg)
 
         cls.manager = ClientManager()
         cls.tts_instances = cls.manager.create_tts_instances(TTS_CLIENTS)
         cls.success_count = 0
 
     def setUp(self) -> None:
-        """Set up the test case by defining the file names for each TTS engine."""
+        """Define file names for each TTS engine."""
         self.file_names = {
             "google": "google-test.wav",
             "googletrans": "googletrans-test.wav",
@@ -179,17 +142,12 @@ class TestFileCreation(unittest.TestCase):
         }
 
     def tearDown(self) -> None:
-        """Clean up after each test case by removing the created audio files."""
+        """Remove created audio files after each test."""
         for filename in self.file_names.values():
             if Path(filename).exists():
                 Path(filename).unlink()
 
     def _test_audio_creation(self, engine_name: str, ssml_text: str) -> None:
-        """Test the audio file creation for a given TTS engine.
-
-        :param engine_name: The name of the TTS engine.
-        :param ssml_text: The SSML text to be synthesized.
-        """
         tts_instance = self.__class__.tts_instances.get(engine_name)
         if tts_instance:
             tts_instance.speak_streamed(ssml_text, self.file_names[engine_name], "wav")
@@ -198,47 +156,37 @@ class TestFileCreation(unittest.TestCase):
         else:
             self.skipTest(f"{engine_name} is not available due to missing credentials.")
 
-    @pytest.mark.skipif(not os.getenv("GOOGLE_SA_PATH"), reason="Google credentials not set")   
+    @pytest.mark.skipif(not os.getenv("GOOGLE_SA_PATH"), reason="Google credentials not set")
     def test_google_audio_creation(self) -> None:
-        """Test audio file creation using Google TTS."""
         self._test_audio_creation("google", "This is a test using Google TTS.")
 
     def test_googletrans_audio_creation(self) -> None:
-        """Test audio file creation using Google Translate TTS."""
-        self._test_audio_creation("googletrans",
-                                  "This is a test using Google Translate TTS.")
+        self._test_audio_creation("googletrans", "This is a test using Google Translate TTS.")
 
-    @pytest.mark.skipif(not os.getenv("MICROSOFT_TOKEN"), reason="Microsoft Azure credentials not set")   
+    @pytest.mark.skipif(not os.getenv("MICROSOFT_TOKEN"), reason="Microsoft Azure credentials not set")
     def test_microsoft_audio_creation(self) -> None:
-        """Test audio file creation using Microsoft TTS."""
         self._test_audio_creation("microsoft", "This is a test using Microsoft TTS.")
 
-    @pytest.mark.skipif(not os.getenv("POLLY_REGION"), reason="Amazon Polly credentials not set")   
+    @pytest.mark.skipif(not os.getenv("POLLY_REGION"), reason="Amazon Polly credentials not set")
     def test_polly_audio_creation(self) -> None:
-        """Test audio file creation using Amazon Polly TTS."""
         self._test_audio_creation("polly", "This is a test using Amazon Polly TTS.")
 
     def test_sherpaonnx_audio_creation(self) -> None:
-        """Test audio file creation using SherpaONNX TTS."""
         self._test_audio_creation("sherpaonnx", "This is a test using SherpaONNX TTS.")
 
-    @pytest.mark.skipif(not os.getenv("WATSON_API_KEY"), reason="Watson credentials not set")   
+    @pytest.mark.skipif(not os.getenv("WATSON_API_KEY"), reason="Watson credentials not set")
     def test_watson_audio_creation(self) -> None:
-        """Test audio file creation using IBM Watson TTS."""
         self._test_audio_creation("watson", "This is a test using IBM Watson TTS.")
 
-    @pytest.mark.skipif(not os.getenv("WITAI_TOKEN"), reason="WitAi credentials not set")   
+    @pytest.mark.skipif(not os.getenv("WITAI_TOKEN"), reason="WitAi credentials not set")
     def test_witai_audio_creation(self) -> None:
-        """Test audio file creation using Wit.ai TTS."""
         self._test_audio_creation("witai", "This is a test using Wit.ai TTS.")
 
     def test_sapi_audio_creation(self) -> None:
-        """Test audio file creation using SAPI TTS."""
         self._test_audio_creation("sapi", "This is a test using SAPI TTS.")
 
-    @pytest.mark.skipif(not os.getenv("ELEVENLABS_API_KEY"), reason="ElevenLabs credentials not set")   
+    @pytest.mark.skipif(not os.getenv("ELEVENLABS_API_KEY"), reason="ElevenLabs credentials not set")
     def test_elevenlabs_audio_creation(self) -> None:
-        """Test audio file creation using Wit.ai TTS."""
         self._test_audio_creation("elevenlabs", "This is a test using elevenlabs TTS.")
 
 if __name__ == "__main__":

@@ -9,33 +9,27 @@ from pathlib import Path
 def load_credentials(public_json_file: str = "credentials.json") -> None:
     """Load credentials from a JSON file if not already set in environment variables.
 
-    The JSON file should contain a dictionary with service names as keys and
-    dictionaries of credentials as values. For example:
-
-    {
-        "google": {
-            "api_key": "your_google_api_key"
-        },
-        "microsoft": {
-            "api_key": "your_microsoft_api_key"
-        }
-    }
-
     Parameters
     ----------
     public_json_file : str
         The path to the public JSON file with credentials.
-
     """
     # Decode Google credentials if set
     decode_google_creds()
 
     # Construct the path to the private JSON file
     private_json_file = public_json_file.replace(".json", "-private.json")
-
-    # Decide which JSON file to use (private, if available, or else public)
     private_path = Path(private_json_file)
-    json_file = private_path if private_path.exists() else public_json_file
+
+    # Decide which JSON file to use (private if available, otherwise public)
+    if private_path.exists():
+        json_file = private_path
+    elif Path(public_json_file).exists():
+        json_file = public_json_file
+    else:
+        # If neither JSON file exists, rely solely on environment variables
+        print("Warning: No credential file found. Relying solely on environment variables.")
+        return  # Exit early if no files are found
 
     # Load from JSON only if the environment variables are not already set
     if not credentials_set_in_env(json_file):
