@@ -147,8 +147,15 @@ class TestFileCreation(unittest.TestCase):
     def _test_audio_creation(self, engine_name: str, ssml_text: str) -> None:
         tts_instance = self.__class__.tts_instances.get(engine_name)
         if tts_instance:
-            tts_instance.speak_streamed(ssml_text, self.file_names[engine_name], "wav")
-            assert Path(self.file_names[engine_name]).exists()
+            # Use synth_to_file to generate and save the audio directly to a file
+            tts_instance.synth_to_file(ssml_text, self.file_names[engine_name], "wav")
+            
+            # Check that the file was created successfully
+            assert Path(self.file_names[engine_name]).exists(), f"File for {engine_name} was not created."
+            
+            # Optionally: Check file size or format
+            assert Path(self.file_names[engine_name]).stat().st_size > 0, f"File for {engine_name} is empty."
+            
             self.__class__.success_count += 1
         else:
             self.skipTest(f"{engine_name} is not available due to missing credentials.")

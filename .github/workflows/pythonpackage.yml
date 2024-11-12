@@ -48,7 +48,7 @@ jobs:
 
       - name: Update package index and install dependencies
         run: |
-          poetry install --with dev --extras "google watson polly microsoft googletrans witai elevenlabs systemtts controlaudio"
+          poetry install --with dev --extras "google watson polly microsoft googletrans witai elevenlabs systemtts controlaudio sherpaonnx"
           poetry run postinstall
 
       - name: Build package
@@ -118,7 +118,7 @@ jobs:
 
       - name: Update package index and install dependencies
         run: |
-          poetry install --with dev --extras "google watson polly microsoft googletrans witai elevenlabs systemtts controlaudio"
+          poetry install --with dev --extras "google watson polly microsoft googletrans witai elevenlabs systemtts controlaudio sherpaonnx"
           poetry run postinstall
 
       - name: Run tests with coverage
