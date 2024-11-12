@@ -2,6 +2,7 @@
 
 import json
 import os
+import pytest
 import unittest
 from pathlib import Path
 
@@ -154,6 +155,11 @@ class TestFileCreation(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
         """Set up the test class by initializing the ClientManager and TTS instances."""
+        required_env_vars = ["GOOGLE_SA_PATH", "WATSON_API_KEY", "MICROSOFT_TOKEN", "POLLY_REGION"]
+        missing_vars = [var for var in required_env_vars if var not in os.environ]
+        if missing_vars:
+            raise RuntimeError(f"Missing required environment variables: {', '.join(missing_vars)}")
+
         cls.manager = ClientManager()
         cls.tts_instances = cls.manager.create_tts_instances(TTS_CLIENTS)
         cls.success_count = 0
@@ -192,6 +198,7 @@ class TestFileCreation(unittest.TestCase):
         else:
             self.skipTest(f"{engine_name} is not available due to missing credentials.")
 
+    @pytest.mark.skipif(not os.getenv("GOOGLE_SA_PATH"), reason="Google credentials not set")   
     def test_google_audio_creation(self) -> None:
         """Test audio file creation using Google TTS."""
         self._test_audio_creation("google", "This is a test using Google TTS.")
@@ -201,10 +208,12 @@ class TestFileCreation(unittest.TestCase):
         self._test_audio_creation("googletrans",
                                   "This is a test using Google Translate TTS.")
 
+    @pytest.mark.skipif(not os.getenv("MICROSOFT_TOKEN"), reason="Microsoft Azure credentials not set")   
     def test_microsoft_audio_creation(self) -> None:
         """Test audio file creation using Microsoft TTS."""
         self._test_audio_creation("microsoft", "This is a test using Microsoft TTS.")
 
+    @pytest.mark.skipif(not os.getenv("POLLY_REGION"), reason="Amazon Polly credentials not set")   
     def test_polly_audio_creation(self) -> None:
         """Test audio file creation using Amazon Polly TTS."""
         self._test_audio_creation("polly", "This is a test using Amazon Polly TTS.")
@@ -213,10 +222,12 @@ class TestFileCreation(unittest.TestCase):
         """Test audio file creation using SherpaONNX TTS."""
         self._test_audio_creation("sherpaonnx", "This is a test using SherpaONNX TTS.")
 
+    @pytest.mark.skipif(not os.getenv("WATSON_API_KEY"), reason="Watson credentials not set")   
     def test_watson_audio_creation(self) -> None:
         """Test audio file creation using IBM Watson TTS."""
         self._test_audio_creation("watson", "This is a test using IBM Watson TTS.")
 
+    @pytest.mark.skipif(not os.getenv("WITAI_TOKEN"), reason="WitAi credentials not set")   
     def test_witai_audio_creation(self) -> None:
         """Test audio file creation using Wit.ai TTS."""
         self._test_audio_creation("witai", "This is a test using Wit.ai TTS.")
@@ -224,6 +235,11 @@ class TestFileCreation(unittest.TestCase):
     def test_sapi_audio_creation(self) -> None:
         """Test audio file creation using SAPI TTS."""
         self._test_audio_creation("sapi", "This is a test using SAPI TTS.")
+
+    @pytest.mark.skipif(not os.getenv("ELEVENLABS_API_KEY"), reason="ElevenLabs credentials not set")   
+    def test_elevenlabs_audio_creation(self) -> None:
+        """Test audio file creation using Wit.ai TTS."""
+        self._test_audio_creation("elevenlabs", "This is a test using elevenlabs TTS.")
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)
