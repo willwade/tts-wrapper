@@ -104,7 +104,7 @@ jobs:
         if: matrix.os == 'ubuntu-latest'
         run: |
           sudo apt-get update -y
-          sudo apt-get install -y portaudio19-dev libttspico-utils ffmpeg
+          sudo apt-get install -y portaudio19-dev libttspico-utils ffmpeg espeak-ng
 
       - name: Install system dependencies on macOS
         if: matrix.os == 'macos-latest'
