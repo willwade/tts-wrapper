@@ -62,7 +62,7 @@ class AbstractTTS(ABC):
         self.sample_width = 2
         self.chunk_size = 1024
 
-        self.playing = False
+        self.isplaying = False
         self.paused = False
         self.position = 0
 
@@ -231,7 +231,7 @@ class AbstractTTS(ABC):
             self.stream_pyaudio.stop_stream()
             self.stream_pyaudio.close()
 
-        self.playing = True
+        self.isplaying = True
         try:
             self.stream_pyaudio = self.pyaudio.open(
                 format=self.pyaudio.get_format_from_width(self.sample_width),
@@ -241,14 +241,14 @@ class AbstractTTS(ABC):
             )
         except Exception:
             logging.exception("Failed to create stream")
-            self.playing = False
+            self.isplaying = False
             raise
 
     def _playback_loop(self) -> None:
         """Run main playback loop in a separate thread."""
         try:
             self._create_stream()
-            while self.playing and self.position < len(self.audio_bytes):
+            while self.isplaying and self.position < len(self.audio_bytes):
                 if not self.paused:
                     chunk = self.audio_bytes[
                         self.position : self.position + self.chunk_size
@@ -265,10 +265,10 @@ class AbstractTTS(ABC):
             if self.stream_pyaudio and not self.stream_pyaudio.is_stopped():
                 self.stream_pyaudio.stop_stream()
                 self.stream_pyaudio.close()
-            self.playing = False
+            self.isplaying = False
         except OSError:
             # Handle stream-related exceptions gracefully
-            self.playing = False
+            self.isplaying = False
 
     def _auto_resume(self) -> None:
         """Resume audio after timed pause."""
@@ -281,8 +281,8 @@ class AbstractTTS(ABC):
             msg = "No audio loaded"
             raise ValueError(msg)
 
-        if not self.playing:
-            self.playing = True
+        if not self.isplaying:
+            self.isplaying = True
             self.paused = False
             self.playback_thread = threading.Thread(target=self._playback_loop)
             self.playback_thread.start()
@@ -315,7 +315,7 @@ class AbstractTTS(ABC):
 
     def resume(self) -> None:
         """Resume playback."""
-        if self.playing:
+        if self.isplaying:
             # Cancel any existing pause timer
             if self.pause_timer:
                 self.pause_timer.cancel()
@@ -324,7 +324,7 @@ class AbstractTTS(ABC):
 
     def stop(self) -> None:
         """Stop playback."""
-        self.playing = False
+        self.isplaying = False
         self.paused = False
         if self.pause_timer:
             self.pause_timer.cancel()
@@ -478,7 +478,7 @@ class AbstractTTS(ABC):
             raise
 
     def callback(
-            self, outdata: np.ndarray, frames: int, status: sd.CallbackFlags) -> None:
+            self, outdata: np.ndarray, frames: int, time:sd.CallbackTime, status: sd.CallbackFlags) -> None:
         """Handle streamed audio playback as a callback."""
         if status:
             logging.warning("Sounddevice status: %s", status)
