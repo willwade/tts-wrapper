@@ -49,7 +49,7 @@ jobs:
       - name: Update package index and install dependencies
         run: |
           poetry install --with dev 
-          poetry install -E google -E watson -E polly -E microsoft -E googletrans -E witai -E elevenlabs
+          poetry install -E google -E watson -E polly -E microsoft -E googletrans -E witai -E elevenlabs -E systemtts
           poetry run postinstall
 
       - name: Build package
@@ -120,7 +120,7 @@ jobs:
       - name: Update package index and install dependencies
         run: |
           poetry install --with dev 
-          poetry install -E google -E watson -E polly -E microsoft -E googletrans -E witai -E elevenlabs
+          poetry install -E google -E watson -E polly -E microsoft -E googletrans -E witai -E elevenlabs -E controlaudio
           poetry run postinstall
 
       - name: Run tests with coverage
