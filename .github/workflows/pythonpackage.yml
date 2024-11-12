@@ -68,6 +68,20 @@ jobs:
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
         python-version: ["3.10", "3.11", "3.12"]
+    env:
+      WATSON_API_KEY: ${{ secrets.WATSON_API_KEY }}
+      WATSON_API_URL: ${{ secrets.WATSON_API_URL }}
+      WATSON_REGION: ${{ secrets.WATSON_REGION }}
+      WATSON_INSTANCE_ID: ${{ secrets.WATSON_INSTANCE_ID }}
+      MICROSOFT_TOKEN: ${{ secrets.MICROSOFT_TOKEN }}
+      MICROSOFT_REGION: ${{ secrets.MICROSOFT_REGION }}
+      POLLY_REGION: ${{ secrets.POLLY_REGION }}
+      POLLY_AWS_KEY_ID: ${{ secrets.POLLY_AWS_KEY_ID }}
+      POLLY_AWS_ACCESS_KEY: ${{ secrets.POLLY_AWS_ACCESS_KEY }}
+      ELEVENLABS_API_KEY: ${{ secrets.ELEVENLABS_API_KEY }}
+      WITAI_TOKEN: ${{ secrets.WITAI_TOKEN }}
+      GOOGLE_SA_PATH: ${{ secrets.GOOGLE_SA_PATH }}
+      GOOGLE_SA_FILE_B64: ${{ secrets.GOOGLE_SA_FILE_B64 }}
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
@@ -111,20 +125,6 @@ jobs:
 
       - name: Set environment variables and create Google credentials file on Windows
         if: matrix.os == 'windows-latest'
-        env:
-          WATSON_API_KEY: ${{ secrets.WATSON_API_KEY }}
-          WATSON_API_URL: ${{ secrets.WATSON_API_URL }}
-          WATSON_REGION: ${{ secrets.WATSON_REGION }}
-          WATSON_INSTANCE_ID: ${{ secrets.WATSON_INSTANCE_ID }}
-          MICROSOFT_TOKEN: ${{ secrets.MICROSOFT_TOKEN }}
-          MICROSOFT_REGION: ${{ secrets.MICROSOFT_REGION }}
-          POLLY_REGION: ${{ secrets.POLLY_REGION }}
-          POLLY_AWS_KEY_ID: ${{ secrets.POLLY_AWS_KEY_ID }}
-          POLLY_AWS_ACCESS_KEY: ${{ secrets.POLLY_AWS_ACCESS_KEY }}
-          ELEVENLABS_API_KEY: ${{ secrets.ELEVENLABS_API_KEY }}
-          WITAI_TOKEN: ${{ secrets.WITAI_TOKEN }}
-          GOOGLE_SA_PATH: ${{ secrets.GOOGLE_SA_PATH }}
-          GOOGLE_SA_FILE_B64: ${{ secrets.GOOGLE_SA_FILE_B64 }}
         run: |
           $google_sa_dir = [System.IO.Path]::GetDirectoryName($env:GOOGLE_SA_PATH)
           if (-not (Test-Path -Path $google_sa_dir)) {
@@ -136,41 +136,27 @@ jobs:
 
       - name: Set environment variables and create Google credentials file on Unix-based systems
         if: matrix.os != 'windows-latest'
-        env:
-          WATSON_API_KEY: ${{ secrets.WATSON_API_KEY }}
-          WATSON_API_URL: ${{ secrets.WATSON_API_URL }}
-          WATSON_REGION: ${{ secrets.WATSON_REGION }}
-          WATSON_INSTANCE_ID: ${{ secrets.WATSON_INSTANCE_ID }}
-          MICROSOFT_TOKEN: ${{ secrets.MICROSOFT_TOKEN }}
-          MICROSOFT_REGION: ${{ secrets.MICROSOFT_REGION }}
-          POLLY_REGION: ${{ secrets.POLLY_REGION }}
-          POLLY_AWS_KEY_ID: ${{ secrets.POLLY_AWS_KEY_ID }}
-          POLLY_AWS_ACCESS_KEY: ${{ secrets.POLLY_AWS_ACCESS_KEY }}
-          ELEVENLABS_API_KEY: ${{ secrets.ELEVENLABS_API_KEY }}
-          WITAI_TOKEN: ${{ secrets.WITAI_TOKEN }}
-          GOOGLE_SA_PATH: ${{ secrets.GOOGLE_SA_PATH }}
-          GOOGLE_SA_FILE_B64: ${{ secrets.GOOGLE_SA_FILE_B64 }}
         run: |
           mkdir -p $(dirname "$GOOGLE_SA_PATH")
           echo "$GOOGLE_SA_FILE_B64" | base64 --decode > "$GOOGLE_SA_PATH"
-          # run all tests with coverage
-          poetry run pytest --cov=tts_wrapper -m "not synthetic"
+
+      - name: Verify Google SA Path
+        run: |
+          echo "GOOGLE_SA_PATH is set to: $GOOGLE_SA_PATH"
+          if [[ -f "$GOOGLE_SA_PATH" ]]; then
+            echo "Google credentials file created at $GOOGLE_SA_PATH"
+          else
+            echo "Error: Google credentials file not created at $GOOGLE_SA_PATH"
+            exit 1
+          fi
+
+      - name: Set permissions for Google SA file
+        run: chmod 600 "$GOOGLE_SA_PATH"
+        
+      - name: Run tests with coverage
+        run: poetry run pytest --cov=tts_wrapper -m "not synthetic"
 
       - name: Run all tests with Makefile
-        env:
-          WATSON_API_KEY: ${{ secrets.WATSON_API_KEY }}
-          WATSON_API_URL: ${{ secrets.WATSON_API_URL }}
-          WATSON_REGION: ${{ secrets.WATSON_REGION }}
-          WATSON_INSTANCE_ID: ${{ secrets.WATSON_INSTANCE_ID }}
-          MICROSOFT_TOKEN: ${{ secrets.MICROSOFT_TOKEN }}
-          MICROSOFT_REGION: ${{ secrets.MICROSOFT_REGION }}
-          POLLY_REGION: ${{ secrets.POLLY_REGION }}
-          POLLY_AWS_KEY_ID: ${{ secrets.POLLY_AWS_KEY_ID }}
-          POLLY_AWS_ACCESS_KEY: ${{ secrets.POLLY_AWS_ACCESS_KEY }}
-          ELEVENLABS_API_KEY: ${{ secrets.ELEVENLABS_API_KEY }}
-          WITAI_TOKEN: ${{ secrets.WITAI_TOKEN }}
-          GOOGLE_SA_PATH: ${{ secrets.GOOGLE_SA_PATH }}
-          GOOGLE_SA_FILE_B64: ${{ secrets.GOOGLE_SA_FILE_B64 }}
         run: poetry run make tests
 
   publish:
