@@ -74,12 +74,17 @@ def decode_google_creds() -> None:
     Also needs GOOGLE_CREDS_PATH
     """
     google_b64_creds = os.getenv("GOOGLE_SA_FILE_B64")
-    google_creds_path = os.getenv("GOOGLE_CREDS_PATH", "google_creds.json")
+    google_creds_path = os.getenv("GOOGLE_SA_PATH", "google_creds.json")
 
     if google_b64_creds:
         try:
+            # Ensure the directory exists
+            creds_path = Path(google_creds_path)
+            creds_path.parent.mkdir(parents=True, exist_ok=True)
+
+            # Decode and write the credentials
             decoded_creds = base64.b64decode(google_b64_creds).decode("utf-8")
-            with Path(google_creds_path).open("w") as f:
+            with creds_path.open("w") as f:
                 f.write(decoded_creds)
         except (OSError, ValueError) as e:
             msg = "Failed to decode or save GOOGLE_SA_FILE_B64"

@@ -1,3 +1,5 @@
+creds/*
+.envrc
 venv/
 .DS_Store
 # Distribution / packaging
