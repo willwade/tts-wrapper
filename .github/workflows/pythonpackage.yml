@@ -149,7 +149,11 @@ jobs:
           fi
 
       - name: Set permissions for Google SA file
-        run: chmod 600 "$GOOGLE_SA_PATH"
+        if: matrix.os != 'windows-latest'
+        run: chmod 644 "$GOOGLE_SA_PATH"
+
+      - name: Verify Google SA Path Content
+        run: cat "$GOOGLE_SA_PATH"
         
       - name: Run tests with coverage
         run: poetry run pytest --cov=tts_wrapper -m "not synthetic"
