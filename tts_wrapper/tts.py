@@ -478,7 +478,8 @@ class AbstractTTS(ABC):
             raise
 
     def callback(
-            self, outdata: np.ndarray, frames: int, time:sd.CallbackTime, status: sd.CallbackFlags) -> None:
+            self, outdata: np.ndarray, frames: int, time: sd.CallbackTime,  # noqa: ARG002
+            status: sd.CallbackFlags) -> None:
         """Handle streamed audio playback as a callback."""
         if status:
             logging.warning("Sounddevice status: %s", status)
