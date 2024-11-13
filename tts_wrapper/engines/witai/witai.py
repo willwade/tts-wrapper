@@ -1,11 +1,11 @@
-from ...tts import AbstractTTS, FileFormat
-from typing import Optional, List, Dict, Any
+from typing import Any, Optional
+
+from tts_wrapper.engines.utils import (
+    estimate_word_timings,  # Import the timing estimation function
+)
+from tts_wrapper.tts import AbstractTTS
+
 from . import WitAiClient, WitAiSSML
-from ...engines.utils import (
-    estimate_word_timings,
-)  # Import the timing estimation function
-from ...exceptions import UnsupportedFileFormat
-import logging
 
 
 class WitAiTTS(AbstractTTS):
@@ -14,7 +14,7 @@ class WitAiTTS(AbstractTTS):
         client: WitAiClient,
         voice: Optional[str] = "Rebecca",
         lang: Optional[str] = "en-US",
-    ):
+    ) -> None:
         super().__init__()
         self._client = client
         self._voice = voice
@@ -38,11 +38,11 @@ class WitAiTTS(AbstractTTS):
         """Returns an instance of the WitSSML class for constructing SSML strings."""
         return WitAiSSML()
 
-    def get_voices(self) -> List[Dict[str, Any]]:
+    def get_voices(self) -> list[dict[str, Any]]:
         """Retrieves a list of available voices from the Wit.ai service."""
         return self._client.get_voices()
 
-    def set_voice(self, voice_id: str, lang_id: str):
+    def set_voice(self, voice_id: str, lang_id: str) -> None:
         """Sets the voice for the TTS engine."""
         super().set_voice(voice_id)
         self._voice = voice_id

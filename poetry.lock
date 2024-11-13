@@ -80,17 +80,17 @@ uvloop = ["uvloop (>=0.15.2)"]
 
 [[package]]
 name = "boto3"
-version = "1.35.55"
+version = "1.35.58"
 description = "The AWS SDK for Python"
 optional = true
 python-versions = ">=3.8"
 files = [
-    {file = "boto3-1.35.55-py3-none-any.whl", hash = "sha256:c7a0a0bc5ae3bed5d38e8bfe5a56b31621e79bdd7c1ea6e5ba4326d820cde3a5"},
-    {file = "boto3-1.35.55.tar.gz", hash = "sha256:82fa8cdb00731aeffe7a5829821ae78d75c7ae959b638c15ff3b4681192ace90"},
+    {file = "boto3-1.35.58-py3-none-any.whl", hash = "sha256:856896fd5fc5871758eb04b27bad5bbbf0fdb6143a923f9e8d10125351efdf98"},
+    {file = "boto3-1.35.58.tar.gz", hash = "sha256:1ee139e63f1545ee0192914cfe422b68360b8c344a94e4612ac657dd7ece93de"},
 ]
 
 [package.dependencies]
-botocore = ">=1.35.55,<1.36.0"
+botocore = ">=1.35.58,<1.36.0"
 jmespath = ">=0.7.1,<2.0.0"
 s3transfer = ">=0.10.0,<0.11.0"
 
@@ -99,13 +99,13 @@ crt = ["botocore[crt] (>=1.21.0,<2.0a0)"]
 
 [[package]]
 name = "boto3-stubs"
-version = "1.35.55"
-description = "Type annotations for boto3 1.35.55 generated with mypy-boto3-builder 8.2.0"
+version = "1.35.58"
+description = "Type annotations for boto3 1.35.58 generated with mypy-boto3-builder 8.2.1"
 optional = false
 python-versions = ">=3.8"
 files = [
-    {file = "boto3_stubs-1.35.55-py3-none-any.whl", hash = "sha256:65d8dc2c05dd85e13be63b724ec9477c4d9d52b1ee31b3c4a245036e69172c86"},
-    {file = "boto3_stubs-1.35.55.tar.gz", hash = "sha256:17bfab8fe3643d93a30c66a48f62597f9406a317e3e9b9d05db5444c9b19be6c"},
+    {file = "boto3_stubs-1.35.58-py3-none-any.whl", hash = "sha256:221dbe6aec614a12bd2c7426e3f879a0f4c2d90a8ed283a248af9d7b3071eed3"},
+    {file = "boto3_stubs-1.35.58.tar.gz", hash = "sha256:a818cb8d1d5d9b51db2631f485d3de8d227b3607b2014a9089b55735772dd0ff"},
 ]
 
 [package.dependencies]
@@ -156,7 +156,7 @@ bedrock-agent = ["mypy-boto3-bedrock-agent (>=1.35.0,<1.36.0)"]
 bedrock-agent-runtime = ["mypy-boto3-bedrock-agent-runtime (>=1.35.0,<1.36.0)"]
 bedrock-runtime = ["mypy-boto3-bedrock-runtime (>=1.35.0,<1.36.0)"]
 billingconductor = ["mypy-boto3-billingconductor (>=1.35.0,<1.36.0)"]
-boto3 = ["boto3 (==1.35.55)", "botocore (==1.35.55)"]
+boto3 = ["boto3 (==1.35.58)", "botocore (==1.35.58)"]
 braket = ["mypy-boto3-braket (>=1.35.0,<1.36.0)"]
 budgets = ["mypy-boto3-budgets (>=1.35.0,<1.36.0)"]
 ce = ["mypy-boto3-ce (>=1.35.0,<1.36.0)"]
@@ -511,13 +511,13 @@ xray = ["mypy-boto3-xray (>=1.35.0,<1.36.0)"]
 
 [[package]]
 name = "botocore"
-version = "1.35.55"
+version = "1.35.58"
 description = "Low-level, data-driven core of boto 3."
 optional = true
 python-versions = ">=3.8"
 files = [
-    {file = "botocore-1.35.55-py3-none-any.whl", hash = "sha256:3d54739e498534c9d7a6e9732ae2d17ed29c7d5e29fe36c956d8488b859538b0"},
-    {file = "botocore-1.35.55.tar.gz", hash = "sha256:61ae18f688250372d7b6046e35c86f8fd09a7c0f0064b52688f3490b4d6c9d6b"},
+    {file = "botocore-1.35.58-py3-none-any.whl", hash = "sha256:647b8706ae6484ee4c2208235f38976d9f0e52f80143e81d7941075215e96111"},
+    {file = "botocore-1.35.58.tar.gz", hash = "sha256:8303309c7b59ddf04b11d79813530809d6b10b411ac9f93916d2032c283d6881"},
 ]
 
 [package.dependencies]
@@ -530,13 +530,13 @@ crt = ["awscrt (==0.22.0)"]
 
 [[package]]
 name = "botocore-stubs"
-version = "1.35.54"
+version = "1.35.58"
 description = "Type annotations and code completion for botocore"
 optional = false
 python-versions = ">=3.8"
 files = [
-    {file = "botocore_stubs-1.35.54-py3-none-any.whl", hash = "sha256:26ba65907eed959dddc644ab1cd72e3a2cc9761dad79e0b45ff3b8676c47e5ec"},
-    {file = "botocore_stubs-1.35.54.tar.gz", hash = "sha256:49e28813324308bfc5a92bde118df5c9c41a01237eef1e1628891770f3f68a94"},
+    {file = "botocore_stubs-1.35.58-py3-none-any.whl", hash = "sha256:cd10f24916177c3a77e4b5a5d4443e19c907e1bf0a5db25da21449a50aebad70"},
+    {file = "botocore_stubs-1.35.58.tar.gz", hash = "sha256:9b695d6309e7d5eed08fbaf30f9526669b847f65b0f01006afd23ad977187d1c"},
 ]
 
 [package.dependencies]
@@ -902,13 +902,13 @@ pyflakes = ">=3.2.0,<3.3.0"
 
 [[package]]
 name = "google-api-core"
-version = "2.22.0"
+version = "2.23.0"
 description = "Google API client core library"
 optional = true
 python-versions = ">=3.7"
 files = [
-    {file = "google_api_core-2.22.0-py3-none-any.whl", hash = "sha256:a6652b6bd51303902494998626653671703c420f6f4c88cfd3f50ed723e9d021"},
-    {file = "google_api_core-2.22.0.tar.gz", hash = "sha256:26f8d76b96477db42b55fd02a33aae4a42ec8b86b98b94969b7333a2c828bf35"},
+    {file = "google_api_core-2.23.0-py3-none-any.whl", hash = "sha256:c20100d4c4c41070cf365f1d8ddf5365915291b5eb11b83829fbd1c999b5122f"},
+    {file = "google_api_core-2.23.0.tar.gz", hash = "sha256:2ceb087315e6af43f256704b871d99326b1f12a9d6ce99beaedec99ba26a0ace"},
 ]
 
 [package.dependencies]
@@ -1074,13 +1074,13 @@ protobuf = ">=5.26.1,<6.0dev"
 
 [[package]]
 name = "gtts"
-version = "2.5.3"
+version = "2.5.4"
 description = "gTTS (Google Text-to-Speech), a Python library and CLI tool to interface with Google Translate text-to-speech API"
 optional = true
 python-versions = ">=3.7"
 files = [
-    {file = "gTTS-2.5.3-py3-none-any.whl", hash = "sha256:ca5d962f7bf57238500d83c61cf3de76b0aa78b18658f3db5c0396e604caa0f5"},
-    {file = "gtts-2.5.3.tar.gz", hash = "sha256:d9f873c2f3a397c77c7a8c5dc128fc35fbed59f3e240cef0bff6c80d8cc12106"},
+    {file = "gTTS-2.5.4-py3-none-any.whl", hash = "sha256:5dd579377f9f5546893bc26315ab1f846933dc27a054764b168f141065ca8436"},
+    {file = "gtts-2.5.4.tar.gz", hash = "sha256:f5737b585f6442f677dbe8773424fd50697c75bdf3e36443585e30a8d48c1884"},
 ]
 
 [package.dependencies]
@@ -1312,13 +1312,13 @@ files = [
 
 [[package]]
 name = "packaging"
-version = "24.1"
+version = "24.2"
 description = "Core utilities for Python packages"
 optional = false
 python-versions = ">=3.8"
 files = [
-    {file = "packaging-24.1-py3-none-any.whl", hash = "sha256:5b8f2217dbdbd2f7f384c41c628544e6d52f2d0f53c6d0c3ea61aa5d1d7ff124"},
-    {file = "packaging-24.1.tar.gz", hash = "sha256:026ed72c8ed3fcce5bf8950572258698927fd1dbda10a5e981cdf0ac37f4f002"},
+    {file = "packaging-24.2-py3-none-any.whl", hash = "sha256:09abb1bccd265c01f4a3aa3f7a7db064b36514d2cba19a2f694fe6150451a759"},
+    {file = "packaging-24.2.tar.gz", hash = "sha256:c228a6dc5e932d346bc5739379109d49e8853dd8223571c7c5b55260edc0b97f"},
 ]
 
 [[package]]
@@ -4678,6 +4678,33 @@ files = [
 pyasn1 = ">=0.1.3"
 
 [[package]]
+name = "ruff"
+version = "0.7.3"
+description = "An extremely fast Python linter and code formatter, written in Rust."
+optional = false
+python-versions = ">=3.7"
+files = [
+    {file = "ruff-0.7.3-py3-none-linux_armv6l.whl", hash = "sha256:34f2339dc22687ec7e7002792d1f50712bf84a13d5152e75712ac08be565d344"},
+    {file = "ruff-0.7.3-py3-none-macosx_10_12_x86_64.whl", hash = "sha256:fb397332a1879b9764a3455a0bb1087bda876c2db8aca3a3cbb67b3dbce8cda0"},
+    {file = "ruff-0.7.3-py3-none-macosx_11_0_arm64.whl", hash = "sha256:37d0b619546103274e7f62643d14e1adcbccb242efda4e4bdb9544d7764782e9"},
+    {file = "ruff-0.7.3-py3-none-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:5d59f0c3ee4d1a6787614e7135b72e21024875266101142a09a61439cb6e38a5"},
+    {file = "ruff-0.7.3-py3-none-manylinux_2_17_armv7l.manylinux2014_armv7l.whl", hash = "sha256:44eb93c2499a169d49fafd07bc62ac89b1bc800b197e50ff4633aed212569299"},
+    {file = "ruff-0.7.3-py3-none-manylinux_2_17_i686.manylinux2014_i686.whl", hash = "sha256:6d0242ce53f3a576c35ee32d907475a8d569944c0407f91d207c8af5be5dae4e"},
+    {file = "ruff-0.7.3-py3-none-manylinux_2_17_ppc64.manylinux2014_ppc64.whl", hash = "sha256:6b6224af8b5e09772c2ecb8dc9f3f344c1aa48201c7f07e7315367f6dd90ac29"},
+    {file = "ruff-0.7.3-py3-none-manylinux_2_17_ppc64le.manylinux2014_ppc64le.whl", hash = "sha256:c50f95a82b94421c964fae4c27c0242890a20fe67d203d127e84fbb8013855f5"},
+    {file = "ruff-0.7.3-py3-none-manylinux_2_17_s390x.manylinux2014_s390x.whl", hash = "sha256:7f3eff9961b5d2644bcf1616c606e93baa2d6b349e8aa8b035f654df252c8c67"},
+    {file = "ruff-0.7.3-py3-none-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:b8963cab06d130c4df2fd52c84e9f10d297826d2e8169ae0c798b6221be1d1d2"},
+    {file = "ruff-0.7.3-py3-none-musllinux_1_2_aarch64.whl", hash = "sha256:61b46049d6edc0e4317fb14b33bd693245281a3007288b68a3f5b74a22a0746d"},
+    {file = "ruff-0.7.3-py3-none-musllinux_1_2_armv7l.whl", hash = "sha256:10ebce7696afe4644e8c1a23b3cf8c0f2193a310c18387c06e583ae9ef284de2"},
+    {file = "ruff-0.7.3-py3-none-musllinux_1_2_i686.whl", hash = "sha256:3f36d56326b3aef8eeee150b700e519880d1aab92f471eefdef656fd57492aa2"},
+    {file = "ruff-0.7.3-py3-none-musllinux_1_2_x86_64.whl", hash = "sha256:5d024301109a0007b78d57ab0ba190087b43dce852e552734ebf0b0b85e4fb16"},
+    {file = "ruff-0.7.3-py3-none-win32.whl", hash = "sha256:4ba81a5f0c5478aa61674c5a2194de8b02652f17addf8dfc40c8937e6e7d79fc"},
+    {file = "ruff-0.7.3-py3-none-win_amd64.whl", hash = "sha256:588a9ff2fecf01025ed065fe28809cd5a53b43505f48b69a1ac7707b1b7e4088"},
+    {file = "ruff-0.7.3-py3-none-win_arm64.whl", hash = "sha256:1713e2c5545863cdbfe2cbce21f69ffaf37b813bfd1fb3b90dc9a6f1963f5a8c"},
+    {file = "ruff-0.7.3.tar.gz", hash = "sha256:e1d1ba2e40b6e71a61b063354d04be669ab0d39c352461f3d789cac68b54a313"},
+]
+
+[[package]]
 name = "s3transfer"
 version = "0.10.3"
 description = "An Amazon S3 Transfer Manager"
@@ -4839,13 +4866,13 @@ files = [
 
 [[package]]
 name = "tomli"
-version = "2.0.2"
+version = "2.1.0"
 description = "A lil' TOML parser"
 optional = false
 python-versions = ">=3.8"
 files = [
-    {file = "tomli-2.0.2-py3-none-any.whl", hash = "sha256:2ebe24485c53d303f690b0ec092806a085f07af5a5aa1464f3931eec36caaa38"},
-    {file = "tomli-2.0.2.tar.gz", hash = "sha256:d46d457a85337051c36524bc5349dd91b1877838e2979ac5ced3e710ed8a60ed"},
+    {file = "tomli-2.1.0-py3-none-any.whl", hash = "sha256:a5c57c3d1c56f5ccdf89f6523458f60ef716e210fc47c4cfb188c5ba473e0391"},
+    {file = "tomli-2.1.0.tar.gz", hash = "sha256:3f646cae2aec94e17d04973e4249548320197cfabdf130015d023de4b74d8ab8"},
 ]
 
 [[package]]
@@ -4988,8 +5015,8 @@ google = ["google-cloud-texttospeech"]
 googletrans = ["gTTS"]
 microsoft = ["azure-cognitiveservices-speech"]
 polly = ["boto3"]
-sapi = ["pyttsx3"]
 sherpaonnx = ["numpy", "numpy", "requests", "sherpa-onnx"]
+systemtts = ["pyttsx3"]
 uwp = []
 watson = ["ibm-watson", "requests"]
 witai = ["requests"]
@@ -4997,4 +5024,4 @@ witai = ["requests"]
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.10,<3.13"
-content-hash = "b71500fc4492cf38d98a25025a4fc6e0ca1e2283ed4f94353bba9a5a17a98334"
+content-hash = "61b1f9821c7dccc781f7117650c605017a24220d0830046e16f6148572f01c29"

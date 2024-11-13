@@ -1,9 +1,9 @@
-from typing import Any, List, Dict, Optional
-from ...exceptions import UnsupportedFileFormat
-from ...tts import AbstractTTS, FileFormat
-from . import MMSClient, MMSSSML
 import re
-import io
+from typing import Any, Optional
+
+from tts_wrapper.tts import AbstractTTS
+
+from . import MMSSSML, MMSClient
 
 try:
     import numpy as np
@@ -11,7 +11,7 @@ except ImportError:
     np = None  # type: ignore
 
 class MMSTTS(AbstractTTS):
-    def __init__(self, client: MMSClient, lang: Optional[str] = None, voice: Optional[str] = None):
+    def __init__(self, client: MMSClient, lang: Optional[str] = None, voice: Optional[str] = None) -> None:
         super().__init__()
         self._client = client
         self._lang = lang or "eng"  # Default to English
@@ -23,32 +23,31 @@ class MMSTTS(AbstractTTS):
         properties = []
         #commenting this for now as we don't have ways to control rate and pitch without ssml
         #rate = self.get_property("rate")
-        #if rate != "":            
+        #if rate != "":
         #    properties.append(f'rate="{rate}"')
-        #        
+        #
         #pitch = self.get_property("pitch")
         #if pitch != "":
         #    properties.append(f'pitch="{pitch}"')
-    
+
         volume = self.get_property("volume")
         if volume != "":
             properties.append(f'volume="{volume}"')
-        
-        prosody_content = " ".join(properties)
-        
-        #text_with_tag = f'<prosody {property}="{volume_in_words}">{text}</prosody>'        
-        text_with_tag = f'<prosody {prosody_content}>{text}</prosody>'
 
-        return text_with_tag
-        
+        prosody_content = " ".join(properties)
+
+        #text_with_tag = f'<prosody {property}="{volume_in_words}">{text}</prosody>'
+        return f"<prosody {prosody_content}>{text}</prosody>"
+
+
     def extract_text_from_tags(self, input_string: str) -> str:
-        pattern = r'<[^>]+>(.*?)</[^>]+>'
+        pattern = r"<[^>]+>(.*?)</[^>]+>"
         match = re.search(pattern, input_string)
         if match:
             return str(match.group(1))
         return input_string
 
-    def synth_to_bytes(self, text: Any) -> bytes:        
+    def synth_to_bytes(self, text: Any) -> bytes:
         text = str(text)
         if not self._is_ssml(text):
             text = self.ssml.add(text)
@@ -56,17 +55,16 @@ class MMSTTS(AbstractTTS):
 
         extracted_text = self.extract_text_from_tags(text)
         result = self._client.synth(str(extracted_text), self._voice, self._lang)
-        
+
         self.audio_bytes = result["audio_content"]
 
         prosody_text = str(text)
 
         if "volume=" in prosody_text:
             volume = self.get_volume_value(prosody_text)
-            print("extracted volume from prosody is ", volume)
             self.audio_bytes = self.adjust_volume_value(self.audio_bytes, volume)
 
-        if self.audio_bytes[:4] == b'RIFF':
+        if self.audio_bytes[:4] == b"RIFF":
             self.audio_bytes = self._strip_wav_header(self.audio_bytes)
 
         return self.audio_bytes
@@ -74,7 +72,7 @@ class MMSTTS(AbstractTTS):
     def adjust_volume_value(self, generated_audio: bytes, volume: float) -> bytes:
         # Ensure even length
         if len(generated_audio) % 2 != 0:
-            generated_audio += b'\x00'
+            generated_audio += b"\x00"
 
         # Convert to float32 array
         samples = np.frombuffer(generated_audio, dtype=np.int16).astype(np.float32) / 32768.0
@@ -102,7 +100,7 @@ class MMSTTS(AbstractTTS):
     def get_volume_value(self, text: str) -> float:
         pattern = r'volume="(\d+)"'
         match = re.search(pattern, text)
-        
+
         return float(match.group(1))
 
     def synth(self, text: Any, output_file: str) -> None:
@@ -114,5 +112,5 @@ class MMSTTS(AbstractTTS):
     def ssml(self) -> MMSSSML:
         return MMSSSML()
 
-    def get_voices(self) -> List[Dict[str, Any]]:
+    def get_voices(self) -> list[dict[str, Any]]:
         return self._client.get_voices()

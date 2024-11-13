@@ -1,4 +1,6 @@
-from ...ssml import BaseSSMLRoot, SSMLNode
+from typing import Optional
+
+from tts_wrapper.ssml import BaseSSMLRoot, SSMLNode
 
 
 class WitAiSSML(BaseSSMLRoot):
@@ -7,7 +9,7 @@ class WitAiSSML(BaseSSMLRoot):
         self.add(SSMLNode("break", attrs={"time": time}))
         return self
 
-    def say_as(self, text: str, interpret_as: str, format: str = None) -> "WitAiSSML":
+    def say_as(self, text: str, interpret_as: str, format: Optional[str] = None) -> "WitAiSSML":
         attrs = {"interpret-as": interpret_as}
         if format:
             attrs["format"] = format
@@ -19,7 +21,7 @@ class WitAiSSML(BaseSSMLRoot):
         return self
 
     def prosody(
-        self, text: str, rate: str = None, pitch: str = None, volume: str = None
+        self, text: str, rate: Optional[str] = None, pitch: Optional[str] = None, volume: Optional[str] = None,
     ) -> "WitAiSSML":
         attrs = {}
         if rate:
@@ -33,7 +35,7 @@ class WitAiSSML(BaseSSMLRoot):
 
     def phoneme(self, text: str, ph: str, alphabet: str) -> "WitAiSSML":
         self.add(
-            SSMLNode("phoneme", attrs={"ph": ph, "alphabet": alphabet}, children=[text])
+            SSMLNode("phoneme", attrs={"ph": ph, "alphabet": alphabet}, children=[text]),
         )
         return self
 
@@ -42,7 +44,7 @@ class WitAiSSML(BaseSSMLRoot):
         return self
 
     def sfx(
-        self, text: str, character: str = None, environment: str = None
+        self, text: str, character: Optional[str] = None, environment: Optional[str] = None,
     ) -> "WitAiSSML":
         attrs = {}
         if character:
@@ -52,5 +54,5 @@ class WitAiSSML(BaseSSMLRoot):
         self.add(SSMLNode("sfx", attrs=attrs, children=[text]))
         return self
 
-    def clear_ssml(self):
+    def clear_ssml(self) -> None:
         self._inner.clear_ssml()

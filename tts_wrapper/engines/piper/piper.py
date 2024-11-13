@@ -1,16 +1,14 @@
-from typing import Any, List, Optional, Dict
+from typing import Any, Optional
 
-from tts_wrapper.exceptions import UnsupportedFileFormat
+from tts_wrapper.engines.utils import estimate_word_timings
+from tts_wrapper.tts import AbstractTTS
 
-from ...tts import AbstractTTS, FileFormat
 from . import PiperClient, PiperSSML
-import threading
-import time
-from ...engines.utils import estimate_word_timings  
+
 
 class PiperTTS(AbstractTTS):
 
-    def __init__(self, client: PiperClient, lang: Optional[str] = None, voice: Optional[str] = None):
+    def __init__(self, client: PiperClient, lang: Optional[str] = None, voice: Optional[str] = None) -> None:
         super().__init__()
         self._client = client
         self._voices = self.get_voices()
@@ -21,20 +19,20 @@ class PiperTTS(AbstractTTS):
         word_timings = estimate_word_timings(str(text))
         self.set_timings(word_timings)
         audio_bytes = self._client.synth(str(text))
-        
-        if self.audio_bytes[:4] == b'RIFF':
+
+        if self.audio_bytes[:4] == b"RIFF":
             audio_bytes = self._strip_wav_header(audio_bytes)
-        
+
         return audio_bytes
 
     @property
     def ssml(self) -> PiperSSML:
         return PiperSSML()
 
-    def get_voices(self) -> List[Dict[str, Any]]:
+    def get_voices(self) -> list[dict[str, Any]]:
         return self._client.get_voices()
 
-    def set_voice(self, voice_id: str, lang_id: str):
+    def set_voice(self, voice_id: str, lang_id: str) -> None:
         super().set_voice(voice_id)
         self._voice = voice_id
         self._lang = lang_id

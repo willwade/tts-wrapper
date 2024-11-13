@@ -1,8 +1,9 @@
-from typing import Any, List, Optional, Dict, Tuple
-from ...exceptions import UnsupportedFileFormat
-from ...tts import AbstractTTS, FileFormat
-from . import WatsonClient, WatsonSSML
 import logging
+from typing import Any, Optional
+
+from tts_wrapper.tts import AbstractTTS
+
+from . import WatsonClient, WatsonSSML
 
 
 class WatsonTTS(AbstractTTS):
@@ -11,7 +12,7 @@ class WatsonTTS(AbstractTTS):
         client: WatsonClient,
         lang: Optional[str] = None,
         voice: Optional[str] = None,
-    ):
+    ) -> None:
         super().__init__()
         self._client = client
         self._voice = voice or "en-US_LisaV3Voice"
@@ -26,8 +27,8 @@ class WatsonTTS(AbstractTTS):
         return 0.0
 
     def _process_word_timings(
-        self, word_timings: List[Tuple[float, str]]
-    ) -> List[Tuple[float, float, str]]:
+        self, word_timings: list[tuple[float, str]],
+    ) -> list[tuple[float, float, str]]:
         processed_timings = []
         audio_duration = self.get_audio_duration()
 
@@ -36,7 +37,7 @@ class WatsonTTS(AbstractTTS):
                 end_time = word_timings[i + 1][0]
             else:
                 end_time = min(
-                    float(start_time) + 0.5, audio_duration
+                    float(start_time) + 0.5, audio_duration,
                 )  # Convert start_time to float
             processed_timings.append((float(start_time), float(end_time), word))
 
@@ -48,7 +49,7 @@ class WatsonTTS(AbstractTTS):
 
         try:
             self.generated_audio = self._client.synth_with_timings(
-                str(text), self._voice
+                str(text), self._voice,
             )
             self.audio_format = "wav"
 
@@ -60,25 +61,24 @@ class WatsonTTS(AbstractTTS):
 
             return self.generated_audio
         except Exception as e:
-            logging.error(f"Error in synth_to_bytes: {e}")
+            logging.exception("Error in synth_to_bytes: %s", e)
             raise
 
     @property
     def ssml(self) -> WatsonSSML:
         return WatsonSSML()
 
-    def get_voices(self) -> List[Dict[str, Any]]:
+    def get_voices(self) -> list[dict[str, Any]]:
         """Retrieves a list of available voices from the Watson TTS service."""
         return self._client.get_voices()
 
-    def set_voice(self, voice_id: str, lang_id: str):
-        """
-        Sets the voice for the TTS engine and updates the SSML configuration accordingly.
+    def set_voice(self, voice_id: str, lang_id: str) -> None:
+        """Sets the voice for the TTS engine and updates the SSML configuration accordingly.
 
         @param voice_id: The ID of the voice to be used for synthesis.
         """
         super().set_voice(
-            voice_id
+            voice_id,
         )  # Optionally manage voice at the AbstractTTS level if needed
         self._voice = voice_id
         self._lang = lang_id

@@ -1,10 +1,10 @@
-from ...ssml import BaseSSMLRoot, SSMLNode, Child
+from tts_wrapper.ssml import BaseSSMLRoot, SSMLNode
+
 
 class PiperSSMLNode(SSMLNode):
     def __str__(self) -> str:
         # Override to generate only the inner content without the actual SSML tags
-        rendered_children = "".join(str(c) for c in self._children)
-        return rendered_children
+        return "".join(str(c) for c in self._children)
 
 class PiperSSMLRoot(BaseSSMLRoot):
     def __init__(self) -> None:

@@ -1,4 +1,4 @@
-from ...ssml import BaseSSMLRoot, SSMLNode
+from tts_wrapper.ssml import BaseSSMLRoot
 
 
 class GoogleSSML(BaseSSMLRoot):
@@ -15,7 +15,7 @@ class GoogleSSML(BaseSSMLRoot):
 
         words = original_text.split()
         ssml_parts = []
-        for i, word in enumerate(words):
+        for _i, word in enumerate(words):
             ssml_parts.append(f'<mark name="{word}"/>{word}')
 
         if "prosody" in text:
@@ -28,5 +28,5 @@ class GoogleSSML(BaseSSMLRoot):
         ssml_parts.append("</speak>")
         return "".join(ssml_parts)
 
-    def clear_ssml(self):
+    def clear_ssml(self) -> None:
         self._inner.clear_ssml()

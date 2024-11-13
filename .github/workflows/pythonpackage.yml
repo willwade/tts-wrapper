@@ -48,8 +48,7 @@ jobs:
 
       - name: Update package index and install dependencies
         run: |
-          poetry install --with dev 
-          poetry install -E google -E watson -E polly -E microsoft -E googletrans -E witai -E elevenlabs
+          poetry install --with dev --extras "google watson polly microsoft googletrans witai elevenlabs systemtts controlaudio sherpaonnx"
           poetry run postinstall
 
       - name: Build package
@@ -68,6 +67,20 @@ jobs:
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
         python-version: ["3.10", "3.11", "3.12"]
+    env:
+      WATSON_API_KEY: ${{ secrets.WATSON_API_KEY }}
+      WATSON_API_URL: ${{ secrets.WATSON_API_URL }}
+      WATSON_REGION: ${{ secrets.WATSON_REGION }}
+      WATSON_INSTANCE_ID: ${{ secrets.WATSON_INSTANCE_ID }}
+      MICROSOFT_TOKEN: ${{ secrets.MICROSOFT_TOKEN }}
+      MICROSOFT_REGION: ${{ secrets.MICROSOFT_REGION }}
+      POLLY_REGION: ${{ secrets.POLLY_REGION }}
+      POLLY_AWS_KEY_ID: ${{ secrets.POLLY_AWS_KEY_ID }}
+      POLLY_AWS_ACCESS_KEY: ${{ secrets.POLLY_AWS_ACCESS_KEY }}
+      ELEVENLABS_API_KEY: ${{ secrets.ELEVENLABS_API_KEY }}
+      WITAI_TOKEN: ${{ secrets.WITAI_TOKEN }}
+      GOOGLE_SA_PATH: ${{ secrets.GOOGLE_SA_PATH }}
+      GOOGLE_SA_FILE_B64: ${{ secrets.GOOGLE_SA_FILE_B64 }}
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
@@ -91,7 +104,7 @@ jobs:
         if: matrix.os == 'ubuntu-latest'
         run: |
           sudo apt-get update -y
-          sudo apt-get install -y portaudio19-dev libttspico-utils ffmpeg
+          sudo apt-get install -y portaudio19-dev libttspico-utils ffmpeg espeak-ng
 
       - name: Install system dependencies on macOS
         if: matrix.os == 'macos-latest'
@@ -105,72 +118,13 @@ jobs:
 
       - name: Update package index and install dependencies
         run: |
-          poetry install --with dev 
-          poetry install -E google -E watson -E polly -E microsoft -E googletrans -E witai -E elevenlabs
+          poetry install --with dev --extras "google watson polly microsoft googletrans witai elevenlabs systemtts controlaudio sherpaonnx"
           poetry run postinstall
 
-      - name: Set environment variables and create Google credentials file on Windows
-        if: matrix.os == 'windows-latest'
-        env:
-          WATSON_API_KEY: ${{ secrets.WATSON_API_KEY }}
-          WATSON_API_URL: ${{ secrets.WATSON_API_URL }}
-          WATSON_REGION: ${{ secrets.WATSON_REGION }}
-          WATSON_INSTANCE_ID: ${{ secrets.WATSON_INSTANCE_ID }}
-          MICROSOFT_TOKEN: ${{ secrets.MICROSOFT_TOKEN }}
-          MICROSOFT_REGION: ${{ secrets.MICROSOFT_REGION }}
-          POLLY_REGION: ${{ secrets.POLLY_REGION }}
-          POLLY_AWS_KEY_ID: ${{ secrets.POLLY_AWS_KEY_ID }}
-          POLLY_AWS_ACCESS_KEY: ${{ secrets.POLLY_AWS_ACCESS_KEY }}
-          ELEVENLABS_API_KEY: ${{ secrets.ELEVENLABS_API_KEY }}
-          WITAI_TOKEN: ${{ secrets.WITAI_TOKEN }}
-          GOOGLE_SA_PATH: ${{ secrets.GOOGLE_SA_PATH }}
-          GOOGLE_SA_FILE_B64: ${{ secrets.GOOGLE_SA_FILE_B64 }}
-        run: |
-          $google_sa_dir = [System.IO.Path]::GetDirectoryName($env:GOOGLE_SA_PATH)
-          if (-not (Test-Path -Path $google_sa_dir)) {
-            New-Item -ItemType Directory -Force -Path $google_sa_dir
-          }
-          [System.Convert]::FromBase64String($env:GOOGLE_SA_FILE_B64) | Set-Content -Path $env:GOOGLE_SA_PATH -AsByteStream
-          # run all tests with coverage
-          poetry run pytest --cov=tts_wrapper -m "not synthetic"
-
-      - name: Set environment variables and create Google credentials file on Unix-based systems
-        if: matrix.os != 'windows-latest'
-        env:
-          WATSON_API_KEY: ${{ secrets.WATSON_API_KEY }}
-          WATSON_API_URL: ${{ secrets.WATSON_API_URL }}
-          WATSON_REGION: ${{ secrets.WATSON_REGION }}
-          WATSON_INSTANCE_ID: ${{ secrets.WATSON_INSTANCE_ID }}
-          MICROSOFT_TOKEN: ${{ secrets.MICROSOFT_TOKEN }}
-          MICROSOFT_REGION: ${{ secrets.MICROSOFT_REGION }}
-          POLLY_REGION: ${{ secrets.POLLY_REGION }}
-          POLLY_AWS_KEY_ID: ${{ secrets.POLLY_AWS_KEY_ID }}
-          POLLY_AWS_ACCESS_KEY: ${{ secrets.POLLY_AWS_ACCESS_KEY }}
-          ELEVENLABS_API_KEY: ${{ secrets.ELEVENLABS_API_KEY }}
-          WITAI_TOKEN: ${{ secrets.WITAI_TOKEN }}
-          GOOGLE_SA_PATH: ${{ secrets.GOOGLE_SA_PATH }}
-          GOOGLE_SA_FILE_B64: ${{ secrets.GOOGLE_SA_FILE_B64 }}
-        run: |
-          mkdir -p $(dirname "$GOOGLE_SA_PATH")
-          echo "$GOOGLE_SA_FILE_B64" | base64 --decode > "$GOOGLE_SA_PATH"
-          # run all tests with coverage
-          poetry run pytest --cov=tts_wrapper -m "not synthetic"
+      - name: Run tests with coverage
+        run: poetry run pytest --cov=tts_wrapper -m "not synthetic"
 
       - name: Run all tests with Makefile
-        env:
-          WATSON_API_KEY: ${{ secrets.WATSON_API_KEY }}
-          WATSON_API_URL: ${{ secrets.WATSON_API_URL }}
-          WATSON_REGION: ${{ secrets.WATSON_REGION }}
-          WATSON_INSTANCE_ID: ${{ secrets.WATSON_INSTANCE_ID }}
-          MICROSOFT_TOKEN: ${{ secrets.MICROSOFT_TOKEN }}
-          MICROSOFT_REGION: ${{ secrets.MICROSOFT_REGION }}
-          POLLY_REGION: ${{ secrets.POLLY_REGION }}
-          POLLY_AWS_KEY_ID: ${{ secrets.POLLY_AWS_KEY_ID }}
-          POLLY_AWS_ACCESS_KEY: ${{ secrets.POLLY_AWS_ACCESS_KEY }}
-          ELEVENLABS_API_KEY: ${{ secrets.ELEVENLABS_API_KEY }}
-          WITAI_TOKEN: ${{ secrets.WITAI_TOKEN }}
-          GOOGLE_SA_PATH: ${{ secrets.GOOGLE_SA_PATH }}
-          GOOGLE_SA_FILE_B64: ${{ secrets.GOOGLE_SA_FILE_B64 }}
         run: poetry run make tests
 
   publish:

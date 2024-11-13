@@ -1,4 +1,6 @@
-from ...ssml import BaseSSMLRoot, SSMLNode
+from typing import Optional
+
+from tts_wrapper.ssml import BaseSSMLRoot, SSMLNode
 
 # Microsoft/ssml.py
 
@@ -26,7 +28,7 @@ class MicrosoftSSML(BaseSSMLRoot):
         self._inner.add(text)
         return str(self)
 
-    def set_voice(self, new_voice: str, new_lang: str):
+    def set_voice(self, new_voice: str, new_lang: str) -> None:
         """Updates the voice and language for the SSML without reconstructing the SSML nodes."""
         self.voice = new_voice
         self.lang = new_lang
@@ -38,7 +40,7 @@ class MicrosoftSSML(BaseSSMLRoot):
         return self
 
     def say_as(
-        self, text: str, interpret_as: str, format: str = None
+        self, text: str, interpret_as: str, format: Optional[str] = None,
     ) -> "MicrosoftSSML":
         attrs = {"interpret-as": interpret_as}
         if format:
@@ -51,7 +53,7 @@ class MicrosoftSSML(BaseSSMLRoot):
         return self
 
     def prosody(
-        self, text: str, rate: str = None, pitch: str = None, volume: str = None
+        self, text: str, rate: Optional[str] = None, pitch: Optional[str] = None, volume: Optional[str] = None,
     ) -> "MicrosoftSSML":
         attrs = {}
         if rate:
@@ -63,5 +65,5 @@ class MicrosoftSSML(BaseSSMLRoot):
         self._inner.add(SSMLNode("prosody", attrs=attrs, children=[text]))
         return self
 
-    def clear_ssml(self):
+    def clear_ssml(self) -> None:
         self._inner.clear_ssml()

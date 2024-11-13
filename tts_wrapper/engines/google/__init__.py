@@ -1,3 +1,3 @@
 from .client import GoogleClient
-from .ssml import GoogleSSML
 from .google import GoogleTTS
+from .ssml import GoogleSSML

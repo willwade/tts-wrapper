@@ -1,11 +1,10 @@
-from typing import Optional, Tuple, Dict, List, Any
-
-from ...engines.utils import process_wav
-from ...exceptions import ModuleNotInstalled
 import json
-import io
+from typing import Any, Optional
 
-Credentials = Tuple[str, str, str]
+from tts_wrapper.engines.utils import process_wav
+from tts_wrapper.exceptions import ModuleNotInstalled
+
+Credentials = tuple[str, str, str]
 
 FORMATS = {
     "wav": "pcm",
@@ -17,12 +16,13 @@ class PollyClient:
     def __init__(
         self,
         credentials: Optional[Credentials] = None,
+        verify_ssl: bool = True,
     ) -> None:
         try:
             import boto3
         except ImportError:
-            boto3 = None  # type: ignore
-            raise ModuleNotInstalled("boto3")
+            msg = "boto3"
+            raise ModuleNotInstalled(msg)
 
         from boto3.session import Session
 
@@ -35,7 +35,7 @@ class PollyClient:
                 aws_secret_access_key=aws_access_key,
                 region_name=region,
             )
-        self._client = boto_session.client("polly")
+        self._client = boto_session.client("polly", verify=verify_ssl)
 
     def synth(self, ssml: str, voice: str) -> bytes:
         raw = self._client.synthesize_speech(
@@ -49,14 +49,14 @@ class PollyClient:
         return process_wav(raw)
 
     def synth_with_timings(
-        self, ssml: str, voice: str
-    ) -> Tuple[bytes, List[Tuple[float, str]]]:
+        self, ssml: str, voice: str,
+    ) -> tuple[bytes, list[tuple[float, str]]]:
         audio_data, word_timings = self._synth_with_marks(ssml, voice)
         return audio_data, word_timings
 
     def _synth_with_marks(
-        self, ssml: str, voice: str
-    ) -> Tuple[bytes, List[Tuple[float, str]]]:
+        self, ssml: str, voice: str,
+    ) -> tuple[bytes, list[tuple[float, str]]]:
         # Get speech marks
         marks_response = self._client.synthesize_speech(
             Engine="neural",
@@ -91,7 +91,7 @@ class PollyClient:
 
         return audio_data, word_timings
 
-    def get_voices(self) -> List[Dict[str, Any]]:
+    def get_voices(self) -> list[dict[str, Any]]:
         """Fetches available voices from Amazon Polly."""
         response = self._client.describe_voices()
         voices = response.get("Voices", [])

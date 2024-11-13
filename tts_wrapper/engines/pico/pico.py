@@ -1,7 +1,7 @@
-from typing import Any, List, Optional
+from typing import Any, Optional
 
-from ...exceptions import UnsupportedFileFormat
-from ...tts import AbstractTTS, FileFormat
+from tts_wrapper.tts import AbstractTTS
+
 from . import PicoClient
 
 

@@ -1,14 +1,15 @@
-from typing import List, Dict, Any, Optional, Union
-from ...exceptions import ModuleNotInstalled
 import struct
+from typing import Any, Optional, Union
+
 from google.cloud import texttospeech_v1beta1 as texttospeech
 from google.oauth2 import service_account
 
+from tts_wrapper.exceptions import ModuleNotInstalled
+
 
 class GoogleClient:
-    def __init__(self, credentials: Union[str, Dict]) -> None:
-        """
-        Initialize the GoogleClient with credentials. Accepts either a file path or a dictionary.
+    def __init__(self, credentials: Union[str, dict]) -> None:
+        """Initialize the GoogleClient with credentials. Accepts either a file path or a dictionary.
 
         :param credentials: The credentials for Google Cloud, can be a file path (str) or a dictionary.
         """
@@ -17,7 +18,7 @@ class GoogleClient:
         self._voice = None
         self._lang = None
 
-    def _initialize_client(self):
+    def _initialize_client(self) -> None:
         self.texttospeech = texttospeech
         self.service_account = service_account
         if self._client is None:
@@ -26,30 +27,32 @@ class GoogleClient:
                     # Credentials provided as a file path
                     self._client = self.texttospeech.TextToSpeechClient(
                         credentials=self.service_account.Credentials.from_service_account_file(
-                            self._credentials
-                        )
+                            self._credentials,
+                        ),
                     )
                 elif isinstance(self._credentials, dict):
                     # Credentials provided as a dictionary
                     self._client = self.texttospeech.TextToSpeechClient(
                         credentials=self.service_account.Credentials.from_service_account_info(
-                            self._credentials
-                        )
+                            self._credentials,
+                        ),
                     )
                 else:
+                    msg = "Credentials must be a file path (str) or a dictionary"
                     raise ValueError(
-                        "Credentials must be a file path (str) or a dictionary"
+                        msg,
                     )
 
             except ImportError:
-                raise ModuleNotInstalled("google-cloud-texttospeech")
+                msg = "google-cloud-texttospeech"
+                raise ModuleNotInstalled(msg)
 
         if not self._credentials:
-            raise ValueError("Credentials are required")
+            msg = "Credentials are required"
+            raise ValueError(msg)
 
-    def set_voice(self, voice: str, lang: str):
-        """
-        Sets the voice and language for the client.
+    def set_voice(self, voice: str, lang: str) -> None:
+        """Sets the voice and language for the client.
 
         :param voice: The name of the voice to use.
         :param lang: The language code (e.g., 'en-US').
@@ -63,12 +66,12 @@ class GoogleClient:
         voice: Optional[str] = None,
         lang: Optional[str] = None,
         include_timepoints: bool = False,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         self._initialize_client()
 
         s_input = self.texttospeech.SynthesisInput(ssml=ssml)
         voice_params = self.texttospeech.VoiceSelectionParams(
-            language_code=lang or self._lang, name=voice or self._voice
+            language_code=lang or self._lang, name=voice or self._voice,
         )
         audio_config = self.texttospeech.AudioConfig(
             audio_encoding=self.texttospeech.AudioEncoding.LINEAR16,
@@ -77,7 +80,7 @@ class GoogleClient:
 
         if include_timepoints:
             timepoints = [
-                self.texttospeech.SynthesizeSpeechRequest.TimepointType.SSML_MARK
+                self.texttospeech.SynthesizeSpeechRequest.TimepointType.SSML_MARK,
             ]
         else:
             timepoints = []
@@ -88,7 +91,7 @@ class GoogleClient:
                 voice=voice_params,
                 audio_config=audio_config,
                 enable_time_pointing=timepoints,
-            )
+            ),
         )
 
         result = {
@@ -107,11 +110,13 @@ class GoogleClient:
         # Parse WAV header to get sample rate and number of samples
         riff, size, fformat = struct.unpack("<4sI4s", audio_content[:12])
         if riff != b"RIFF" or fformat != b"WAVE":
-            raise ValueError("Not a WAV file")
+            msg = "Not a WAV file"
+            raise ValueError(msg)
 
         subchunk1, subchunk1_size = struct.unpack("<4sI", audio_content[12:20])
         if subchunk1 != b"fmt ":
-            raise ValueError("Not a valid WAV file")
+            msg = "Not a valid WAV file"
+            raise ValueError(msg)
 
         aformat, channels, sample_rate, byte_rate, block_align, bits_per_sample = (
             struct.unpack("HHIIHH", audio_content[20:36])
@@ -119,14 +124,14 @@ class GoogleClient:
 
         subchunk2, subchunk2_size = struct.unpack("<4sI", audio_content[36:44])
         if subchunk2 != b"data":
-            raise ValueError("Not a valid WAV file")
+            msg = "Not a valid WAV file"
+            raise ValueError(msg)
 
         num_samples = subchunk2_size // (channels * (bits_per_sample // 8))
-        duration = num_samples / sample_rate
+        return num_samples / sample_rate
 
-        return duration
 
-    def get_voices(self) -> List[Dict[str, Any]]:
+    def get_voices(self) -> list[dict[str, Any]]:
         """Fetches available voices from Google Cloud Text-to-Speech service."""
         self._initialize_client()
 

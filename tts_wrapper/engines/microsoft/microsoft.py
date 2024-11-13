@@ -1,24 +1,22 @@
 # The MS SpeechSDK can do a lot of our base class - and better. So lets overrride that
-from typing import Any, List, Dict, Optional
+from typing import Any, Optional
 
-from ...exceptions import UnsupportedFileFormat
-from ...tts import AbstractTTS, FileFormat
-from . import MicrosoftClient, MicrosoftSSML
+from tts_wrapper.tts import AbstractTTS
+
+from . import MicrosoftClient
 from .client import FORMATS
 
-
 try:
+    import azure.cognitiveservices.speech as speechsdk
     from azure.cognitiveservices.speech import (
+        AudioConfig,
         SpeechConfig,
         SpeechSynthesizer,
-        AudioConfig,
     )
-    import azure.cognitiveservices.speech as speechsdk
 except ImportError:
     speechsdk = None  # type: ignore
 
 import logging
-import threading
 
 
 class MicrosoftTTS(AbstractTTS):
@@ -27,10 +25,12 @@ class MicrosoftTTS(AbstractTTS):
         client: MicrosoftClient,
         lang: Optional[str] = None,
         voice: Optional[str] = None,
-    ):
+    ) -> None:
         super().__init__()
         self._client = client
         self.set_voice(voice or "en-US-JennyNeural", lang or "en-US")
+
+        from .ssml import MicrosoftSSML
         self._ssml = MicrosoftSSML(self._lang, self._voice)
 
         # Ensure we're requesting word boundary information
@@ -49,15 +49,14 @@ class MicrosoftTTS(AbstractTTS):
         return 0.0
 
     @property
-    def ssml(self) -> MicrosoftSSML:
-        return MicrosoftSSML(self._lang, self._voice)
+    def ssml(self) -> "MicrosoftSSML":
+        return self._ssml
 
-    def get_voices(self) -> List[Dict[str, Any]]:
+    def get_voices(self) -> list[dict[str, Any]]:
         return self._client.get_available_voices()
 
-    def set_voice(self, voice_id: str, lang_id: str):
-        """
-        Sets the voice for the TTS engine and updates the SSML configuration accordingly.
+    def set_voice(self, voice_id: str, lang_id: str) -> None:
+        """Sets the voice for the TTS engine and updates the SSML configuration accordingly.
 
         @param voice_id: The ID of the voice to be used for synthesis.
         """
@@ -83,19 +82,15 @@ class MicrosoftTTS(AbstractTTS):
 
         prosody_content = " ".join(properties)
 
-        text_with_tag = f"<prosody {prosody_content}>{text}</prosody>"
+        return f"<prosody {prosody_content}>{text}</prosody>"
 
-        return text_with_tag
 
     def synth_to_bytes(self, text: Any) -> bytes:
-        if not self._is_ssml(str(text)):
-            ssml = self.ssml.add(str(text))
-        else:
-            ssml = str(text)
+        ssml = self.ssml.add(str(text)) if not self._is_ssml(str(text)) else str(text)
 
         azure_format = FORMATS.get("wav", "Riff24Khz16BitMonoPcm")
         self._client.speech_config.set_speech_synthesis_output_format(
-            getattr(speechsdk.SpeechSynthesisOutputFormat, azure_format)
+            getattr(speechsdk.SpeechSynthesisOutputFormat, azure_format),
         )
 
         # Ensure we're requesting word boundary information
@@ -105,18 +100,18 @@ class MicrosoftTTS(AbstractTTS):
         )
 
         self.synthesizer = speechsdk.SpeechSynthesizer(
-            speech_config=self._client.speech_config, audio_config=None
+            speech_config=self._client.speech_config, audio_config=None,
         )
 
         word_timings = []
 
-        def word_boundary_callback(evt):
+        def word_boundary_callback(evt) -> None:
             start_time = evt.audio_offset / 10000000  # Convert to seconds
             duration = evt.duration.total_seconds()
             end_time = start_time + duration
             word_timings.append((start_time, end_time, evt.text))
             logging.debug(
-                f"Word: {evt.text}, Start: {start_time:.3f}s, Duration: {duration:.3f}s"
+                f"Word: {evt.text}, Start: {start_time:.3f}s, Duration: {duration:.3f}s",
             )
 
         self.synthesizer.synthesis_word_boundary.connect(word_boundary_callback)
@@ -125,18 +120,20 @@ class MicrosoftTTS(AbstractTTS):
 
         if result.reason == speechsdk.ResultReason.SynthesizingAudioCompleted:
             self.set_timings(word_timings)
-            logging.info(f"Captured {len(word_timings)} word timings")
+            logging.info("Captured %s word timings", len(word_timings))
             return result.audio_data
-        elif result.reason == speechsdk.ResultReason.Canceled:
+        if result.reason == speechsdk.ResultReason.Canceled:
             cancellation_details = result.cancellation_details
-            logging.error(f"Speech synthesis canceled: {cancellation_details.reason}")
+            logging.error("Speech synthesis canceled: %s", cancellation_details.reason)
             if cancellation_details.reason == speechsdk.CancellationReason.Error:
-                logging.error(f"Error details: {cancellation_details.error_details}")
+                logging.error("Error details: %s", cancellation_details.error_details)
+                msg = f"Synthesis error: {cancellation_details.error_details}"
                 raise Exception(
-                    f"Synthesis error: {cancellation_details.error_details}"
+                    msg,
                 )
-        else:
-            raise Exception("Synthesis failed without detailed error message.")
+            return None
+        msg = "Synthesis failed without detailed error message."
+        raise Exception(msg)
 
     def get_audio_duration(self) -> float:
         if self.timings:
@@ -146,7 +143,3 @@ class MicrosoftTTS(AbstractTTS):
 
     def _is_ssml(self, ssml):
         return "<speak" in str(ssml)
-
-    @property
-    def ssml(self) -> MicrosoftSSML:
-        return self._ssml

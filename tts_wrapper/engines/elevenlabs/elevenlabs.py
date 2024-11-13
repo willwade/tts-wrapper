@@ -1,10 +1,9 @@
-from typing import Any, List, Dict, Optional, Tuple
-from ...exceptions import UnsupportedFileFormat
-from ...tts import AbstractTTS, FileFormat
-from . import ElevenLabsClient, ElevenLabsSSMLRoot
 import re
-import numpy as np
-import pathlib
+from typing import Any, Optional
+
+from tts_wrapper.tts import AbstractTTS
+
+from . import ElevenLabsClient
 
 
 class ElevenLabsTTS(AbstractTTS):
@@ -13,7 +12,7 @@ class ElevenLabsTTS(AbstractTTS):
         client: ElevenLabsClient,
         lang: Optional[str] = None,
         voice: Optional[str] = None,
-    ):
+    ) -> None:
         super().__init__()
         self._client = client
         self.audio_rate = 22050  # Kept at 22050
@@ -21,7 +20,8 @@ class ElevenLabsTTS(AbstractTTS):
 
     def synth_to_bytes(self, text: Any) -> bytes:
         if not self._voice:
-            raise ValueError("Voice ID must be set before synthesizing speech.")
+            msg = "Voice ID must be set before synthesizing speech."
+            raise ValueError(msg)
 
         # Get the audio and word timings from the ElevenLabs API
         self.generated_audio, word_timings = self._client.synth(str(text), self._voice)
@@ -31,7 +31,7 @@ class ElevenLabsTTS(AbstractTTS):
         if "volume=" in prosody_text:
             volume = self.get_volume_value(prosody_text)
             self.generated_audio = self.adjust_volume_value(
-                self.generated_audio, volume
+                self.generated_audio, volume,
             )
 
         # check if wav file has header. Strip header to make it raw
@@ -41,9 +41,7 @@ class ElevenLabsTTS(AbstractTTS):
         return self.generated_audio
 
     def get_audio_duration(self) -> float:
-        """
-        Calculate the duration of the audio based on the number of samples and sample rate.
-        """
+        """Calculate the duration of the audio based on the number of samples and sample rate."""
         if self.generated_audio is not None:
             num_samples = len(self.generated_audio) // 2  # Assuming 16-bit audio
             return num_samples / self.audio_rate
@@ -56,7 +54,8 @@ class ElevenLabsTTS(AbstractTTS):
         try:
             import numpy as np
         except ImportError:
-            raise ModuleNotInstalled("numpy")
+            msg = "numpy"
+            raise ModuleNotInstalled(msg)
 
         if len(generated_audio) % 2 != 0:
             generated_audio += b"\x00"
@@ -76,9 +75,8 @@ class ElevenLabsTTS(AbstractTTS):
         clipped_audio = np.clip(scaled_audio, -1.0, 1.0)
         # Convert back to int16
         output_samples = (clipped_audio * 32768).astype(np.int16)
-        output_bytes = output_samples.tobytes()
+        return output_samples.tobytes()
 
-        return output_bytes
 
     def get_volume_value(self, text: str) -> float:
         pattern = r'volume="(\d+)"'
@@ -86,7 +84,7 @@ class ElevenLabsTTS(AbstractTTS):
 
         return float(match.group(1))
 
-    def get_voices(self) -> List[Dict[str, Any]]:
+    def get_voices(self) -> list[dict[str, Any]]:
         return self._client.get_voices()
 
     def construct_prosody_tag(self, text: str) -> str:
@@ -96,7 +94,6 @@ class ElevenLabsTTS(AbstractTTS):
         rate = self.get_property("rate")
         if rate != "":
             properties.append(f'rate="{rate}"')
-        #
         pitch = self.get_property("pitch")
         if pitch != "":
             properties.append(f'pitch="{pitch}"')
@@ -108,15 +105,15 @@ class ElevenLabsTTS(AbstractTTS):
         prosody_content = " ".join(properties)
 
         # text_with_tag = f'<prosody {property}="{volume_in_words}">{text}</prosody>'
-        text_with_tag = f"<prosody {prosody_content}>{text}</prosody>"
+        return f"<prosody {prosody_content}>{text}</prosody>"
 
-        return text_with_tag
 
     @property
-    def ssml(self) -> ElevenLabsSSMLRoot:
+    def ssml(self)  -> "ElevenLabsSSMLRoot":
+        from .ssml import ElevenLabsSSMLRoot  # pylint: disable=import-outside-toplevel
         return ElevenLabsSSMLRoot()
 
-    def set_voice(self, voice_id: str, lang_id: str = None):
+    def set_voice(self, voice_id: str, lang_id: Optional[str] = None) -> None:
         """Updates the currently set voice ID."""
         super().set_voice(voice_id)
         self._voice = voice_id

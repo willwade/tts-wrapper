@@ -1,30 +1,29 @@
-import json
 import base64
-from typing import List, Dict, Any, Optional, Tuple
-from ...tts import FileFormat
-from ...exceptions import UnsupportedFileFormat
+import json
+
 import requests
 
 audio_format = ("pcm_22050",)
 
 
 class ElevenLabsClient:
-    def __init__(self, credentials):
+    def __init__(self, credentials) -> None:
         try:
             import requests
 
         except ImportError:
-            requests = None  # type: ignore
-            raise ModuleNotInstalled("requests")
+            msg = "requests"
+            raise ModuleNotInstalled(msg)
 
         if not credentials:
-            raise ValueError("An API key for ElevenLabs must be provided")
+            msg = "An API key for ElevenLabs must be provided"
+            raise ValueError(msg)
         self.api_key = credentials
         self.base_url = "https://api.elevenlabs.io"
 
     def synth(
-        self, text: str, voice_id: str
-    ) -> Tuple[bytes, List[Tuple[float, float, str]]]:
+        self, text: str, voice_id: str,
+    ) -> tuple[bytes, list[tuple[float, float, str]]]:
         url = f"{self.base_url}/v1/text-to-speech/{voice_id}/stream/with-timestamps"
         headers = {
             "Content-Type": "application/json",
@@ -42,7 +41,7 @@ class ElevenLabsClient:
         }
 
         response = requests.post(
-            url, headers=headers, json=data, params=params, stream=True
+            url, headers=headers, json=data, params=params, stream=True,
         )
 
         if response.status_code != 200:
@@ -51,15 +50,15 @@ class ElevenLabsClient:
                 json_response = response.json()
                 if "detail" in json_response:
                     status = json_response["detail"].get(
-                        "status", "No status available"
+                        "status", "No status available",
                     )
                     message = json_response["detail"].get(
-                        "message", "No message provided"
+                        "message", "No message provided",
                     )
                     error_message += f" Status: {status}. Message: {message}"
                 else:
                     error_details = json_response.get("error", {}).get(
-                        "message", "No error details available."
+                        "message", "No error details available.",
                     )
                     error_message += f" Details: {error_details}"
             except ValueError:
@@ -80,15 +79,15 @@ class ElevenLabsClient:
                 if response_dict.get("alignment") is not None:
                     characters.extend(response_dict["alignment"]["characters"])
                     character_start_times.extend(
-                        response_dict["alignment"]["character_start_times_seconds"]
+                        response_dict["alignment"]["character_start_times_seconds"],
                     )
                     character_end_times.extend(
-                        response_dict["alignment"]["character_end_times_seconds"]
+                        response_dict["alignment"]["character_end_times_seconds"],
                     )
 
         # Process character timings into word timings
         word_timings = self._process_word_timings(
-            characters, character_start_times, character_end_times
+            characters, character_start_times, character_end_times,
         )
         return audio_bytes, word_timings
 
@@ -194,20 +193,16 @@ class ElevenLabsClient:
             for voice in voices:
                 voice["id"] = voice["voice_id"]
                 accent = voice["labels"].get("accent", "american")
-                language_code = accent_to_language_code.get(
-                    accent, "en-US"
+                accent_to_language_code.get(
+                    accent, "en-US",
                 )  # Default to 'en-US'
                 if voice["high_quality_base_model_ids"] == "eleven_multilingual_v1":
-                    voice["language_codes"] = [
-                        language_code for language_code in supported_languages_v1.keys()
-                    ]
+                    voice["language_codes"] = list(supported_languages_v1.keys())
                 else:
-                    voice["language_codes"] = [
-                        language_code for language_code in supported_languages_v2.keys()
-                    ]
+                    voice["language_codes"] = list(supported_languages_v2.keys())
                 voice["name"] = voice["name"]
                 voice["gender"] = "Unknown"
                 standardized_voices.append(voice)
             return standardized_voices
-        else:
-            response.raise_for_status()
+        response.raise_for_status()
+        return None

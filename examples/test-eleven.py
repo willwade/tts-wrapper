@@ -1,8 +1,11 @@
-from tts_wrapper import ElevenLabsTTS, ElevenLabsClient
+import os
+import sys
 import time
 from pathlib import Path
-import os
+
 from load_credentials import load_credentials
+
+from tts_wrapper import ElevenLabsClient, ElevenLabsTTS
 
 # Load credentials
 load_credentials("credentials-private.json")
@@ -10,13 +13,12 @@ load_credentials("credentials-private.json")
 client = ElevenLabsClient(credentials=(os.getenv("ELEVENLABS_API_KEY")))
 tts = ElevenLabsTTS(client)
 tts.speak_streamed(
-    "The town of Brookhollow was the kind of place where people left their doors unlocked and trusted everyone they met. Tucked away in the rolling hills of the countryside, it was a town where time seemed to stand still. But on a crisp October morning, something sinister shattered the peace."
+    "The town of Brookhollow was the kind of place where people left their doors unlocked and trusted everyone they met. Tucked away in the rolling hills of the countryside, it was a town where time seemed to stand still. But on a crisp October morning, something sinister shattered the peace.",
 )
 tts.pause_audio()
 input("Press enter to resume")
 tts.resume_audio()
-exit()
-print(client.get_voices())
+sys.exit()
 
 long_text = '''"Title: "The Silent Truth"
 The town of Brookhollow was the kind of place where people left their doors unlocked and trusted everyone they met. Tucked away in the rolling hills of the countryside, it was a town where time seemed to stand still. But on a crisp October morning, something sinister shattered the peace.
@@ -36,33 +38,29 @@ try:
     # Pause after 5 seconds
     time.sleep(0.3)
     tts.pause_audio()
-    print("Pausing..")
     # Resume after 3 seconds
     time.sleep(0.5)
     tts.resume_audio()
-    print("Resuming")
     # Stop after 2 seconds
     time.sleep(1)
     tts.stop_audio()
-    print("Stopping.")
-except Exception as e:
-    print(f"Error at pausing: {e}")
+except Exception:
+    pass
 
 time.sleep(3)
 #
 # # Demonstrate saving audio to a file
 try:
-    ssml_text = tts.ssml.add(f"This is me speaking with Speak function and ElevenLabs")
+    ssml_text = tts.ssml.add("This is me speaking with Speak function and ElevenLabs")
 
     #   ssml_text = tts.ssml.add(long_text)
-    output_file = Path(f"output_elevenlabs.wav")
+    output_file = Path("output_elevenlabs.wav")
     # tts.synth(ssml_text, str(output_file), format='wav')
     tts.speak_streamed(ssml_text, output_file, audio_format="wav")
     # or you could do
     # tts.speak(ssml_text)
-    print(f"Audio content saved to {output_file}")
-except Exception as e:
-    print(f"Error at saving: {e}")
+except Exception:
+    pass
 
 time.sleep(3)
 
