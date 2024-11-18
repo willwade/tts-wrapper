@@ -68,6 +68,7 @@ class SherpaOnnxClient:
                     raise RuntimeError(msg) from e
 
             self.json_models, self.voices_cache = self._load_models_and_voices()
+
             if voice_id:
                 self.set_voice(voice_id)
             self.audio_queue = queue.Queue()  # Ensure `queue` is imported
@@ -367,13 +368,16 @@ class SherpaOnnxClient:
 
 
     def _load_models_and_voices(self) -> (dict[str, Any], list):
-        with Path("merged_models.json").open() as file:
+        root_dir = Path(__file__).parent
+        config_path = root_dir / 'merged_models.json'
+        
+        with config_path.open() as file:
             models_json = json.load(file)
         file.close()
         
         first_part = models_json.copy()
         supported_languages_list = []
-        
+
         if 'languages_supported' in first_part:
             supported_languages_list = first_part.pop('languages_supported')
         
