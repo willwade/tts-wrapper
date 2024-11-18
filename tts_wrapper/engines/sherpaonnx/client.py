@@ -28,8 +28,8 @@ except ImportError:
 class SherpaOnnxClient:
     """Class for sherpaonnx client."""
 
-    VOICES_URL = "https://huggingface.co/willwade/mms-tts-multilingual-models-onnx/raw/main/languages-supported.json"
-    CACHE_FILE = "languages-supported.json"
+    #VOICES_URL = "https://huggingface.co/willwade/mms-tts-multilingual-models-onnx/raw/main/languages-supported.json"
+    #CACHE_FILE = "languages-supported.json"
     MODELS_FILE = "merged_models.json"
 
     def __init__(
@@ -67,60 +67,13 @@ class SherpaOnnxClient:
                     msg = f"Failed to create model directory {self._model_dir}: {e!s}"
                     raise RuntimeError(msg) from e
 
-            self.voices_cache = self._load_voices_cache()
+            self.json_models, self.voices_cache = self._load_models_and_voices()
             if voice_id:
                 self.set_voice(voice_id)
             self.audio_queue = queue.Queue()  # Ensure `queue` is imported
             self.tts = None
             self.sample_rate = None
-
-    def _download_voices(self) -> None:
-        try:
-            try:
-                import requests
-            except ImportError:
-                msg = "Please install requests library to download voices JSON file"
-                raise ImportError(msg) from None
-
-            logging.info("Downloading voices JSON file from (%s)...", self.VOICES_URL)
-            response = requests.get(self.VOICES_URL, timeout=10)
-            response.raise_for_status()
-            logging.info("Response status code: %s", response.status_code)
-
-            # Check if response is not empty
-            def _raise_if_empty(content: bytes) -> None:
-                if not content.strip():
-                    msg = "Downloaded JSON is empty"
-                    raise ValueError(msg)
-
-            _raise_if_empty(response.content)
-
-            # Write the response to the file
-            cache_file_path = Path(self._model_dir) / self.CACHE_FILE
-            with cache_file_path.open("w") as f:
-                f.write(response.text)
-                logging.info("Voices JSON file written to %s,", cache_file_path)
-        except Exception as e:
-            logging.info("Failed to download voices JSON file: %s", e)
-            raise
-
-    def _load_voices_cache(self) -> list[dict[str, Any]]:
-        cache_file_path = Path(self._model_dir) / self.CACHE_FILE
-        if not cache_file_path.exists():
-            self._download_voices()
-
-        try:
-            logging.info("Loading voices JSON file...")
-            with Path(cache_file_path).open() as f:
-                content = f.read()
-                if not content.strip():  # Check if file is not empty
-                    msg = "Cache file is empty"
-                    raise ValueError(msg)
-                return json.loads(content)
-        except Exception as e:
-            logging.info("Failed to load voices JSON file: %s", e)
-            raise
-
+            
     def _download_file(self, url:str, destination:str) -> None:
         try:
             import requests
@@ -135,6 +88,7 @@ class SherpaOnnxClient:
             for chunk in response.iter_content(chunk_size=8192):
                 f.write(chunk)
 
+    
     def _check_files_exist(self, model_path: str, tokens_path: str, model_id: str) -> bool:
         if not model_id :
             logging.info("Model Id not defined, using default model\n")
@@ -172,10 +126,8 @@ class SherpaOnnxClient:
     def _download_model_and_tokens(self, iso_code: str, destination_dir: Path, model_id: str | None) -> tuple[Path, Path, str, str]:
         lexicon_path = ""
         dict_dir = ""
-
-        if model_id:
-            json_models = self._load_models()
-            model_url = json_models[model_id]["url"]
+        if model_id and model_id != "languages_supported":
+            model_url = self.json_models[model_id]["url"]
             filename = Path(model_url).name
             logging.info("Downloading model from %s", model_url)
 
@@ -414,9 +366,15 @@ class SherpaOnnxClient:
         return (samples * 32767).astype(np.int16).tobytes()
 
 
-    def _load_models(self) -> dict[str, Any]:
+    def _load_models_and_voices(self) -> (dict[str, Any], list):
         with Path("merged_models.json").open() as file:
             models_json = json.load(file)
         file.close()
-
-        return models_json
+        
+        first_part = models_json.copy()
+        supported_languages_list = []
+        
+        if 'languages_supported' in first_part:
+            supported_languages_list = first_part.pop('languages_supported')
+        
+        return first_part, supported_languages_list

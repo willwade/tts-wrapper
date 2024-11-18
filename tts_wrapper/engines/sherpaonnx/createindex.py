@@ -10,6 +10,7 @@ import requests
 # Regex to validate ISO language codes (1-8 alphanumeric characters)
 iso_code_pattern = re.compile(r"^[a-zA-Z0-9]{1,8}$")
 lang_code_pattern = re.compile(r"-(?P<lang>[a-z]{2})([_-][A-Z]{2})?")
+result_json = {}
 
 
 def handle_special_cases(developer, name, quality, url):
@@ -242,6 +243,7 @@ def generate_model_id(developer, lang_codes, name, quality) -> str:
 def get_github_release_assets(repo, tag, merged_models, output_file):
     headers = {"Accept": "application/vnd.github.v3+json"}
     releases_url = f"https://api.github.com/repos/{repo}/releases/tags/{tag}"
+    print("Get models from github\n")
     response = requests.get(releases_url, headers=headers)
 
     if response.status_code != 200:
@@ -249,8 +251,10 @@ def get_github_release_assets(repo, tag, merged_models, output_file):
         raise Exception(msg)
 
     release_info = response.json()
-
+    print("For all models in github response, construct the merged_models.json\n")
+    idx = 0
     for asset in release_info.get("assets", []):
+        print(f"Model {asset['name']}\n")
         filename = asset["name"]
         asset_url = asset["browser_download_url"]
 
@@ -331,8 +335,11 @@ def get_github_release_assets(repo, tag, merged_models, output_file):
         merged_models[id] = model_data
 
         # Save after each model is processed
-        save_models(merged_models, output_file)
+        #print ("save models")
+        #save_models(merged_models, output_file)
 
+    #print ("merged _models: ")
+    #print (merged_models)
 
     return merged_models
 
@@ -343,6 +350,35 @@ def fetch_data_from_url(url: str) -> dict:
     response.raise_for_status()
     return response.json()
 
+def get_supported_languages () -> dict:
+    languages_url = "https://huggingface.co/willwade/mms-tts-multilingual-models-onnx/raw/main/languages-supported.json"
+    response_json = fetch_data_from_url(languages_url)
+    
+    result_json['languages_supported'] = response_json
+    
+    return result_json
+
+def combine_json_parts(json_part1, json_part2):
+    """
+    Combine two JSON dictionaries, only adding 'other' if it doesn't exist in the first dict
+    
+    Args:
+        json_part1 (dict): First JSON part as dictionary
+        json_part2 (dict): Second JSON part as dictionary
+    
+    Returns:
+        dict: Combined JSON object
+    """
+    # Create a copy of the first dictionary to avoid modifying the original
+
+    combined_json = json_part1.copy()
+    print (json_part1)
+    # Only add 'other' if it doesn't exist in the first dictionary
+    if 'languages_supported' not in combined_json:
+        print("combined json")
+        combined_json.update(json_part2)
+    
+    return combined_json
 
 # Known ISO 639-1 language codes (you can expand this as needed)
 known_lang_codes = {
@@ -390,9 +426,16 @@ def main() -> None:
     # Step 2: Fetch GitHub models (VITS, Piper, etc.)
     repo = "k2-fsa/sherpa-onnx"
     tag = "tts-models"
+    print("Build merged_models.json file\n")
     get_github_release_assets(repo, tag, merged_models, output_file)
 
+    #add languages json to merged_models.json
+    print("Get suppported languages\n")
+    languages_json = get_supported_languages()
 
+    models_languages = combine_json_parts (merged_models, languages_json)
+    print (models_languages)
+    save_models(models_languages, output_file)
 
 if __name__ == "__main__":
     main()
