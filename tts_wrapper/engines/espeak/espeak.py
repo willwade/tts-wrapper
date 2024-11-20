@@ -105,3 +105,15 @@ class eSpeakTTS(AbstractTTS):
         super().set_voice(voice_id)
         self._voice = voice_id
         self._lang = lang_id or "en"
+
+    def construct_prosody_tag(self, text: str, volume: Optional[str] = None, rate: Optional[str] = None, pitch: Optional[str] = None) -> str:
+        attributes = []
+        if volume:
+            attributes.append(f'volume="{volume}"')
+        if rate:
+            attributes.append(f'rate="{rate}"')
+        if pitch:
+            attributes.append(f'pitch="{pitch}"')
+        
+        attr_str = " ".join(attributes)
+        return f'<prosody {attr_str}>{text}</prosody>'
