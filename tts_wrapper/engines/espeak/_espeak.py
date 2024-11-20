@@ -236,35 +236,28 @@ class EspeakLib:
         """Callback function for synthesis events (streaming support)."""
         try:
             logging.debug("Entering _synth_callback")
-            
-            # Check if samples exist and append them
+
             if numsamples > 0 and wav:
                 audio_chunk = struct.pack(f"{numsamples}h", *wav[:numsamples])
-                logging.debug(f"Received {numsamples} samples, audio chunk size: {len(audio_chunk)} bytes")
-
-                # Append to local audio buffer
-                if not hasattr(self, "_local_audio_buffer"):
-                    logging.debug("Initializing local audio buffer")
-                    self._local_audio_buffer = bytearray()
                 self._local_audio_buffer.extend(audio_chunk)
-                logging.debug(f"Updated local audio buffer size: {len(self._local_audio_buffer)} bytes")
-            
-            # End of synthesis
+                logging.debug(f"Updated buffer size: {len(self._local_audio_buffer)} bytes")
+
             if numsamples == 0 and not events:
                 logging.debug("End of synthesis: no more samples or events")
-                self.on_end()
-                if hasattr(self, "_local_audio_buffer"):
-                    logging.debug(f"Final audio buffer size: {len(self._local_audio_buffer)} bytes")
+                if self._on_end_callback and not self._on_end_triggered:
+                    self._on_end_callback()  # Trigger the callback
+                    self._on_end_triggered = True  # Prevent repeated calls
                 return 0
-            
+
             # Process events
             i = 0
             logging.debug("Processing synthesis events")
             while True:
                 current_event = ctypes.cast(events, POINTER(EspeakEvent))[i]
                 logging.debug(
-                    f"Event {i}: type={current_event.type}, text_position={current_event.text_position}, "
-                    f"length={current_event.length}, audio_position={current_event.audio_position}"
+                    "Event %d: type=%d, text_position=%d, length=%d, audio_position=%d",
+                    i, current_event.type, current_event.text_position,
+                    current_event.length, current_event.audio_position
                 )
                 if current_event.type == self.EVENT_LIST_TERMINATED:
                     logging.debug("Event processing terminated")

@@ -1,3 +1,4 @@
+from __future__ import annotations
 from typing import Any, Optional
 from collections.abc import Generator
 from tts_wrapper.tts import AbstractTTS
@@ -18,6 +19,7 @@ class eSpeakTTS(AbstractTTS):
         self.audio_rate = 22050
         self.generated_audio = bytearray()
         self.word_timings = []
+        self.on_end = None 
 
     def synth_to_bytes(self, text: Any) -> bytes:
         """Convert text to audio bytes."""
@@ -30,6 +32,8 @@ class eSpeakTTS(AbstractTTS):
 
         # Call the client for synthesis
         audio_data, word_timings = self._client.synth(text, self._voice)
+        if self.on_end:
+            self.on_end() 
         self.word_timings = self._process_word_timings(word_timings, text)
         self.set_timings(self.word_timings)
 
@@ -52,7 +56,8 @@ class eSpeakTTS(AbstractTTS):
 
         # Use eSpeakClient to perform synthesis 
         stream_queue, word_timings = self._client.synth_streaming(text, self._voice)
-
+        if self.on_end:
+            self.on_end()
         self.word_timings = self._process_word_timings(word_timings, text)
         self.set_timings(self.word_timings)
 
@@ -104,14 +109,38 @@ class eSpeakTTS(AbstractTTS):
         self._voice = voice_id
         self._lang = lang_id or "en"
 
-    def construct_prosody_tag(self, text: str, volume: Optional[str] = None, rate: Optional[str] = None, pitch: Optional[str] = None) -> str:
-        attributes = []
-        if volume:
-            attributes.append(f'volume="{volume}"')
-        if rate:
-            attributes.append(f'rate="{rate}"')
-        if pitch:
-            attributes.append(f'pitch="{pitch}"')
+    def construct_prosody_tag(
+        self,
+        text: str,
+        volume: Optional[str] = None,
+        rate: Optional[str] = None,
+        pitch: Optional[str] = None,
+        range: Optional[str] = None,
+    ) -> str:
+        """
+        Construct a <prosody> tag using the SSML handler.
+        :param text: The text to wrap.
+        :param volume: Volume setting (e.g., soft, +1dB).
+        :param rate: Rate of speech (e.g., slow, 125%).
+        :param pitch: Pitch level (e.g., high, 75).
+        :param range: Pitch range (e.g., low, x-high).
+        :return: A string with SSML <prosody> wrapping the text.
+        """
+        kwargs = {
+            k: v
+            for k, v in {
+                "volume": volume,
+                "rate": rate,
+                "pitch": pitch,
+                "range": range,
+            }.items()
+            if v
+        }
+        return self._ssml.construct_prosody(text, **kwargs)
 
-        attr_str = " ".join(attributes)
-        return f'<prosody {attr_str}>{text}</prosody>'
+    def set_property(self, property_name: str, value: float | str) -> None:
+        """Set a property for the TTS engine and update its internal state."""
+        super().set_property(property_name, value)
+        # Update SSML defaults for corresponding properties
+        if property_name in ("rate", "volume", "pitch"):
+            self._ssml.add(f'<prosody {property_name}="{value}"/>', clear=True)

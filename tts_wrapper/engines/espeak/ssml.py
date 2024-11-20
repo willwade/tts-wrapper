@@ -17,12 +17,56 @@ class eSpeakSSML(BaseSSMLRoot):
         if clear:
             self.clear_ssml()
 
-        if isinstance(text, str) and "<prosody" in text:
+        if isinstance(text, str) and "<" in text:  # Treat raw SSML
             self._inner.add(SSMLNode("raw", children=[text]))
         else:
-            self._inner.add(text)
+            self._inner.add(SSMLNode("text", children=[text]))
 
         return str(self)
+
+    def construct_prosody(self, text: str, **kwargs) -> str:
+        """
+        Constructs a <prosody> tag with specified attributes.
+        :param text: The text to wrap with the prosody tag.
+        :param kwargs: Attributes for the prosody tag (rate, pitch, volume, range).
+        :return: The prosody-wrapped text.
+        """
+        attributes = [f'{key}="{value}"' for key, value in kwargs.items()]
+        attr_str = " ".join(attributes)
+        return f'<prosody {attr_str}>{text}</prosody>'
+
+    def construct_say_as(self, text: str, interpret_as: str, format: str = None) -> str:
+        """
+        Constructs a <say-as> tag with interpret-as and optional format.
+        :param text: The text to wrap.
+        :param interpret_as: Interpretation type (e.g., characters, digits).
+        :param format: Optional format for the interpretation.
+        :return: The say-as wrapped text.
+        """
+        format_attr = f' format="{format}"' if format else ""
+        return f'<say-as interpret-as="{interpret_as}"{format_attr}>{text}</say-as>'
+
+    def construct_emphasis(self, text: str, level: str = "moderate") -> str:
+        """
+        Constructs an <emphasis> tag.
+        :param text: The text to emphasize.
+        :param level: Level of emphasis (e.g., none, moderate, strong).
+        :return: The emphasis-wrapped text.
+        """
+        return f'<emphasis level="{level}">{text}</emphasis>'
+
+    def construct_break(self, strength: str = None, time: str = None) -> str:
+        """
+        Constructs a <break> tag.
+        :param strength: Break strength (e.g., none, x-strong).
+        :param time: Break time in milliseconds.
+        :return: The break tag.
+        """
+        if strength:
+            return f'<break strength="{strength}"/>'
+        if time:
+            return f'<break time="{time}ms"/>'
+        return "<break/>"
 
     def clear_ssml(self) -> None:
         """Clears all child nodes from the SSML root."""
