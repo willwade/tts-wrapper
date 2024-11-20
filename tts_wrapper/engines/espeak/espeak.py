@@ -1,7 +1,10 @@
 from typing import Any, Optional
+
 from tts_wrapper.tts import AbstractTTS
+
 from . import eSpeakClient
 from .ssml import eSpeakSSML
+
 
 class eSpeakTTS(AbstractTTS):
     """High-level TTS interface for eSpeak."""
@@ -10,19 +13,34 @@ class eSpeakTTS(AbstractTTS):
         """Initialize the eSpeak TTS interface."""
         super().__init__()
         self._client = client
-        self.set_voice(voice or "default", lang or "en")
+        self.set_voice(voice or "gmw/en")
         self._ssml = eSpeakSSML()
         self.audio_rate = 22050
+        self.generated_audio = bytearray()
+        self.word_timings = []
 
     def synth_to_bytes(self, text: Any) -> bytes:
-        """Convert text to synthesized audio bytes."""
+        """Convert text to audio bytes."""
+        self.generated_audio = bytearray()  # Clear audio buffer before synthesis
         if not self._is_ssml(str(text)):
             text = self.ssml.add(str(text))
 
-        audio_data, word_timings = self._client.synth_with_timings(str(text), self._voice)
-        self.set_timings(self._process_word_timings(word_timings))
+        result = self._client.synth_with_timings(str(text), self._voice)
 
-        return audio_data
+        if isinstance(result, tuple) and len(result) == 2:
+            self.generated_audio, word_timings = result
+        else:
+            self.generated_audio = result
+            word_timings = []
+
+        processed_timings = self._process_word_timings(word_timings)
+        self.set_timings(processed_timings)
+
+        if self.generated_audio[:4] == b"RIFF":
+            self.generated_audio = self._strip_wav_header(self.generated_audio)
+
+        return bytes(self.generated_audio)
+
 
     def _process_word_timings(self, word_timings: list[tuple[float, str]]) -> list[tuple[float, float, str]]:
         """Process raw word timings into start-end intervals."""

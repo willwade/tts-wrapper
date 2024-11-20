@@ -1,6 +1,9 @@
-from typing import Any, Optional
+from typing import Any
+
 from tts_wrapper.engines.utils import process_wav
+
 from ._espeak import EspeakLib
+
 
 class eSpeakClient:
     """Client interface for the eSpeak TTS engine."""
@@ -12,7 +15,7 @@ class eSpeakClient:
     def synth(self, ssml: str, voice: str) -> bytes:
         """Synthesize speech and return audio data."""
         self._espeak.set_voice(voice)
-        self._espeak.speak(ssml, ssml=True)
+        self._espeak.speak_and_wait(ssml, ssml=True)
         # Assuming process_wav is used to standardize audio formats
         return process_wav(self._espeak.generated_audio)
 
@@ -31,9 +34,15 @@ class eSpeakClient:
         return processed_audio, word_timings
 
     def get_voices(self) -> list[dict[str, Any]]:
-        """Fetches available voices from the eSpeak engine."""
-        voices = self._espeak.list_voices()
-        return [
-            {"id": voice["name"], "language_codes": [voice["languages"]], "name": voice["name"], "gender": voice["gender"]}
-            for voice in voices
-        ]
+        """Fetches available voices from eSpeak."""
+        voices = self._espeak.get_available_voices()
+        standardized_voices = []
+        for voice in voices:
+            standardized_voices.append({
+                "id": voice["id"],
+                "name": voice["name"],
+                "language_codes": voice["language_codes"],
+                "gender": voice["gender"],
+                "age": voice.get("age", 0),  # Age is optional
+            })
+        return standardized_voices

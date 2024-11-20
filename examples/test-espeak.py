@@ -1,14 +1,14 @@
 import os
 import time
+import logging
 
-from load_credentials import load_credentials
-
+logging.basicConfig(level=logging.DEBUG)
 from tts_wrapper import eSpeakClient, eSpeakTTS
 
 client = eSpeakClient()
 tts = eSpeakTTS(client)
 
-tts.get_voices()
+tts.speak_streamed("Hello, This is a test")
 
 exit()
 

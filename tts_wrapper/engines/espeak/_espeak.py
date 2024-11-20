@@ -1,10 +1,24 @@
 import ctypes
-from ctypes import POINTER, c_int, c_short, c_uint, c_void_p, c_char_p, CFUNCTYPE, Structure
-from ctypes.util import find_library
 import logging
+import queue
+import struct
+from ctypes import (
+    CFUNCTYPE,
+    POINTER,
+    Structure,
+    c_char_p,
+    c_int,
+    c_short,
+    c_ubyte,
+    c_uint,
+    c_void_p,
+)
+from typing import Any
+
 
 class EventID(ctypes.Union):
     """Union for event ID in EspeakEvent."""
+
     _fields_ = [
         ("number", ctypes.c_int),        # Used for WORD and SENTENCE events
         ("name", ctypes.c_char_p),      # Used for MARK and PLAY events
@@ -14,6 +28,7 @@ class EventID(ctypes.Union):
 
 class EspeakEvent(Structure):
     """Structure for eSpeak events."""
+
     _fields_ = [
         ("type", ctypes.c_int),                # Event type (e.g., word, sentence, etc.)
         ("unique_identifier", ctypes.c_uint),  # Message identifier
@@ -48,13 +63,14 @@ class EspeakLib:
     # SSML support
     SSML_FLAG = 0x10   # Enable SSML processing
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize eSpeak library and load functions."""
         self.dll = self._load_library()
         self._initialize_functions()
         self.synth_callback = None
         self.word_timings = []
         self._initialize_espeak()
+        self.generated_audio = bytearray()
 
     def _load_library(self):
         """Load eSpeak library dynamically."""
@@ -73,9 +89,10 @@ class EspeakLib:
                 return ctypes.cdll.LoadLibrary(path)
             except OSError:
                 continue
-        raise RuntimeError("Failed to load eSpeak library.")
+        msg = "Failed to load eSpeak library."
+        raise RuntimeError(msg)
 
-    def _initialize_functions(self):
+    def _initialize_functions(self) -> None:
         """Bind library functions with proper signatures."""
         self.dll.espeak_Initialize.restype = c_int
         self.dll.espeak_Initialize.argtypes = [c_int, c_int, c_char_p, c_int]
@@ -88,7 +105,7 @@ class EspeakLib:
 
         self.dll.espeak_Synth.restype = c_int
         self.dll.espeak_Synth.argtypes = [
-            c_char_p, ctypes.c_size_t, c_uint, c_void_p, c_uint, c_uint, c_void_p, c_void_p
+            c_char_p, ctypes.c_size_t, c_uint, c_void_p, c_uint, c_uint, c_void_p, c_void_p,
         ]
 
         self.dll.espeak_SetSynthCallback.restype = None
@@ -96,41 +113,132 @@ class EspeakLib:
 
         self.dll.espeak_Terminate.restype = c_int
 
-    def _initialize_espeak(self):
+    def _initialize_espeak(self) -> None:
         """Initialize eSpeak with default settings."""
         result = self.dll.espeak_Initialize(1, 500, None, 0)
         if result == -1:
-            raise RuntimeError("Failed to initialize eSpeak library.")
+            msg = "Failed to initialize eSpeak library."
+            raise RuntimeError(msg)
 
-    def set_voice(self, voice: str):
+    def set_voice(self, voice: str) -> None:
         """Set the voice by name."""
         self.dll.espeak_SetVoiceByName(c_char_p(voice.encode("utf-8")))
 
-    def set_rate(self, rate: int):
+    def set_rate(self, rate: int) -> None:
         """Set the speech rate."""
         self.dll.espeak_SetParameter(1, rate, 0)
 
-    def set_pitch(self, pitch: int):
+    def set_pitch(self, pitch: int) -> None:
         """Set the pitch."""
         self.dll.espeak_SetParameter(3, pitch, 0)
 
-    def set_volume(self, volume: int):
+    def set_volume(self, volume: int) -> None:
         """Set the volume."""
         self.dll.espeak_SetParameter(2, volume, 0)
 
+    def get_available_voices(self) -> list[dict[str, Any]]:
+        """Retrieve available voices from eSpeak."""
+        # Define the VOICE structure
+        class VOICE(Structure):
+            _fields_ = [
+                ("name", c_char_p),
+                ("languages", c_char_p),
+                ("identifier", c_char_p),
+                ("gender", c_ubyte),
+                ("age", c_ubyte),
+                ("variant", c_ubyte),
+                ("xx1", c_ubyte),
+                ("score", c_int),
+                ("spare", c_void_p),
+            ]
+
+        # Set the return type of espeak_ListVoices
+        self.dll.espeak_ListVoices.restype = POINTER(POINTER(VOICE))
+
+        # Call espeak_ListVoices
+        voices_ptr = self.dll.espeak_ListVoices(None)
+        voices = []
+
+        i = 0
+        while voices_ptr[i]:  # Check for NULL terminator
+            voice = voices_ptr[i].contents  # Dereference the pointer
+
+            raw_languages = voice.languages.decode("utf-8")
+            language_codes = []
+            for lang in raw_languages.split("\x05"):
+                if lang:
+                    language_codes.append(lang.strip())
+
+            voices.append({
+                "id": voice.identifier.decode("utf-8") if voice.identifier else voice.name.decode("utf-8"),
+                "name": voice.name.decode("utf-8") if voice.name else "unknown",
+                "language_codes": language_codes,
+                "gender": "Male" if voice.gender == 1 else "Female" if voice.gender == 2 else "Neutral",
+                "age": voice.age,
+            })
+            i += 1
+
+        return voices
+
+    def get_default_voice(self) -> dict[str, Any]:
+        """Retrieve the default voice from eSpeak.
+        If unavailable, fallback to a known default.
+        """
+        self.dll.espeak_GetCurrentVoice.restype = POINTER(VOICE)
+        current_voice_ptr = self.dll.espeak_GetCurrentVoice()
+        if current_voice_ptr and current_voice_ptr.contents.name:
+            current_voice = current_voice_ptr.contents
+            return {
+                "id": current_voice.identifier.decode("utf-8") if current_voice.identifier else current_voice.name.decode("utf-8"),
+                "name": current_voice.name.decode("utf-8"),
+                "language_codes": [current_voice.languages.decode("utf-8") if current_voice.languages else ""],
+                "gender": "male" if current_voice.gender == 1 else "female" if current_voice.gender == 2 else "unknown",
+                "age": current_voice.age,
+            }
+        # Fallback to a known default
+        return {
+            "id": "gmw/en",
+            "name": "English (default)",
+            "language_codes": ["en"],
+            "gender": "unknown",
+            "age": 0,
+        }
+
+    def _parse_languages(self, languages: bytes) -> list[str]:
+        """Parse language codes from the languages field."""
+        lang_list = []
+        offset = 0
+        while offset < len(languages):
+            priority = languages[offset]
+            offset += 1
+            if priority == 0:  # End of the list
+                break
+            lang_end = languages.find(b"\x00", offset)
+            lang = languages[offset:lang_end].decode("utf-8")
+            lang_list.append(lang)
+            offset = lang_end + 1
+        return lang_list
+
     def _synth_callback(self, wav, numsamples, events) -> int:
-        """Callback function for synthesis events."""
+        """Callback function for synthesis events (streaming support)."""
+        if numsamples > 0 and wav:
+            # Convert 16-bit samples to bytes
+            audio_chunk = struct.pack(f"{numsamples}h", *wav[:numsamples])
+
+            # If a streaming queue exists, add the chunk to the queue
+            if hasattr(self, "stream_queue") and self.stream_queue is not None:
+                self.stream_queue.put(audio_chunk)
+
         if numsamples == 0 and not events:
-            return 0  # Synthesis completed.
+            # End of synthesis, signal streaming completion
+            if hasattr(self, "stream_queue") and self.stream_queue is not None:
+                self.stream_queue.put(None)  # Sentinel to indicate end of streaming
 
         i = 0
         while True:
-            # Access the event at index `i`
+            # Process synthesis events (same as before)
             current_event = ctypes.cast(events, POINTER(EspeakEvent))[i]
 
-            logging.debug(f"Event: type={current_event.type}, text_position={current_event.text_position}, "
-                f"length={current_event.length}, audio_position={current_event.audio_position}, "
-                f"unique_id={current_event.unique_identifier}")
             if current_event.type == self.EVENT_LIST_TERMINATED:
                 break
 
@@ -140,45 +248,51 @@ class EspeakLib:
                     "text_position": current_event.text_position,
                     "length": current_event.length,
                 }
-                logging.debug(
-                    f"Word Event: text_position={current_event.text_position}, "
-                    f"length={current_event.length}, audio_position={current_event.audio_position}"
-                )
                 self.word_timings.append(word)
-            elif current_event.type == self.EVENT_SENTENCE:
-                logging.debug(f"Sentence Event: text_position={current_event.text_position}")
-            elif current_event.type == self.EVENT_MARK:
-                # Handle MARK events
-                mark_name = current_event.id.name.decode("utf-8") if current_event.id.name else "Unnamed Mark"
-                logging.debug(f"Mark Event: id={current_event.id.name.decode('utf-8') if current_event.id.name else 'Unnamed'}")
-            elif current_event.type == self.EVENT_PHONEME:
-                # Handle PHONEME events
-                phoneme = current_event.id.string.decode("utf-8")
-                logging.debug(f"Phoneme Event: phoneme={current_event.id.string.decode('utf-8')}")
 
             i += 1  # Move to the next event
 
         return 0
 
-    def speak_and_wait(self, text: str, ssml: bool = False):
-        """Speak the given text and wait for it to complete."""
-        self.word_timings = [] #clear word timings
-        self.speak(text, ssml=ssml)
-        self.dll.espeak_Synchronize()
+    def speak_streamed(self, text: str, ssml: bool = False) -> None:
+        """Speak the given text and stream audio chunks."""
+        self.word_timings = []
+        self.generated_audio = bytearray()
 
-    def speak(self, text: str, ssml: bool = False):
-        """Speak the given text, with optional SSML support."""
-        self.word_timings = [] #clear word timings
+        # Create a queue for audio chunks
+        self.stream_queue = queue.Queue()
+
+        # Start synthesis
         callback_type = CFUNCTYPE(c_int, POINTER(c_short), c_int, POINTER(EspeakEvent))
         self.synth_callback = callback_type(self._synth_callback)
         self.dll.espeak_SetSynthCallback(self.synth_callback)
 
         flags = self.SSML_FLAG if ssml else self.CHARS_UTF8
         self.dll.espeak_Synth(
-            c_char_p(text.encode("utf-8")), len(text) * 2, 0, None, 0, flags, None, None
+            c_char_p(text.encode("utf-8")), len(text) * 2, 0, None, 0, flags, None, None,
         )
 
-    def speak_debug(self, text: str, ssml: bool = False):
+    def speak_and_wait(self, text: str, ssml: bool = False) -> None:
+        """Speak the given text and wait for it to complete."""
+        self.word_timings = [] #clear word timings
+        self.generated_audio = bytearray() #clear generated audio
+        self.speak(text, ssml=ssml)
+        self.dll.espeak_Synchronize()
+
+    def speak(self, text: str, ssml: bool = False) -> None:
+        """Speak the given text, with optional SSML support."""
+        self.word_timings = [] #clear word timings
+        self.generated_audio = bytearray() #clear generated audio
+        callback_type = CFUNCTYPE(c_int, POINTER(c_short), c_int, POINTER(EspeakEvent))
+        self.synth_callback = callback_type(self._synth_callback)
+        self.dll.espeak_SetSynthCallback(self.synth_callback)
+
+        flags = self.SSML_FLAG if ssml else self.CHARS_UTF8
+        self.dll.espeak_Synth(
+            c_char_p(text.encode("utf-8")), len(text) * 2, 0, None, 0, flags, None, None,
+        )
+
+    def speak_debug(self, text: str, ssml: bool = False) -> None:
         """Speak text with detailed debugging of positions."""
         logging.debug("Input Text: %s", text)
         words = text.split()
@@ -187,7 +301,7 @@ class EspeakLib:
 
         self.speak(text, ssml=ssml)
 
-    def terminate(self):
+    def terminate(self) -> None:
         """Terminate the eSpeak library."""
         self.dll.espeak_Terminate()
 
