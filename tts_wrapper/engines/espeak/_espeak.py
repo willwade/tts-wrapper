@@ -63,6 +63,12 @@ class EspeakLib:
     # SSML support
     SSML_FLAG = 0x10   # Enable SSML processing
 
+    # Audio output modes
+    AUDIO_OUTPUT_PLAYBACK = 0
+    AUDIO_OUTPUT_RETRIEVAL = 1
+    AUDIO_OUTPUT_SYNCHRONOUS = 2
+    AUDIO_OUTPUT_SYNCH_PLAYBACK = 3
+
     def __init__(self) -> None:
         """Initialize eSpeak library and load functions."""
         self.dll = self._load_library()
@@ -70,7 +76,6 @@ class EspeakLib:
         self.synth_callback = None
         self.word_timings = []
         self._initialize_espeak()
-        self.generated_audio = bytearray()
 
     def _load_library(self):
         """Load eSpeak library dynamically."""
@@ -115,10 +120,12 @@ class EspeakLib:
 
     def _initialize_espeak(self) -> None:
         """Initialize eSpeak with default settings."""
-        result = self.dll.espeak_Initialize(1, 500, None, 0)
+        result = self.dll.espeak_Initialize(self.AUDIO_OUTPUT_RETRIEVAL, 500, None, 0)
         if result == -1:
             msg = "Failed to initialize eSpeak library."
             raise RuntimeError(msg)
+        else:
+            logging.debug(f"eSpeak initialized with mode {self.AUDIO_OUTPUT_RETRIEVAL}, result: {result}")
 
     def set_voice(self, voice: str) -> None:
         """Set the voice by name."""
@@ -224,22 +231,23 @@ class EspeakLib:
         if numsamples > 0 and wav:
             # Convert 16-bit samples to bytes
             audio_chunk = struct.pack(f"{numsamples}h", *wav[:numsamples])
+            logging.debug(f"Received {numsamples} samples, audio chunk size: {len(audio_chunk)} bytes")
 
-            # If a streaming queue exists, add the chunk to the queue
-            if hasattr(self, "stream_queue") and self.stream_queue is not None:
-                self.stream_queue.put(audio_chunk)
+            # Append to a local audio buffer
+            if hasattr(self, "_local_audio_buffer"):
+                self._local_audio_buffer.extend(audio_chunk)
 
         if numsamples == 0 and not events:
-            # End of synthesis, signal streaming completion
-            if hasattr(self, "stream_queue") and self.stream_queue is not None:
-                self.stream_queue.put(None)  # Sentinel to indicate end of streaming
+            # End of synthesis
+            logging.debug("End of synthesis: no more samples or events")
 
         i = 0
         while True:
-            # Process synthesis events (same as before)
+            # Process synthesis events
             current_event = ctypes.cast(events, POINTER(EspeakEvent))[i]
 
             if current_event.type == self.EVENT_LIST_TERMINATED:
+                logging.debug("Event processing terminated")
                 break
 
             if current_event.type == self.EVENT_WORD:
@@ -249,20 +257,24 @@ class EspeakLib:
                     "length": current_event.length,
                 }
                 self.word_timings.append(word)
+                logging.debug(f"Word event: {word}")
 
             i += 1  # Move to the next event
 
         return 0
 
-    def speak_streamed(self, text: str, ssml: bool = False) -> None:
-        """Speak the given text and stream audio chunks."""
+    def speak_streamed(self, text: str, ssml: bool = False) -> tuple[queue.Queue, list[dict[str, Any]]]:
+        """
+        Speak the given text and stream audio chunks via a queue.
+
+        :param text: The text to synthesize.
+        :param ssml: If True, treat the text as SSML.
+        :return: A tuple containing the streaming queue and word timings.
+        """
         self.word_timings = []
-        self.generated_audio = bytearray()
+        self.stream_queue = queue.Queue()  # Queue for streaming audio chunks
 
-        # Create a queue for audio chunks
-        self.stream_queue = queue.Queue()
-
-        # Start synthesis
+        # Start synthesis with callback
         callback_type = CFUNCTYPE(c_int, POINTER(c_short), c_int, POINTER(EspeakEvent))
         self.synth_callback = callback_type(self._synth_callback)
         self.dll.espeak_SetSynthCallback(self.synth_callback)
@@ -272,17 +284,17 @@ class EspeakLib:
             c_char_p(text.encode("utf-8")), len(text) * 2, 0, None, 0, flags, None, None,
         )
 
-    def speak_and_wait(self, text: str, ssml: bool = False) -> None:
-        """Speak the given text and wait for it to complete."""
-        self.word_timings = [] #clear word timings
-        self.generated_audio = bytearray() #clear generated audio
-        self.speak(text, ssml=ssml)
-        self.dll.espeak_Synchronize()
+        # Signal synthesis completion
+        self.dll.espeak_Synchronize()  # Ensure all audio chunks are processed
+        self.stream_queue.put(None)  # Add sentinel to indicate end of streaming
 
-    def speak(self, text: str, ssml: bool = False) -> None:
-        """Speak the given text, with optional SSML support."""
-        self.word_timings = [] #clear word timings
-        self.generated_audio = bytearray() #clear generated audio
+        return self.stream_queue, self.word_timings
+
+    def speak_and_wait(self, text: str, ssml: bool = False) -> tuple[bytes, list[dict[str, Any]]]:
+        """Speak the given text and return the audio bytestream and word timings."""
+        self.word_timings = []  # Clear word timings
+        self._local_audio_buffer = bytearray()  # Local audio buffer
+
         callback_type = CFUNCTYPE(c_int, POINTER(c_short), c_int, POINTER(EspeakEvent))
         self.synth_callback = callback_type(self._synth_callback)
         self.dll.espeak_SetSynthCallback(self.synth_callback)
@@ -291,6 +303,32 @@ class EspeakLib:
         self.dll.espeak_Synth(
             c_char_p(text.encode("utf-8")), len(text) * 2, 0, None, 0, flags, None, None,
         )
+        self.dll.espeak_Synchronize()  # Wait for synthesis to complete
+
+        return bytes(self._local_audio_buffer), self.word_timings
+
+    def speak(self, text: str, ssml: bool = False) -> tuple[bytes, list[dict[str, Any]]]:
+        """
+        Speak the given text and return audio bytestream and word timings.
+
+        :param text: The text to synthesize.
+        :param ssml: If True, treat the text as SSML.
+        :return: A tuple containing the audio bytestream and word timings.
+        """
+        self.word_timings = []  # Clear word timings
+        self._local_audio_buffer = bytearray()  # Local audio buffer
+
+        callback_type = CFUNCTYPE(c_int, POINTER(c_short), c_int, POINTER(EspeakEvent))
+        self.synth_callback = callback_type(self._synth_callback)
+        self.dll.espeak_SetSynthCallback(self.synth_callback)
+
+        flags = self.SSML_FLAG if ssml else self.CHARS_UTF8
+        self.dll.espeak_Synth(
+            c_char_p(text.encode("utf-8")), len(text) * 2, 0, None, 0, flags, None, None,
+        )
+        self.dll.espeak_Synchronize()  # Wait for synthesis to complete
+
+        return bytes(self._local_audio_buffer), self.word_timings
 
     def speak_debug(self, text: str, ssml: bool = False) -> None:
         """Speak text with detailed debugging of positions."""
@@ -308,6 +346,10 @@ class EspeakLib:
 
 # Example Usage
 if __name__ == "__main__":
+    import logging
+    from io import BytesIO
+    import wave
+
     logging.basicConfig(level=logging.DEBUG)
     espeak = EspeakLib()
     espeak.set_voice("en")
@@ -315,12 +357,33 @@ if __name__ == "__main__":
     espeak.set_pitch(50)
     espeak.set_volume(80)
 
-    logging.debug("SSML Example:")
-    espeak.speak_and_wait("<speak>Hello, <mark name='pause'/> world!</speak>", ssml=True)
+    text = "Hello, this is a test of the eSpeak library."
 
-    logging.debug("\nPlain Text Example:")
-    espeak.speak_and_wait("Hello, this is a plain text example.")
+    # Perform synthesis and output results
+    logging.debug("Synthesizing text to audio...")
+    espeak.generated_audio = bytearray()  # Clear audio buffer
+    espeak.word_timings = []  # Clear word timings
 
-    logging.debug("\nSpeak Debug:")
-    espeak.speak_debug("Hello world, this is a test.", ssml=False)
-    espeak.terminate()
+    try:
+        espeak.speak_and_wait(text)
+        logging.debug("Synthesis complete. Processing audio data...")
+        logging.debug(f"Generated audio buffer size: {len(espeak.generated_audio)} bytes")
+
+        # Process audio as a WAV file
+        bio = BytesIO()
+        with wave.open(bio, "wb") as wav:
+            wav.setparams((1, 2, 22050, 0, "NONE", "NONE"))
+            wav.writeframes(bytes(espeak.generated_audio))
+        bio.seek(0)
+
+        # Save the audio file for verification
+        with open("output.wav", "wb") as f:
+            f.write(bio.read())
+
+        logging.info("Audio saved to output.wav")
+        logging.info("Word timings: %s", espeak.word_timings)
+
+    except Exception as e:
+        logging.exception("Error during synthesis: %s", e)
+    finally:
+        espeak.terminate()

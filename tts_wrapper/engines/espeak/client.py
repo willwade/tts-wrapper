@@ -4,6 +4,7 @@ from tts_wrapper.engines.utils import process_wav
 
 from ._espeak import EspeakLib
 
+import logging 
 
 class eSpeakClient:
     """Client interface for the eSpeak TTS engine."""
@@ -11,11 +12,12 @@ class eSpeakClient:
     def __init__(self) -> None:
         """Initialize the eSpeak library client."""
         self._espeak = EspeakLib()
+        logging.debug("eSpeak client initialized")
 
     def synth(self, ssml: str, voice: str) -> bytes:
         """Synthesize speech and return audio data."""
         self._espeak.set_voice(voice)
-        self._espeak.speak_and_wait(ssml, ssml=True)
+        self._espeak.speak(ssml, ssml=True)
         # Assuming process_wav is used to standardize audio formats
         return process_wav(self._espeak.generated_audio)
 
