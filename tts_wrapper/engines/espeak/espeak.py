@@ -26,22 +26,19 @@ class eSpeakTTS(AbstractTTS):
         self.word_timings = []
 
         # Wrap text in SSML if not already formatted
-        if not self._is_ssml(str(text)):
-            text = self.ssml.add(str(text))  # Ensure add() returns a string
-        else:
-            text = str(text)  # Convert to string if already SSML
+        text = self.ssml.add(str(text)) if not self._is_ssml(str(text)) else str(text)
 
         # Call the client for synthesis
         audio_data, word_timings = self._client.synth(text, self._voice)
-        self.generated_audio.extend(audio_data)
         self.word_timings = self._process_word_timings(word_timings, text)
         self.set_timings(self.word_timings)
 
-        return bytes(self.generated_audio)
+        return audio_data
+
 
     def synth_to_bytestream(
-        self, text: Any, format: Optional[str] = "wav"
-    ) -> Generator[bytes, None, None]:
+            self, text: Any, format: Optional[str] = "wav"
+        ) -> Generator[bytes, None, None]:
         """
         Synthesizes text to an in-memory bytestream in the specified audio format.
         Yields audio data chunks as they are generated.
@@ -53,24 +50,20 @@ class eSpeakTTS(AbstractTTS):
         if not self._is_ssml(str(text)):
             text = self.ssml.add(str(text))
 
-        # Use eSpeakClient to perform synthesis
-        audio_data, word_timings = self._client.synth(text, self._voice)
+        # Use eSpeakClient to perform synthesis 
+        stream_queue, word_timings = self._client.synth_streaming(text, self._voice)
 
-        # Process timings for metadata
         self.word_timings = self._process_word_timings(word_timings, text)
         self.set_timings(self.word_timings)
 
-        # Yield audio data in chunks (e.g., for streaming)
-        chunk_size = 4096
-        for i in range(0, len(audio_data), chunk_size):
-            chunk = audio_data[i:i + chunk_size]
-            if format == "wav":
-                yield self._format_as_wav(chunk)
-            else:
-                raise NotImplementedError(f"Format {format} not supported yet.")
+        while True:
+            chunk = stream_queue.get()
+            if chunk is None:
+                break
+            yield chunk
 
     def _process_word_timings(self, word_timings: list[dict], input_text: str) -> list[tuple[float, float, str]]:
-        """Process raw word timings into start-end intervals."""
+        """Convert raw word timings to (start_time, end_time, word) tuples."""
         processed_timings = []
         audio_duration = self.get_audio_duration()
 
@@ -79,10 +72,15 @@ class eSpeakTTS(AbstractTTS):
             text_position = word_info["text_position"]
             length = word_info["length"]
 
+            # Extract word text
             word_text = input_text[text_position : text_position + length]
+
+            # Calculate end_time
             end_time = (
                 word_timings[i + 1]["start_time"] if i + 1 < len(word_timings) else audio_duration
             )
+
+            # Append the tuple
             processed_timings.append((start_time, end_time, word_text))
 
         return processed_timings
@@ -114,6 +112,6 @@ class eSpeakTTS(AbstractTTS):
             attributes.append(f'rate="{rate}"')
         if pitch:
             attributes.append(f'pitch="{pitch}"')
-        
+
         attr_str = " ".join(attributes)
         return f'<prosody {attr_str}>{text}</prosody>'

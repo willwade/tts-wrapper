@@ -1,10 +1,9 @@
+import logging
+import queue
 from typing import Any
-
-from tts_wrapper.engines.utils import process_wav
 
 from ._espeak import EspeakLib
 
-import logging 
 
 class eSpeakClient:
     """Client interface for the eSpeak TTS engine."""
@@ -15,24 +14,26 @@ class eSpeakClient:
         logging.debug("eSpeak client initialized")
 
     def synth(self, ssml: str, voice: str) -> tuple[bytes, list[dict]]:
-        """Synthesize speech and return raw audio data and word timings."""
+        """Synthesize speech using EspeakLib and return raw audio and word timings."""
         self._espeak.set_voice(voice)
-        ssml_text = str(ssml)
-        audio_data, word_timings = self._espeak.speak_and_wait(ssml_text, ssml=True)
-        logging.debug("Client - Audio size: %d bytes", len(audio_data))
-        logging.debug("Client - Word timings: %s", word_timings)
-        return audio_data, word_timings
+        return self._espeak.synth(ssml, ssml=True)
+
+    def synth_streaming(self, ssml: str, voice: str) -> tuple[queue.Queue, list[dict]]:
+        """Stream synthesis using EspeakLib and return a queue and word timings."""
+        self._espeak.set_voice(voice)
+        return self._espeak.synth_streaming(ssml, ssml=True)
 
     def get_voices(self) -> list[dict[str, Any]]:
         """Fetches available voices from eSpeak."""
         voices = self._espeak.get_available_voices()
-        standardized_voices = []
-        for voice in voices:
-            standardized_voices.append({
+        standardized_voices = [
+            {
                 "id": voice["id"],
                 "name": voice["name"],
                 "language_codes": voice["language_codes"],
                 "gender": voice["gender"],
                 "age": voice.get("age", 0),  # Age is optional
-            })
+            }
+            for voice in voices
+        ]
         return standardized_voices
