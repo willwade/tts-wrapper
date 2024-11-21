@@ -12,5 +12,6 @@ from .uwp import *
 from .watson import *
 from .witai import *
 from .espeak import *
+from .avspeech import *
 # from .mms import *
 # from .piper import *
