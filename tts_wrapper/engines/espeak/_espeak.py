@@ -126,8 +126,7 @@ class EspeakLib:
         if result == -1:
             msg = "Failed to initialize eSpeak library."
             raise RuntimeError(msg)
-        else:
-            logging.debug(f"eSpeak initialized with mode {self.AUDIO_OUTPUT_RETRIEVAL}, result: {result}")
+        logging.debug(f"eSpeak initialized with mode {self.AUDIO_OUTPUT_RETRIEVAL}, result: {result}")
 
     def set_voice(self, voice: str) -> None:
         """Set the voice by name."""
@@ -190,7 +189,8 @@ class EspeakLib:
         return voices
 
     def get_default_voice(self) -> dict[str, Any]:
-        """Retrieve the default voice from eSpeak.
+        """
+        Retrieve the default voice from eSpeak.
         If unavailable, fallback to a known default.
         """
         self.dll.espeak_GetCurrentVoice.restype = POINTER(VOICE)
@@ -228,7 +228,7 @@ class EspeakLib:
             offset = lang_end + 1
         return lang_list
 
-    def _reset_buffers(self):
+    def _reset_buffers(self) -> None:
         """Reset buffers for audio and word timings."""
         self._local_audio_buffer = bytearray()
         self.word_timings = []
@@ -297,7 +297,7 @@ class EspeakLib:
 
     def synth(self, text: str, ssml: bool = False) -> tuple[bytes, list[dict[str, Any]]]:
         """
-        Synthesize the given text and return the full audio bytestream and word timings. Blocking
+        Synthesize the given text and return the full audio bytestream and word timings. Blocking.
 
         Blocking. Think of this as "synth and wait"
         :param text: The text to synthesize.
@@ -325,7 +325,7 @@ class EspeakLib:
 
     def synth_streaming(self, text: str, ssml: bool = False) -> tuple[queue.Queue, list[dict[str, Any]]]:
         """
-        Synthesize the given text and stream audio chunks via a queue. 
+        Synthesize the given text and stream audio chunks via a queue.
 
         non-blocking. Think of this as "synth and stream as generated"
         :param text: The text to synthesize.
@@ -370,8 +370,8 @@ class EspeakLib:
 # Example Usage
 if __name__ == "__main__":
     import logging
-    from io import BytesIO
     import wave
+    from io import BytesIO
 
     logging.basicConfig(level=logging.DEBUG)
     espeak = EspeakLib()

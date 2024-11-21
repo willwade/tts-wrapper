@@ -26,7 +26,7 @@ class eSpeakClient:
     def get_voices(self) -> list[dict[str, Any]]:
         """Fetches available voices from eSpeak."""
         voices = self._espeak.get_available_voices()
-        standardized_voices = [
+        return [
             {
                 "id": voice["id"],
                 "name": voice["name"],
@@ -36,4 +36,3 @@ class eSpeakClient:
             }
             for voice in voices
         ]
-        return standardized_voices

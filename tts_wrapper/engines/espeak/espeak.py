@@ -1,16 +1,22 @@
 from __future__ import annotations
-from typing import Any, Optional
-from collections.abc import Generator
-from tts_wrapper.tts import AbstractTTS
-from . import eSpeakClient
-from .ssml import eSpeakSSML
+
 import logging
+from typing import TYPE_CHECKING, Any
+
+from tts_wrapper.tts import AbstractTTS
+
+from .ssml import eSpeakSSML
+
+if TYPE_CHECKING:
+    from collections.abc import Generator
+
+    from . import eSpeakClient
 
 
 class eSpeakTTS(AbstractTTS):
     """High-level TTS interface for eSpeak."""
 
-    def __init__(self, client: eSpeakClient, lang: Optional[str] = None, voice: Optional[str] = None) -> None:
+    def __init__(self, client: eSpeakClient, lang: str | None = None, voice: str | None = None) -> None:
         """Initialize the eSpeak TTS interface."""
         super().__init__()
         self._client = client
@@ -19,7 +25,7 @@ class eSpeakTTS(AbstractTTS):
         self.audio_rate = 22050
         self.generated_audio = bytearray()
         self.word_timings = []
-        self.on_end = None 
+        self.on_end = None
 
     def synth_to_bytes(self, text: Any) -> bytes:
         """Convert text to audio bytes."""
@@ -33,7 +39,7 @@ class eSpeakTTS(AbstractTTS):
         # Call the client for synthesis
         audio_data, word_timings = self._client.synth(text, self._voice)
         if self.on_end:
-            self.on_end() 
+            self.on_end()
         self.word_timings = self._process_word_timings(word_timings, text)
         self.set_timings(self.word_timings)
 
@@ -41,7 +47,7 @@ class eSpeakTTS(AbstractTTS):
 
 
     def synth_to_bytestream(
-            self, text: Any, format: Optional[str] = "wav"
+            self, text: Any, format: str | None = "wav"
         ) -> Generator[bytes, None, None]:
         """
         Synthesizes text to an in-memory bytestream in the specified audio format.
@@ -54,7 +60,7 @@ class eSpeakTTS(AbstractTTS):
         if not self._is_ssml(str(text)):
             text = self.ssml.add(str(text))
 
-        # Use eSpeakClient to perform synthesis 
+        # Use eSpeakClient to perform synthesis
         stream_queue, word_timings = self._client.synth_streaming(text, self._voice)
         if self.on_end:
             self.on_end()
@@ -71,20 +77,23 @@ class eSpeakTTS(AbstractTTS):
         """
         Processes raw word timings and formats them as (start_time, end_time, word) tuples.
 
-        Parameters:
+        Parameters
+        ----------
         - word_timings: List of dictionaries containing raw word timing information.
         - input_text: The original text that was synthesized.
 
-        Returns:
+        Returns
+        -------
         - List of tuples in the format (start_time, end_time, word).
+
         """
         processed_timings = []
         audio_duration = self.get_audio_duration()
 
         for i, word_info in enumerate(word_timings):
             start_time = word_info["start_time"]
-            text_position = word_info["text_position"]
-            length = word_info["length"]
+            word_info["text_position"]
+            word_info["length"]
             word_text = word_info["word"]
 
             # Determine the end time
@@ -117,7 +126,7 @@ class eSpeakTTS(AbstractTTS):
         """Return available voices."""
         return self._client.get_voices()
 
-    def set_voice(self, voice_id: str, lang_id: Optional[str] = None) -> None:
+    def set_voice(self, voice_id: str, lang_id: str | None = None) -> None:
         """Set the voice and language."""
         super().set_voice(voice_id)
         self._voice = voice_id
@@ -126,10 +135,10 @@ class eSpeakTTS(AbstractTTS):
     def construct_prosody_tag(
         self,
         text: str,
-        volume: Optional[str] = None,
-        rate: Optional[str] = None,
-        pitch: Optional[str] = None,
-        range: Optional[str] = None,
+        volume: str | None = None,
+        rate: str | None = None,
+        pitch: str | None = None,
+        range: str | None = None,
     ) -> str:
         """
         Construct a <prosody> tag using the SSML handler.

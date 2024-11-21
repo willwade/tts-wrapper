@@ -1,4 +1,5 @@
-"""Provides an abstract text-to-speech (TTS) class.
+"""
+Provides an abstract text-to-speech (TTS) class.
 
 with methods for synthesis, playback, and property management.
 Designed to be extended by specific TTS engine implementations.
@@ -36,7 +37,8 @@ STEREO_CHANNELS = 2
 SIXTEEN_BIT_PCM_SIZE = 2
 
 class AbstractTTS(ABC):
-    """Abstract class (ABC) for text-to-speech functionalities,.
+    """
+    Abstract class (ABC) for text-to-speech functionalities,.
 
     including synthesis and playback.
     """
@@ -76,7 +78,8 @@ class AbstractTTS(ABC):
         """Retrieve a list of available voices from the TTS service."""
 
     def check_credentials(self) -> bool:
-        """Verify that the provided credentials are valid by calling get_voices.
+        """
+        Verify that the provided credentials are valid by calling get_voices.
 
         This method should be implemented by the child classes to handle the
           specific credential checks.
@@ -89,7 +92,8 @@ class AbstractTTS(ABC):
             return False
 
     def set_voice(self, voice_id: str, lang: str = "en-US") -> None:
-        """Set the voice for the TTS engine.
+        """
+        Set the voice for the TTS engine.
 
         Parameters
         ----------
@@ -104,7 +108,8 @@ class AbstractTTS(ABC):
         self.lang = lang
 
     def _convert_mp3_to_pcm(self, mp3_data: bytes) -> bytes:
-        """Convert MP3 data to raw PCM data.
+        """
+        Convert MP3 data to raw PCM data.
 
         :param mp3_data: MP3 audio data as bytes.
         :return: Raw PCM data as bytes (int16).
@@ -117,7 +122,8 @@ class AbstractTTS(ABC):
         return pcm_data.tobytes()
 
     def _strip_wav_header(self, wav_data: bytes) -> bytes:
-        """Strip the WAV header from the audio data to return raw PCM.
+        """
+        Strip the WAV header from the audio data to return raw PCM.
 
         WAV headers are typically 44 bytes,
         so we slice the data after the header.
@@ -125,7 +131,8 @@ class AbstractTTS(ABC):
         return wav_data[44:]
 
     def _infer_channels_from_pcm(self, pcm_data: np.ndarray) -> int:
-        """Infer the number of channels from the PCM data.
+        """
+        Infer the number of channels from the PCM data.
 
         :param pcm_data: PCM data as a numpy array.
         :return: Number of channels (1 for mono, 2 for stereo).
@@ -140,7 +147,8 @@ class AbstractTTS(ABC):
     def _convert_audio(
         self, pcm_data: np.ndarray, target_format: str, sample_rate: int,
     ) -> bytes:
-        """Convert raw PCM data to a specified audio format.
+        """
+        Convert raw PCM data to a specified audio format.
 
         :param pcm_data: Raw PCM audio data (assumed to be in int16 format).
         :param target_format: Target format (e.g., 'mp3', 'flac').
@@ -202,14 +210,16 @@ class AbstractTTS(ABC):
 
     @abstractmethod
     def synth_to_bytes(self, text: str | SSML) -> bytes:
-        """Transform written text to audio bytes on supported formats.
+        """
+        Transform written text to audio bytes on supported formats.
 
         This method should return raw PCM data with
           no headers for sounddevice playback.
         """
 
     def load_audio(self, audio_bytes: bytes) -> None:
-        """Load audio bytes into the player.
+        """
+        Load audio bytes into the player.
 
         Parameters
         ----------
@@ -303,7 +313,8 @@ class AbstractTTS(ABC):
 
 
     def pause(self, duration: float | None = None) -> None:
-        """Pause playback with optional duration.
+        """
+        Pause playback with optional duration.
 
         Parameters
         ----------
@@ -369,7 +380,8 @@ class AbstractTTS(ABC):
     def synth_to_file(
         self, text: str | SSML, filename: str, audio_format: str | None = "wav",
     ) -> None:
-        """Synthesizes text to audio and saves it to a file.
+        """
+        Synthesizes text to audio and saves it to a file.
 
         :param text: The text to synthesize.
         :param filename: The file where the audio will be saved.
@@ -389,7 +401,8 @@ class AbstractTTS(ABC):
         self.synth_to_file(text, filename, audio_format)
 
     def speak(self, text: str | SSML) -> None:
-        """Synthesize text and play it back using sounddevice.
+        """
+        Synthesize text and play it back using sounddevice.
 
         :param text: The text to synthesize and play.
         """
@@ -411,7 +424,8 @@ class AbstractTTS(ABC):
         save_to_file_path: str | None = None,
         audio_format: str | None = "wav",
     ) -> None:
-        """Synthesize text and stream it for playback using sounddevice.
+        """
+        Synthesize text and stream it for playback using sounddevice.
 
         Optionally save the audio to a file after playback completes.
 
@@ -466,7 +480,8 @@ class AbstractTTS(ABC):
 
     def setup_stream(self, samplerate: int = 22050,
                      channels: int = 1, dtype: str | int = "int16") -> None:
-        """Set up the audio stream for playback.
+        """
+        Set up the audio stream for playback.
 
         Parameters
         ----------
@@ -559,7 +574,8 @@ class AbstractTTS(ABC):
         return self.timings
 
     def get_audio_duration(self) -> float:
-        """Calculate the duration of the audio.
+        """
+        Calculate the duration of the audio.
 
         Calculate the duration of the audio based
         on the number of samples and sample rate.
@@ -569,7 +585,8 @@ class AbstractTTS(ABC):
         return 0.0
 
     def on_word_callback(self, word: str, start_time: float, end_time: float) -> None:
-        """Trigger a callback when a word is spoken during playback.
+        """
+        Trigger a callback when a word is spoken during playback.
 
         :param word: The word being spoken.
         :param start_time: The start time of the word in seconds.
@@ -591,7 +608,8 @@ class AbstractTTS(ABC):
 
     def start_playback_with_callbacks(
             self, text: str, callback: Callable | None = None) -> None:
-        """Start playback of the given text with callbacks triggered at each word.
+        """
+        Start playback of the given text with callbacks triggered at each word.
 
         Parameters
         ----------
@@ -635,7 +653,8 @@ class AbstractTTS(ABC):
         self.finish()
 
     def get_property(self, property_name: str) -> PropertyType:
-        """Retrieve the value of a specified property for the TTS engine.
+        """
+        Retrieve the value of a specified property for the TTS engine.
 
         Parameters
         ----------
@@ -652,7 +671,8 @@ class AbstractTTS(ABC):
         return self.properties.get(property_name, None)
 
     def set_property(self, property_name: str, value: float | str) -> None:
-        """Set a property for the TTS engine and update its internal state.
+        """
+        Set a property for the TTS engine and update its internal state.
 
         Parameters
         ----------
@@ -687,7 +707,8 @@ class AbstractTTS(ABC):
         return " ".join(ssml_parts)
 
     def set_output_device(self, device_id: int) -> None:
-        """Set the default output sound device by its ID.
+        """
+        Set the default output sound device by its ID.
 
         :param device_id: The ID of the device to be set as the default output.
         """
