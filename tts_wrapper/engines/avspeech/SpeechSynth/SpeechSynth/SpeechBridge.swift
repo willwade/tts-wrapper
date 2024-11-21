@@ -28,6 +28,7 @@ public func getVoices() -> UnsafePointer<CChar>? {
         return nil
     }
 }
+
 @_cdecl("synthesizeToByteStream")
 public func synthesizeToByteStream(
     text: UnsafePointer<CChar>,
@@ -36,7 +37,7 @@ public func synthesizeToByteStream(
 ) {
     let textString = String(cString: text)
     let voiceIdentifierString = voiceIdentifier != nil ? String(cString: voiceIdentifier!) : nil
-    let synthesizer = TTSManager.synthesizer
+
     let audioEngine = TTSManager.audioEngine
     let mainMixer = audioEngine.mainMixerNode
     let outputFormat = mainMixer.outputFormat(forBus: 0)
@@ -48,7 +49,7 @@ public func synthesizeToByteStream(
     utterance.rate = 0.5
 
     do {
-        // Attach audio nodes and start capturing audio
+        // Install tap to capture audio
         mainMixer.installTap(onBus: 0, bufferSize: 1024, format: outputFormat) { buffer, _ in
             if let channelData = buffer.floatChannelData {
                 let frameLength = Int(buffer.frameLength)
@@ -69,12 +70,28 @@ public func synthesizeToByteStream(
         try audioEngine.start()
         print("Audio engine started")
 
-        // Speak the utterance, suppressing playback
-        synthesizer.delegate = nil
-        synthesizer.speak(utterance)
+        // Generate audio data using AVSpeechSynthesizer
+        TTSManager.synthesizer.write(utterance) { buffer in
+            guard let pcmBuffer = buffer as? AVAudioPCMBuffer, pcmBuffer.frameLength > 0 else {
+                return
+            }
+
+            if let channelData = pcmBuffer.floatChannelData {
+                let frameLength = Int(pcmBuffer.frameLength)
+                let audioBytes = UnsafeBufferPointer(start: channelData[0], count: frameLength)
+                let int16Data = audioBytes.map { Int16($0 * Float(Int16.max)) }
+                let byteData = int16Data.flatMap { int16Sample in
+                    [UInt8(truncatingIfNeeded: int16Sample & 0xFF),
+                     UInt8(truncatingIfNeeded: (int16Sample >> 8) & 0xFF)]
+                }
+                byteData.withUnsafeBufferPointer { pointer in
+                    callback(pointer.baseAddress!, byteData.count)
+                }
+            }
+        }
 
         // Wait for synthesis to complete
-        while synthesizer.isSpeaking {
+        while TTSManager.synthesizer.isSpeaking {
             Thread.sleep(forTimeInterval: 0.1)
         }
 
