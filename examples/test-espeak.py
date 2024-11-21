@@ -46,29 +46,37 @@ def test_saving_audio():
 def test_changing_voices():
     """Test changing voices and synthesizing text."""
     try:
+        # Get the list of available voices
         voices = tts.get_voices()
+        logging.debug(f"Voices: {voices}")
         if not voices:
             print("No voices available.")
             return
 
-        print("Getting voices")
-        for voice in voices[:4]:
-            language_codes = voice.get("language_codes", [])
-            display_name = voice.get("name", "Unknown voice")
-            first_language_code = language_codes[0] if language_codes else "Unknown"
-            print(f"{display_name} ({first_language_code}): {voice['id']}")
+        print("Getting voices...")
+        english_voices = [
+            voice for voice in voices
+            if "English" in (voice.get("name") or [])
+        ]
 
-        if len(voices) > 1:
-            new_voice_id = voices[1].get("id")
-            new_lang_codes = voices[1].get("language_codes", [])
-            new_lang_id = new_lang_codes[0] if new_lang_codes else "Unknown"
-            print(f"Running with {new_voice_id} and {new_lang_id}")
+        if not english_voices:
+            print("No English voices available.")
+            return
+
+        # Select and test the first four English voices
+        for i, voice in enumerate(english_voices[:4], start=1):
+            display_name = voice.get("name", "Unknown voice")
+            voice_id = voice.get("id", "Unknown ID")
+            language_codes = voice.get("language_codes", [])
+            first_language_code = language_codes[0] if language_codes else "Unknown"
+            
+            print(f"Testing voice {i}: {display_name} ({first_language_code}) - ID: {voice_id}")
             try:
-                tts.set_voice(new_voice_id, new_lang_id)
-                ssml_text = tts.ssml.add("Continuing with a new voice!", clear=True)
-                tts.speak_streamed(ssml_text)
+                # Set the current voice and synthesize text
+                tts.set_voice(voice_id, first_language_code)
+                tts.speak_streamed(f"This is voice {i}. Testing the {display_name} voice.")
             except Exception as e:
-                print(f"Error at setting voice: {e}")
+                print(f"Error testing voice {i}: {e}")
     except Exception as e:
         print(f"Error in voice changing test: {e}")
 
@@ -111,6 +119,6 @@ if __name__ == "__main__":
     # Uncomment any line below to test the corresponding functionality
     # test_pausing_and_resuming()
     # test_saving_audio()
-    # test_changing_voices()
-    test_callbacks()
+    test_changing_voices()
+    # test_callbacks()
     # test_volume_control()
