@@ -3,6 +3,61 @@ import AVFoundation
 class TTSManager {
     static let synthesizer = AVSpeechSynthesizer()
     static let audioEngine = AVAudioEngine()
+    static var pitchMultiplier: Float = 1.0
+    static var rate: Float = 0.5
+    static var volume: Float = 1.0
+}
+
+class TTSDelegate: NSObject, AVSpeechSynthesizerDelegate {
+    var onWordEvent: (([String: Any]) -> Void)?
+
+    func speechSynthesizer(
+        _ synthesizer: AVSpeechSynthesizer,
+        willSpeakRangeOfSpeechString characterRange: NSRange,
+        utterance: AVSpeechUtterance
+    ) {
+        // Extract the word and its properties
+        let word = (utterance.speechString as NSString).substring(with: characterRange)
+        let event: [String: Any] = [
+            "text_position": characterRange.location,
+            "length": characterRange.length,
+            "word": word
+        ]
+        // Trigger the callback with the event
+        onWordEvent?(event)
+    }
+}
+
+// Set parameters
+@_cdecl("setPitch")
+public func setPitch(pitch: Float) {
+    TTSManager.pitchMultiplier = pitch
+}
+
+@_cdecl("setRate")
+public func setRate(rate: Float) {
+    TTSManager.rate = rate
+}
+
+@_cdecl("setVolume")
+public func setVolume(volume: Float) {
+    TTSManager.volume = volume
+}
+
+// Get parameters
+@_cdecl("getPitch")
+public func getPitch() -> Float {
+    return TTSManager.pitchMultiplier
+}
+
+@_cdecl("getRate")
+public func getRate() -> Float {
+    return TTSManager.rate
+}
+
+@_cdecl("getVolume")
+public func getVolume() -> Float {
+    return TTSManager.volume
 }
 
 // Voice Information
@@ -33,94 +88,103 @@ public func getVoices() -> UnsafePointer<CChar>? {
 public func synthesizeToByteStream(
     text: UnsafePointer<CChar>,
     voiceIdentifier: UnsafePointer<CChar>?,
-    callback: @escaping @convention(c) (UnsafePointer<UInt8>, Int) -> Void
+    isSSML: Bool,
+    callback: @escaping @convention(c) (UnsafePointer<UInt8>, Int, UnsafePointer<CChar>?) -> Void
 ) {
-    let textString = String(cString: text)
+    let inputString = String(cString: text)
     let voiceIdentifierString = voiceIdentifier != nil ? String(cString: voiceIdentifier!) : nil
 
-    let audioEngine = TTSManager.audioEngine
-    let mainMixer = audioEngine.mainMixerNode
-    let outputFormat = mainMixer.outputFormat(forBus: 0)
+    let utterance: AVSpeechUtterance
+    if isSSML {
+        guard let ssmlUtterance = AVSpeechUtterance(ssmlRepresentation: inputString) else {
+            print("Invalid SSML string")
+            return
+        }
+        utterance = ssmlUtterance
+    } else {
+        utterance = AVSpeechUtterance(string: inputString)
+    }
 
-    let utterance = AVSpeechUtterance(string: textString)
     if let voiceID = voiceIdentifierString, let voice = AVSpeechSynthesisVoice(identifier: voiceID) {
         utterance.voice = voice
     }
     utterance.rate = 0.5
 
-    do {
-        // Install tap to capture audio
-        mainMixer.installTap(onBus: 0, bufferSize: 1024, format: outputFormat) { buffer, _ in
-            if let channelData = buffer.floatChannelData {
-                let frameLength = Int(buffer.frameLength)
-                let audioBytes = UnsafeBufferPointer(start: channelData[0], count: frameLength)
-                let int16Data = audioBytes.map { Int16($0 * Float(Int16.max)) }
-                let byteData = int16Data.flatMap { int16Sample in
-                    [UInt8(truncatingIfNeeded: int16Sample & 0xFF),
-                     UInt8(truncatingIfNeeded: (int16Sample >> 8) & 0xFF)]
-                }
-                byteData.withUnsafeBufferPointer { pointer in
-                    callback(pointer.baseAddress!, byteData.count)
-                }
+    // Delegate to handle word events
+    let delegate = TTSDelegate()
+    delegate.onWordEvent = { event in
+        if let wordData = try? JSONSerialization.data(withJSONObject: event, options: []),
+           let wordCString = String(data: wordData, encoding: .utf8)?.cString(using: .utf8) {
+            wordCString.withUnsafeBufferPointer { pointer in
+                let emptyAudioChunk = UnsafeMutablePointer<UInt8>.allocate(capacity: 1)
+                emptyAudioChunk.initialize(to: 0)
+                callback(emptyAudioChunk, 0, pointer.baseAddress)
+                emptyAudioChunk.deinitialize(count: 1)
+                emptyAudioChunk.deallocate()
             }
         }
+    }
+    TTSManager.synthesizer.delegate = delegate
 
-        // Prepare and start the audio engine
-        audioEngine.prepare()
-        try audioEngine.start()
-        print("Audio engine started")
-
-        // Generate audio data using AVSpeechSynthesizer
-        TTSManager.synthesizer.write(utterance) { buffer in
-            guard let pcmBuffer = buffer as? AVAudioPCMBuffer, pcmBuffer.frameLength > 0 else {
-                return
-            }
-
-            if let channelData = pcmBuffer.floatChannelData {
-                let frameLength = Int(pcmBuffer.frameLength)
-                let audioBytes = UnsafeBufferPointer(start: channelData[0], count: frameLength)
-                let int16Data = audioBytes.map { Int16($0 * Float(Int16.max)) }
-                let byteData = int16Data.flatMap { int16Sample in
-                    [UInt8(truncatingIfNeeded: int16Sample & 0xFF),
-                     UInt8(truncatingIfNeeded: (int16Sample >> 8) & 0xFF)]
-                }
-                byteData.withUnsafeBufferPointer { pointer in
-                    callback(pointer.baseAddress!, byteData.count)
-                }
-            }
+    // Use `write(_:completionHandler:)` for audio data
+    TTSManager.synthesizer.write(utterance) { buffer in
+        guard let pcmBuffer = buffer as? AVAudioPCMBuffer, pcmBuffer.frameLength > 0 else {
+            return
         }
 
-        // Wait for synthesis to complete
-        while TTSManager.synthesizer.isSpeaking {
-            Thread.sleep(forTimeInterval: 0.1)
+        if let channelData = pcmBuffer.floatChannelData {
+            let frameLength = Int(pcmBuffer.frameLength)
+            let audioBytes = UnsafeBufferPointer(start: channelData[0], count: frameLength)
+            let int16Data = audioBytes.map { Int16($0 * Float(Int16.max)) }
+            let byteData = int16Data.flatMap { int16Sample in
+                [UInt8(truncatingIfNeeded: int16Sample & 0xFF),
+                 UInt8(truncatingIfNeeded: (int16Sample >> 8) & 0xFF)]
+            }
+            byteData.withUnsafeBufferPointer { pointer in
+                callback(pointer.baseAddress!, byteData.count, nil)
+            }
         }
-
-        // Cleanup
-        mainMixer.removeTap(onBus: 0)
-        audioEngine.stop()
-        print("Audio engine stopped")
-
-    } catch {
-        print("Error during synthesis: \(error)")
     }
 }
 
-// Synthesize Speech to Bytes (Blocking)
 @_cdecl("synthesizeToBytes")
-public func synthesizeToBytes(text: UnsafePointer<CChar>, voiceIdentifier: UnsafePointer<CChar>?) -> UnsafePointer<UInt8>? {
-    let textString = String(cString: text)
+public func synthesizeToBytes(
+    text: UnsafePointer<CChar>,
+    voiceIdentifier: UnsafePointer<CChar>?,
+    isSSML: Bool,
+    wordTimingCallback: @escaping @convention(c) (UnsafePointer<CChar>?) -> Void
+) -> UnsafePointer<UInt8>? {
+    let inputString = String(cString: text)
     let voiceIdentifierString = voiceIdentifier != nil ? String(cString: voiceIdentifier!) : nil
-    let synthesizer = TTSManager.synthesizer
+
     let audioEngine = TTSManager.audioEngine
     let mainMixer = audioEngine.mainMixerNode
     let outputFormat = mainMixer.outputFormat(forBus: 0)
     var audioData = [UInt8]()
+    var wordTimings = [[String: Any]]()
 
-    let utterance = AVSpeechUtterance(string: textString)
+    let utterance: AVSpeechUtterance
+    if isSSML {
+        guard let ssmlUtterance = AVSpeechUtterance(ssmlRepresentation: inputString) else {
+            print("Invalid SSML string")
+            return nil
+        }
+        utterance = ssmlUtterance
+    } else {
+        utterance = AVSpeechUtterance(string: inputString)
+    }
+
     if let voiceID = voiceIdentifierString, let voice = AVSpeechSynthesisVoice(identifier: voiceID) {
         utterance.voice = voice
     }
     utterance.rate = 0.5
+
+    // Setup delegate for word timing
+    let delegate = TTSDelegate()
+    delegate.onWordEvent = { event in
+        wordTimings.append(event)
+    }
+    TTSManager.synthesizer.delegate = delegate
 
     do {
         mainMixer.installTap(onBus: 0, bufferSize: 1024, format: outputFormat) { buffer, _ in
@@ -138,26 +202,39 @@ public func synthesizeToBytes(text: UnsafePointer<CChar>, voiceIdentifier: Unsaf
 
         audioEngine.prepare()
         try audioEngine.start()
-        synthesizer.speak(utterance)
+        print("Audio engine started")
+
+        TTSManager.synthesizer.speak(utterance)
 
         // Wait for synthesis to complete
-        while synthesizer.isSpeaking {
+        while TTSManager.synthesizer.isSpeaking {
             Thread.sleep(forTimeInterval: 0.1)
         }
 
+        // Cleanup
         mainMixer.removeTap(onBus: 0)
         audioEngine.stop()
+        print("Audio engine stopped")
+
+        // Serialize word timings and send via callback
+        if let wordTimingData = try? JSONSerialization.data(withJSONObject: wordTimings, options: []),
+           let wordTimingJSONString = String(data: wordTimingData, encoding: .utf8) {
+            wordTimingJSONString.withCString { cString in
+                wordTimingCallback(strdup(cString))
+            }
+        }
 
     } catch {
         print("Error during synthesis: \(error)")
     }
 
+    // Copy audio data into an unsafe buffer
     let byteCount = audioData.count
     let buffer = UnsafeMutablePointer<UInt8>.allocate(capacity: byteCount)
-
-    // Copy audioData contents into the buffer
     buffer.initialize(from: audioData, count: byteCount)
 
-    // Return the pointer to the buffer
     return UnsafePointer(buffer)
 }
+
+
+
