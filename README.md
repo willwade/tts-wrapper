@@ -54,7 +54,7 @@ _TTS-Wrapper_ simplifies using text-to-speech APIs by providing a unified interf
 | UWP        | Windows             | Offline        | No   | Yes               | No            |
 | SAPI       | Windows             | Offline        | Yes  | Yes               | Yes           |
 | NSS        | MacOS               | Offline        | Yes  | Yes               | Yes           |
-| eSpeak     | Linux/MacOS/Windows | Offline        | No   | Yes               | No            |
+| eSpeak     | Linux/MacOS/Windows | Offline        | Yes  | Yes               | Yes           |
 
 
 ### Methods for each engine
@@ -101,6 +101,11 @@ For PicoTTS on Debian systems:
 sudo apt-get install libttspico-utils
 ```
 
+The `espeak` TTS functionality requires the `eSpeak` C library to be installed on your system.
+
+- **Ubuntu/Debian**: `sudo apt install espeak-ng`
+- **macOS**: `brew install espeak-ng`
+- **Windows**: Download the binaries from https://espeak.sourceforge.net/
 
 ### Using pip
 
@@ -239,6 +244,18 @@ from tts_wrapper import UWPTTS, UWPClient
 client = UWPClient()
 tts = UWPTTS(client)
 ```
+
+### eSpeak
+
+```python
+from tts_wrapper import eSpeakClient, eSpeakTTS
+
+client = eSpeakClient()
+tts = eSpeakTTS(client)
+
+```
+
+Note: It relies on know extra libraries except you need to instal espeak-ng
 
 ### SAPI/eSpeak/NSSS
 
