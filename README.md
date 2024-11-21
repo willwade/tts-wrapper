@@ -17,6 +17,7 @@ _TTS-Wrapper_ simplifies using text-to-speech APIs by providing a unified interf
 - IBM Watson
 - ElevenLabs
 - Wit.Ai 
+- eSpeak-NG
 
 
 ### Experimental (Not fully featured or in a state of WIP)
@@ -24,8 +25,7 @@ _TTS-Wrapper_ simplifies using text-to-speech APIs by providing a unified interf
 - PicoTTS
 - UWP (WinRT) Speech system (win 10+)
 - Sherpa-Onnx (focusing on MMS models for now)
-- gTTS (GoogleTranslation TTS.)
-- eSpeak/SAPI/NSSS (Microsoft Speech API)/NSSS
+- SAPI/NSSS (Microsoft Speech API)/NSSS
 
 
 ## Features
