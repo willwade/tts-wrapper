@@ -66,7 +66,7 @@ _TTS-Wrapper_ simplifies using text-to-speech APIs by providing a unified interf
 | `speak_streamed()`        | Streams synthesized speech.                  | All engines             |
 | `set_property()`          | Sets properties like rate, volume, pitch.    | All engines             |
 | `get_voices()`            | Retrieves available voices.                  | All engines             |
-| `connect()`               | Connects callback functions for events.      | Polly, Microsoft, Google, Watson. |
+| `connect()`               | Connects callback functions for events.      | Polly, Microsoft, Google, Watson, eSpeak |
 | `pause_audio()`           | Pauses ongoing speech playback.              | All engines             |
 | `resume_audio()`          | Resumes paused speech playback.              | All engines             |
 | `stop_audio()`            | Stops ongoing speech playback.               | All engines             |
