@@ -62,6 +62,7 @@ class EspeakLib:
 
     # SSML support
     SSML_FLAG = 0x10   # Enable SSML processing
+    ENDPAUSE = 0x1000  # Add a pause at the end of the text
 
     # Audio output modes
     AUDIO_OUTPUT_PLAYBACK = 0
@@ -75,6 +76,7 @@ class EspeakLib:
         self._initialize_functions()
         self.synth_callback = None
         self.word_timings = []
+        self.input_text = ""
         self._initialize_espeak()
 
     def _load_library(self):
@@ -235,42 +237,60 @@ class EspeakLib:
     def _synth_callback(self, wav, numsamples, events) -> int:
         """Callback function for synthesis events (streaming support)."""
         try:
-            logging.debug("Entering _synth_callback")
-
+            # Handle audio data
             if numsamples > 0 and wav:
                 audio_chunk = struct.pack(f"{numsamples}h", *wav[:numsamples])
+                if not hasattr(self, "_local_audio_buffer"):
+                    self._local_audio_buffer = bytearray()
                 self._local_audio_buffer.extend(audio_chunk)
-                logging.debug(f"Updated buffer size: {len(self._local_audio_buffer)} bytes")
 
+            # Handle end of synthesis (no audio and no events)
             if numsamples == 0 and not events:
-                logging.debug("End of synthesis: no more samples or events")
-                if self._on_end_callback and not self._on_end_triggered:
-                    self._on_end_callback()  # Trigger the callback
-                    self._on_end_triggered = True  # Prevent repeated calls
+                logging.debug("End of synthesis detected with no events.")
                 return 0
 
             # Process events
             i = 0
-            logging.debug("Processing synthesis events")
             while True:
                 current_event = ctypes.cast(events, POINTER(EspeakEvent))[i]
-                logging.debug(
-                    "Event %d: type=%d, text_position=%d, length=%d, audio_position=%d",
-                    i, current_event.type, current_event.text_position,
-                    current_event.length, current_event.audio_position
-                )
-                if current_event.type == self.EVENT_LIST_TERMINATED:
-                    logging.debug("Event processing terminated")
+
+                # Check for end of entire string synthesis
+                if current_event.type == self.EVENT_MSG_TERMINATED:
+                    logging.debug("Received EVENT_MSG_TERMINATED. Ending processing.")
                     break
+
+                # Check for end of event list
+                if current_event.type == self.EVENT_LIST_TERMINATED:
+                    logging.debug("Received EVENT_LIST_TERMINATED. Ending list.")
+                    break
+
+                # Handle word events
                 if current_event.type == self.EVENT_WORD:
+                    try:
+                        word_text = self.input_text[
+                            current_event.text_position - 1 : current_event.text_position - 1 + current_event.length
+                        ]
+                        logging.debug(f"Extracted word text: {word_text}")
+                    except Exception as e:
+                        word_text = "<unknown>"
+                        logging.warning(f"Failed to extract word text: {e}")
+
                     word = {
                         "start_time": current_event.audio_position / 1000.0,
                         "text_position": current_event.text_position,
                         "length": current_event.length,
+                        "word": word_text,
                     }
-                    self.word_timings.append(word)
                     logging.debug(f"Word event: {word}")
+                    self.word_timings.append(word)
+
+                # Handle phoneme events
+                elif current_event.type == self.EVENT_PHONEME:
+                    phoneme_name = current_event.id.string.decode("utf-8").rstrip("\x00")
+                    logging.debug(f"Phoneme event: {phoneme_name}")
+
                 i += 1
+
         except Exception as e:
             logging.exception(f"Error in _synth_callback: {e}")
         return 0
@@ -285,6 +305,7 @@ class EspeakLib:
         :return: A tuple containing the audio bytestream and word timings.
         """
         self._reset_buffers()
+        self.input_text = text
 
         # Set up the synthesis callback
         callback_type = CFUNCTYPE(c_int, POINTER(c_short), c_int, POINTER(EspeakEvent))
@@ -292,7 +313,7 @@ class EspeakLib:
         self.dll.espeak_SetSynthCallback(self.synth_callback)
 
         # Perform synthesis
-        flags = self.SSML_FLAG if ssml else self.CHARS_UTF8
+        flags = self.SSML_FLAG if ssml else self.CHARS_UTF8 | self.ENDPAUSE
         self.dll.espeak_Synth(
             c_char_p(text.encode("utf-8")), len(text) * 2, 0, None, 0, flags, None, None,
         )
@@ -313,6 +334,7 @@ class EspeakLib:
         """
         self._reset_buffers()
         self.stream_queue = queue.Queue()  # Initialize the stream queue
+        self.input_text = text
 
         # Set up the synthesis callback
         callback_type = CFUNCTYPE(c_int, POINTER(c_short), c_int, POINTER(EspeakEvent))

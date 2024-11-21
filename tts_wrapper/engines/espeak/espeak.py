@@ -68,7 +68,16 @@ class eSpeakTTS(AbstractTTS):
             yield chunk
 
     def _process_word_timings(self, word_timings: list[dict], input_text: str) -> list[tuple[float, float, str]]:
-        """Convert raw word timings to (start_time, end_time, word) tuples."""
+        """
+        Processes raw word timings and formats them as (start_time, end_time, word) tuples.
+
+        Parameters:
+        - word_timings: List of dictionaries containing raw word timing information.
+        - input_text: The original text that was synthesized.
+
+        Returns:
+        - List of tuples in the format (start_time, end_time, word).
+        """
         processed_timings = []
         audio_duration = self.get_audio_duration()
 
@@ -76,17 +85,22 @@ class eSpeakTTS(AbstractTTS):
             start_time = word_info["start_time"]
             text_position = word_info["text_position"]
             length = word_info["length"]
+            word_text = word_info["word"]
 
-            # Extract word text
-            word_text = input_text[text_position : text_position + length]
+            # Determine the end time
+            if i + 1 < len(word_timings):
+                end_time = word_timings[i + 1]["start_time"]
+            else:
+                end_time = audio_duration  # Last word ends with audio duration
 
-            # Calculate end_time
-            end_time = (
-                word_timings[i + 1]["start_time"] if i + 1 < len(word_timings) else audio_duration
-            )
-
-            # Append the tuple
+            # Append the processed tuple
             processed_timings.append((start_time, end_time, word_text))
+
+            # Debugging for validation
+            logging.debug(
+                f"Word: '{word_text}', Start Time: {start_time}, End Time: {end_time}, "
+                f"Duration: {end_time - start_time:.3f}s"
+            )
 
         return processed_timings
 
