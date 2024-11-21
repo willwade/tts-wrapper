@@ -11,5 +11,6 @@ from .sherpaonnx import *
 from .uwp import *
 from .watson import *
 from .witai import *
+from .espeak import *
 # from .mms import *
 # from .piper import *
