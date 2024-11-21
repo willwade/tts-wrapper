@@ -248,6 +248,8 @@ class AbstractTTS(ABC):
         """Run main playback loop in a separate thread."""
         try:
             self._create_stream()
+            self._on_end_triggered = False  # Reset the guard flag at the start of playback
+
             while self.isplaying and self.position < len(self.audio_bytes):
                 if not self.paused:
                     chunk = self.audio_bytes[
@@ -260,6 +262,13 @@ class AbstractTTS(ABC):
                         break
                 else:
                     time.sleep(0.1)  # Reduce CPU usage while paused
+
+            # Trigger "onEnd" only once when playback ends
+            if not self._on_end_triggered:
+                if self.position >= len(self.audio_bytes):
+                    self._trigger_callback("onEnd")
+                    self._on_end_triggered = True
+                self.playing.clear()
 
             # Cleanup after playback ends
             if self.stream_pyaudio and not self.stream_pyaudio.is_stopped():
@@ -284,6 +293,8 @@ class AbstractTTS(ABC):
         if not self.isplaying:
             self.isplaying = True
             self.paused = False
+            self.position = 0
+            self._on_end_triggered = False  # Reset the guard flag at the start of playback
             self.playback_thread = threading.Thread(target=self._playback_loop)
             self.playback_thread.start()
             time.sleep(float(duration or 0))
@@ -385,6 +396,10 @@ class AbstractTTS(ABC):
         try:
             audio_bytes = self.synth_to_bytes(text)
             audio_data = np.frombuffer(audio_bytes, dtype=np.int16)
+
+            logging.debug(f"Audio buffer size: {len(audio_bytes)} bytes")
+            logging.debug(f"First 20 bytes of audio: {audio_bytes[:20]}")
+
             sd.play(audio_data, samplerate=self.audio_rate)
             sd.wait()
         except Exception:
