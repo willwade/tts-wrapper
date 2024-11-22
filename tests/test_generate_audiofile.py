@@ -8,6 +8,8 @@ from tts_wrapper import (
     SystemTTS,
     ElevenLabsClient,
     ElevenLabsTTS,
+    eSpeakClient,
+    eSpeakTTS,
     GoogleClient,
     GoogleTransClient,
     GoogleTransTTS,
@@ -26,7 +28,7 @@ from tts_wrapper import (
 )
 
 services = ["polly", "google", "microsoft", "watson", "elevenlabs",
-            "witai", "googletrans", "sherpaonnx", "systemtts"]
+            "witai", "googletrans", "sherpaonnx", "systemtts", "espeak"]
 
 TTS_CLIENTS = {
     "polly": {
@@ -37,7 +39,7 @@ TTS_CLIENTS = {
     "google": {
         "client": GoogleClient,
         "class": GoogleTTS,
-        "credential_keys": ["GOOGLE_SA_PATH"],
+        "credential_keys": ["GOOGLE_CREDS_PATH"],
     },
     "microsoft": {
         "client": MicrosoftClient,
@@ -70,6 +72,10 @@ TTS_CLIENTS = {
     "systemtts": {
         "client_lambda": lambda: SystemTTSClient(),
         "class": SystemTTS,
+    },    
+    "espeak": {
+        "client_lambda": lambda: eSpeakClient(),
+        "class": eSpeakTTS
     },
 }
 
@@ -117,8 +123,8 @@ class TestFileCreation(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls) -> None:
-        print("GOOGLE_SA_PATH:", os.getenv("GOOGLE_SA_PATH"))
-        print("File exists:", Path(os.getenv("GOOGLE_SA_PATH", "")).exists())
+        print("GOOGLE_CREDS_PATH:", os.getenv("GOOGLE_CREDS_PATH"))
+        print("File exists:", Path(os.getenv("GOOGLE_CREDS_PATH", "")).exists())
 
         cls.manager = ClientManager()
         cls.tts_instances = cls.manager.create_tts_instances(TTS_CLIENTS)
@@ -136,6 +142,7 @@ class TestFileCreation(unittest.TestCase):
             "watson": "watson-test.wav",
             "witai": "witai-test.wav",
             "systemtts": "systemtts-test.wav",
+            "espeak": "espeak-test.wav",
         }
 
     def tearDown(self) -> None:
@@ -192,6 +199,10 @@ class TestFileCreation(unittest.TestCase):
     @pytest.mark.skipif(not os.getenv("ELEVENLABS_API_KEY"), reason="ElevenLabs credentials not set")
     def test_elevenlabs_audio_creation(self) -> None:
         self._test_audio_creation("elevenlabs", "This is a test using elevenlabs TTS.")
+    
+    def test_espeak_audio_creation(self) -> None:
+        self._test_audio_creation("espeak", "This is a test using espeak TTS.")
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)

@@ -7,6 +7,8 @@ import pytest
 
 from tts_wrapper import (
     ElevenLabsClient,
+    eSpeakClient,
+    eSpeakTTS,
     ElevenLabsTTS,
     GoogleClient,
     GoogleTransClient,
@@ -68,6 +70,10 @@ TTS_CLIENTS = {
     "sherpaonnx": {
         "client": lambda: SherpaOnnxClient(model_path=None, tokens_path=None, voice_id="eng"),
         "class": SherpaOnnxTTS,
+    },
+    "espeak": {
+        "client": lambda: eSpeakClient(),
+        "class": eSpeakTTS
     },
 }
 
