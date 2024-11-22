@@ -6,6 +6,7 @@ class TTSManager {
     static var pitchMultiplier: Float = 1.0
     static var rate: Float = 0.5
     static var volume: Float = 1.0
+    static var currentDelegate: TTSDelegate? // Add this line
 }
 
 
@@ -129,7 +130,7 @@ public func synthesizeToByteStream(
         }
     }
     TTSManager.synthesizer.delegate = delegate
-
+    
     // Use `write(_:completionHandler:)` for audio data
     TTSManager.synthesizer.write(utterance) { buffer in
         guard let pcmBuffer = buffer as? AVAudioPCMBuffer, pcmBuffer.frameLength > 0 else {
@@ -168,7 +169,6 @@ public func synthesizeToByteStream(
     }
 }
 
-@_cdecl("synthesizeToBytes")
 public func synthesizeToBytes(
     text: UnsafePointer<CChar>,
     voiceIdentifier: UnsafePointer<CChar>?,
@@ -200,12 +200,13 @@ public func synthesizeToBytes(
     }
     utterance.rate = 0.5
 
-    // Setup delegate for word timing
     let delegate = TTSDelegate()
     delegate.onWordEvent = { event in
+        print("Word event: \(event)")
         wordTimings.append(event)
     }
     TTSManager.synthesizer.delegate = delegate
+    TTSManager.currentDelegate = delegate
 
     do {
         mainMixer.installTap(onBus: 0, bufferSize: 4096, format: outputFormat) { buffer, _ in
@@ -227,19 +228,13 @@ public func synthesizeToBytes(
 
         TTSManager.synthesizer.speak(utterance)
 
-        // Wait for synthesis to complete
         while TTSManager.synthesizer.isSpeaking {
             Thread.sleep(forTimeInterval: 0.1)
         }
 
-        // Cleanup
         mainMixer.removeTap(onBus: 0)
-        TTSManager.audioEngine.stop()
-        TTSManager.audioEngine.reset()
-        TTSManager.synthesizer.delegate = nil
-        print("Audio engine stopped")
+        audioEngine.stop()
 
-        // Serialize word timings and send via callback
         if let wordTimingData = try? JSONSerialization.data(withJSONObject: wordTimings, options: []),
            let wordTimingJSONString = String(data: wordTimingData, encoding: .utf8) {
             wordTimingJSONString.withCString { cString in
@@ -251,11 +246,12 @@ public func synthesizeToBytes(
         print("Error during synthesis: \(error)")
     }
 
-    // Copy audio data into an unsafe buffer
+    TTSManager.currentDelegate = nil
+    
     let byteCount = audioData.count
     let buffer = UnsafeMutablePointer<UInt8>.allocate(capacity: byteCount)
     buffer.initialize(from: audioData, count: byteCount)
-
+    
     return UnsafePointer(buffer)
 }
 
