@@ -8,6 +8,7 @@ class TTSManager {
     static var volume: Float = 1.0
 }
 
+
 class TTSDelegate: NSObject, AVSpeechSynthesizerDelegate {
     var onWordEvent: (([String: Any]) -> Void)?
 
@@ -17,7 +18,9 @@ class TTSDelegate: NSObject, AVSpeechSynthesizerDelegate {
         utterance: AVSpeechUtterance
     ) {
         // Extract the word and its properties
+        print("Delegate triggered for word range: \(characterRange)")
         let word = (utterance.speechString as NSString).substring(with: characterRange)
+        print("Word event: \(word)")
         let event: [String: Any] = [
             "text_position": characterRange.location,
             "length": characterRange.length,
@@ -113,6 +116,7 @@ public func synthesizeToByteStream(
     // Delegate to handle word events
     let delegate = TTSDelegate()
     delegate.onWordEvent = { event in
+        print("Received word event: \(event)")
         if let wordData = try? JSONSerialization.data(withJSONObject: event, options: []),
            let wordCString = String(data: wordData, encoding: .utf8)?.cString(using: .utf8) {
             wordCString.withUnsafeBufferPointer { pointer in
@@ -129,6 +133,11 @@ public func synthesizeToByteStream(
     // Use `write(_:completionHandler:)` for audio data
     TTSManager.synthesizer.write(utterance) { buffer in
         guard let pcmBuffer = buffer as? AVAudioPCMBuffer, pcmBuffer.frameLength > 0 else {
+            // Perform cleanup when synthesis is finished
+            TTSManager.audioEngine.stop()
+            TTSManager.audioEngine.reset()
+            TTSManager.synthesizer.delegate = nil
+            print("Audio engine stopped")
             return
         }
 
@@ -144,6 +153,18 @@ public func synthesizeToByteStream(
                 callback(pointer.baseAddress!, byteData.count, nil)
             }
         }
+    }
+
+    // Ensure cleanup happens when the utterance completes
+    DispatchQueue.main.async {
+        while TTSManager.synthesizer.isSpeaking {
+            Thread.sleep(forTimeInterval: 0.1)
+        }
+
+        TTSManager.audioEngine.stop()
+        TTSManager.audioEngine.reset()
+        TTSManager.synthesizer.delegate = nil
+        print("Audio engine stopped")
     }
 }
 
@@ -187,7 +208,7 @@ public func synthesizeToBytes(
     TTSManager.synthesizer.delegate = delegate
 
     do {
-        mainMixer.installTap(onBus: 0, bufferSize: 1024, format: outputFormat) { buffer, _ in
+        mainMixer.installTap(onBus: 0, bufferSize: 4096, format: outputFormat) { buffer, _ in
             if let channelData = buffer.floatChannelData {
                 let frameLength = Int(buffer.frameLength)
                 let audioBytes = UnsafeBufferPointer(start: channelData[0], count: frameLength)
@@ -213,7 +234,9 @@ public func synthesizeToBytes(
 
         // Cleanup
         mainMixer.removeTap(onBus: 0)
-        audioEngine.stop()
+        TTSManager.audioEngine.stop()
+        TTSManager.audioEngine.reset()
+        TTSManager.synthesizer.delegate = nil
         print("Audio engine stopped")
 
         // Serialize word timings and send via callback

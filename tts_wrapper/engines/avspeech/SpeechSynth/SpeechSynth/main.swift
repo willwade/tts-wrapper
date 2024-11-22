@@ -30,6 +30,7 @@ func saveAudioData(_ audioData: [UInt8], to fileName: String) {
 // Save word timings to a JSON file
 func saveWordTimings(_ wordTimings: [[String: Any]], to fileName: String) {
     let url = URL(fileURLWithPath: FileManager.default.currentDirectoryPath).appendingPathComponent(fileName)
+    print(url)
     do {
         let data = try JSONSerialization.data(withJSONObject: wordTimings, options: .prettyPrinted)
         try data.write(to: url)
@@ -71,11 +72,6 @@ saveWordTimings(wordTimingsBuffer, to: "word_timings.json")
 
 free(inputText)
 RunLoop.current.run(until: Date().addingTimeInterval(5))
-
-
-
-
-
 
 
 
