@@ -2,17 +2,17 @@ import os
 import time
 import logging
 from pathlib import Path
-from tts_wrapper import AVSpeechClient, AVSpeechTTS
+from tts_wrapper import AVSynthClient, AVSynthTTS
 
 logging.basicConfig(level=logging.DEBUG)
 
-client = AVSpeechClient()
-tts = AVSpeechTTS(client)
+client = AVSynthClient()
+tts = AVSynthTTS(client)
 
 def test_simple_speech():
     """Test simple speech synthesis."""
     try:
-        tts.speak("This is a simple test of the AVSpeech TTS engine.")
+        tts.speak("This is a simple test of the AVSynth TTS engine.")
     except Exception as e:
         print(f"Error in simple speech test: {e}")
 

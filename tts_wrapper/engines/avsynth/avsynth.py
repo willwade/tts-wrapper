@@ -1,7 +1,10 @@
 import logging
-from typing import TYPE_CHECKING, Any, Generator
+from collections.abc import Generator
+from typing import TYPE_CHECKING, Any
 
 from tts_wrapper.tts import AbstractTTS
+
+from .client import AVSynthClient
 from .ssml import AVSynthSSML
 
 if TYPE_CHECKING:
@@ -30,6 +33,7 @@ class AVSynthTTS(AbstractTTS):
         # Wrap text in SSML if not already formatted
         if not self._is_ssml(str(text)):
             text = self.ssml.add(str(text))
+        text = str(text)
 
         # Call the client for synthesis
         audio_data, word_timings = self._client.synth(text, self._voice)
