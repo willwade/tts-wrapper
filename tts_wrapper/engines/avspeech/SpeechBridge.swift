@@ -21,6 +21,8 @@ class TTSManager {
 public func synthToBytes(
     text: UnsafePointer<CChar>,
     isSSML: Bool,
+    streaming: Bool,
+    byteCallback: @escaping @convention(c) (UnsafePointer<UInt8>, Int) -> Void,
     wordTimingCallback: @escaping @convention(c) (UnsafePointer<CChar>?) -> Void,
     logCallback: @escaping @convention(c) (UnsafePointer<CChar>?) -> Void
 ) -> UnsafeMutablePointer<UInt8>? {
@@ -85,7 +87,15 @@ public func synthToBytes(
                             [UInt8(truncatingIfNeeded: int16Sample & 0xFF),
                             UInt8(truncatingIfNeeded: (int16Sample >> 8) & 0xFF)]
                         }
-                        audioData.append(contentsOf: byteData)
+                        if streaming {
+                            // Send audio chunk immediately via byteCallback
+                            byteData.withUnsafeBytes { ptr in
+                                byteCallback(ptr.baseAddress!.assumingMemoryBound(to: UInt8.self), byteData.count)
+                            }
+                        } else {
+                            // Append audio data for later return
+                            audioData.append(contentsOf: byteData)
+                        }
                     }
                 } else {
                     // Handle the final buffer
@@ -101,18 +111,25 @@ public func synthToBytes(
         }
     }
 
-    // Run the main run loop to keep the process alive
-    let runLoop = RunLoop.current
-    let timeout = Date().addingTimeInterval(15)
-    while !processingComplete && runLoop.run(mode: .default, before: Date(timeIntervalSinceNow: 0.1)) {
-        if Date() > timeout {
-            TTSManager.log("Synthesis timed out")
-            return nil
+    if !streaming {
+        // Run the main run loop to keep the process alive
+        let runLoop = RunLoop.current
+        let timeout = Date().addingTimeInterval(15)
+        while !processingComplete && runLoop.run(mode: .default, before: Date(timeIntervalSinceNow: 0.1)) {
+            if Date() > timeout {
+                TTSManager.log("Synthesis timed out")
+                return nil
+            }
         }
+
+        // Wait for the semaphore to ensure processing completion
+        semaphore.wait()
     }
 
-    // Wait for the semaphore to ensure processing completion
-    semaphore.wait()
+    if streaming {
+        // No return in streaming mode
+        return nil
+    }
 
     TTSManager.log("Synthesis complete")
     TTSManager.log("Audio data length: \(audioData.count)")
@@ -124,17 +141,19 @@ public func synthToBytes(
 
     // Convert audio data to an UnsafePointer
     let byteCount = audioData.count
-    let combinedPointer = UnsafeMutablePointer<UInt8>.allocate(capacity: byteCount + MemoryLayout<Int>.size)
+
+    // Allocate memory for byte count and audio data
+    let metadataSize = MemoryLayout<Int>.size
+    let combinedPointer = UnsafeMutablePointer<UInt8>.allocate(capacity: byteCount + metadataSize)
 
     // Store the length at the start
-    let lengthPointer = combinedPointer.withMemoryRebound(to: Int.self, capacity: 1) { $0 }
-    lengthPointer.pointee = byteCount
+    let metadataPointer = combinedPointer.withMemoryRebound(to: Int.self, capacity: 1) { $0 }
+    metadataPointer[0] = byteCount
 
-    // Store the audio data after the length
-    combinedPointer.advanced(by: MemoryLayout<Int>.size).update(from: audioData, count: byteCount)
+    // Store the audio data after the metadata
+    combinedPointer.advanced(by: metadataSize).update(from: audioData, count: byteCount)
 
     return combinedPointer
-
 }
 
 class TTSDelegate: NSObject, AVSpeechSynthesizerDelegate {
