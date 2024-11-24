@@ -8,9 +8,14 @@ class TTSManager {
     static var rate: Float = 0.5
     static var volume: Float = 1.0
     static var currentDelegate: TTSDelegate?
-}
+    static var defaultVoice: AVSpeechSynthesisVoice? = nil // Store the selected voice
 
-
+    static var logCallback: (@convention(c) (UnsafePointer<CChar>?) -> Void)?
+    
+    static func log(_ message: String) {
+        logCallback?(message.cString(using: .utf8))
+    }
+}   
 
 @_cdecl("synthToBytes")
 public func synthToBytes(
@@ -20,11 +25,9 @@ public func synthToBytes(
     logCallback: @escaping @convention(c) (UnsafePointer<CChar>?) -> Void
 ) -> UnsafeMutablePointer<UInt8>? {
 
-    func log(_ message: String) {
-        logCallback(message.cString(using: .utf8))
-    }
+    TTSManager.logCallback = logCallback
 
-    log("synthToBytes called")
+    TTSManager.log("synthToBytes called")
 
     let inputString = String(cString: text)
     var audioData = [UInt8]()
@@ -36,7 +39,7 @@ public func synthToBytes(
     synthesizer.delegate = delegate
 
     delegate.onWordEvent = { event in
-        log("Captured word event: \(event)")
+        TTSManager.log("Captured word event: \(event)")
         if let eventData = try? JSONSerialization.data(withJSONObject: event, options: []),
            let eventJSONString = String(data: eventData, encoding: .utf8) {
             eventJSONString.withCString { cString in
@@ -49,7 +52,7 @@ public func synthToBytes(
     let utterance: AVSpeechUtterance
     if isSSML {
         guard let ssmlUtterance = AVSpeechUtterance(ssmlRepresentation: inputString) else {
-            log("Invalid SSML string")
+            TTSManager.log("Invalid SSML string")
             return nil
         }
         utterance = ssmlUtterance
@@ -57,15 +60,15 @@ public func synthToBytes(
         utterance = AVSpeechUtterance(string: inputString)
     }
 
-    utterance.voice = AVSpeechSynthesisVoice(language: "en-US")
+    utterance.voice = TTSManager.defaultVoice ?? AVSpeechSynthesisVoice(language: "en-US")
     utterance.rate = TTSManager.rate
     utterance.pitchMultiplier = TTSManager.pitchMultiplier
     utterance.volume = TTSManager.volume
 
-    log("Utterance details:")
-    log("Text: \(utterance.speechString)")
-    log("Voice: \(utterance.voice?.identifier ?? "Default voice")")
-    log("Rate: \(utterance.rate), Pitch: \(utterance.pitchMultiplier), Volume: \(utterance.volume)")
+    TTSManager.log("Utterance details:")
+    TTSManager.log("Text: \(utterance.speechString)")
+    TTSManager.log("Voice: \(utterance.voice?.identifier ?? "Default voice")")
+    TTSManager.log("Rate: \(utterance.rate), Pitch: \(utterance.pitchMultiplier), Volume: \(utterance.volume)")
 
     // Start processing buffers on the main thread
     DispatchQueue.main.async {
@@ -73,7 +76,7 @@ public func synthToBytes(
             if let pcmBuffer = buffer as? AVAudioPCMBuffer {
                 if pcmBuffer.frameLength > 0 {
                     // Process the audio data
-                    log("PCM buffer processed, frame length: \(pcmBuffer.frameLength)")
+                    TTSManager.log("PCM buffer processed, frame length: \(pcmBuffer.frameLength)")
                     if let channelData = pcmBuffer.floatChannelData {
                         let frameLength = Int(pcmBuffer.frameLength)
                         let audioBytes = UnsafeBufferPointer(start: channelData[0], count: frameLength)
@@ -86,12 +89,12 @@ public func synthToBytes(
                     }
                 } else {
                     // Handle the final buffer
-                    log("Final buffer received, synthesis complete")
+                    TTSManager.log("Final buffer received, synthesis complete")
                     processingComplete = true
                     semaphore.signal()
                 }
             } else {
-                log("No frame data or end of synthesis")
+                TTSManager.log("No frame data or end of synthesis")
                 processingComplete = true
                 semaphore.signal()
             }
@@ -103,7 +106,7 @@ public func synthToBytes(
     let timeout = Date().addingTimeInterval(15)
     while !processingComplete && runLoop.run(mode: .default, before: Date(timeIntervalSinceNow: 0.1)) {
         if Date() > timeout {
-            log("Synthesis timed out")
+            TTSManager.log("Synthesis timed out")
             return nil
         }
     }
@@ -111,11 +114,11 @@ public func synthToBytes(
     // Wait for the semaphore to ensure processing completion
     semaphore.wait()
 
-    log("Synthesis complete")
-    log("Audio data length: \(audioData.count)")
+    TTSManager.log("Synthesis complete")
+    TTSManager.log("Audio data length: \(audioData.count)")
 
     if audioData.isEmpty {
-        log("No audio data captured")
+        TTSManager.log("No audio data captured")
         return nil
     }
 
@@ -185,6 +188,21 @@ public func getRate() -> Float {
 @_cdecl("getVolume")
 public func getVolume() -> Float {
     return TTSManager.volume
+}
+
+@_cdecl("setVoice")
+public func setVoice(identifier: UnsafePointer<CChar>) {
+    let voiceId = String(cString: identifier)
+    if let voice = AVSpeechSynthesisVoice(identifier: voiceId) {
+        TTSManager.synthesizer.stopSpeaking(at: .immediate) // Stop any ongoing speech
+        // Assign the selected voice for future utterances
+        TTSManager.synthesizer.delegate = TTSManager.currentDelegate
+
+        // Store the new voice as the default in the manager
+        TTSManager.defaultVoice = voice
+    } else {
+        TTSManager.log("Voice with identifier \(voiceId) not found.")
+    }
 }
 
 @_cdecl("getVoice")
