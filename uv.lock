@@ -278,6 +278,15 @@ wheels = [
 ]
 
 [[package]]
+name = "filetype"
+version = "1.2.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/bb/29/745f7d30d47fe0f251d3ad3dc2978a23141917661998763bebb6da007eb1/filetype-1.2.0.tar.gz", hash = "sha256:66b56cd6474bf41d8c54660347d37afcc3f7d1970648de365c102ef77548aadb", size = 998020 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/18/79/1b8fa1bb3568781e84c9200f951c735f3f157429f44be0495da55894d620/filetype-1.2.0-py2.py3-none-any.whl", hash = "sha256:7ce71b6880181241cf7ac8697a2f1eb6a8bd9b429f7ad6d27b8db9ba5f1c2d25", size = 19970 },
+]
+
+[[package]]
 name = "google-api-core"
 version = "2.23.0"
 source = { registry = "https://pypi.org/simple" }
@@ -600,7 +609,7 @@ wheels = [
 
 [[package]]
 name = "py3-tts-wrapper"
-version = "0.9.16.post90+0c4480d"
+version = "0.9.16.post92+b656e20"
 source = { editable = "." }
 dependencies = [
     { name = "numpy" },
@@ -616,6 +625,7 @@ controlaudio = [
 ]
 dev = [
     { name = "black" },
+    { name = "filetype" },
     { name = "mypy" },
     { name = "pyinstrument" },
     { name = "pytest" },
@@ -664,6 +674,7 @@ requires-dist = [
     { name = "azure-cognitiveservices-speech", marker = "extra == 'microsoft'", specifier = ">=1.15.0" },
     { name = "black", marker = "extra == 'dev'", specifier = ">=22.1.0" },
     { name = "boto3", marker = "extra == 'polly'", specifier = ">=1.34.137" },
+    { name = "filetype", marker = "extra == 'dev'", specifier = ">=1.0.13" },
     { name = "google-cloud-texttospeech", marker = "extra == 'google'", specifier = ">=2.12.0" },
     { name = "gtts", marker = "extra == 'googletrans'", specifier = ">=2.5.2" },
     { name = "ibm-watson", marker = "extra == 'watson'", specifier = ">=8.1.0" },

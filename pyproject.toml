@@ -24,6 +24,7 @@ dev = [
     "pyinstrument>=4.7.3",
     "pytest>=6.2.1",
     "pytest-mock>=3.5.1",
+    "filetype>=1.0.13",
     "black>=22.1.0",
     "types-requests>=2.27.31",
     "mypy>=0.971",
