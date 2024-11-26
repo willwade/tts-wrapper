@@ -5,7 +5,6 @@ from pathlib import Path
 import pytest
 
 from tts_wrapper import (
-    SystemTTS,
     ElevenLabsClient,
     ElevenLabsTTS,
     GoogleClient,
@@ -16,17 +15,20 @@ from tts_wrapper import (
     MicrosoftTTS,
     PollyClient,
     PollyTTS,
-    SystemTTSClient,
     SherpaOnnxClient,
     SherpaOnnxTTS,
+    SystemTTS,
+    SystemTTSClient,
     WatsonClient,
     WatsonTTS,
     WitAiClient,
     WitAiTTS,
+    eSpeakClient,
+    eSpeakTTS,
 )
 
 services = ["polly", "google", "microsoft", "watson", "elevenlabs",
-            "witai", "googletrans", "sherpaonnx", "systemtts"]
+            "witai", "googletrans", "sherpaonnx", "systemtts", "espeak"]
 
 TTS_CLIENTS = {
     "polly": {
@@ -37,7 +39,7 @@ TTS_CLIENTS = {
     "google": {
         "client": GoogleClient,
         "class": GoogleTTS,
-        "credential_keys": ["GOOGLE_SA_PATH"],
+        "credential_keys": ["GOOGLE_CREDS_PATH"],
     },
     "microsoft": {
         "client": MicrosoftClient,
@@ -70,6 +72,10 @@ TTS_CLIENTS = {
     "systemtts": {
         "client_lambda": lambda: SystemTTSClient(),
         "class": SystemTTS,
+    },
+    "espeak": {
+        "client_lambda": lambda: eSpeakClient(),
+        "class": eSpeakTTS
     },
 }
 
@@ -117,8 +123,8 @@ class TestFileCreation(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls) -> None:
-        print("GOOGLE_SA_PATH:", os.getenv("GOOGLE_SA_PATH"))
-        print("File exists:", Path(os.getenv("GOOGLE_SA_PATH", "")).exists())
+        print("GOOGLE_CREDS_PATH:", os.getenv("GOOGLE_CREDS_PATH"))
+        print("File exists:", Path(os.getenv("GOOGLE_CREDS_PATH", "")).exists())
 
         cls.manager = ClientManager()
         cls.tts_instances = cls.manager.create_tts_instances(TTS_CLIENTS)
@@ -136,6 +142,7 @@ class TestFileCreation(unittest.TestCase):
             "watson": "watson-test.wav",
             "witai": "witai-test.wav",
             "systemtts": "systemtts-test.wav",
+            "espeak": "espeak-test.wav",
         }
 
     def tearDown(self) -> None:
@@ -149,13 +156,13 @@ class TestFileCreation(unittest.TestCase):
         if tts_instance:
             # Use synth_to_file to generate and save the audio directly to a file
             tts_instance.synth_to_file(ssml_text, self.file_names[engine_name], "wav")
-            
+
             # Check that the file was created successfully
             assert Path(self.file_names[engine_name]).exists(), f"File for {engine_name} was not created."
-            
+
             # Optionally: Check file size or format
             assert Path(self.file_names[engine_name]).stat().st_size > 0, f"File for {engine_name} is empty."
-            
+
             self.__class__.success_count += 1
         else:
             self.skipTest(f"{engine_name} is not available due to missing credentials.")
@@ -192,6 +199,10 @@ class TestFileCreation(unittest.TestCase):
     @pytest.mark.skipif(not os.getenv("ELEVENLABS_API_KEY"), reason="ElevenLabs credentials not set")
     def test_elevenlabs_audio_creation(self) -> None:
         self._test_audio_creation("elevenlabs", "This is a test using elevenlabs TTS.")
+
+    def test_espeak_audio_creation(self) -> None:
+        self._test_audio_creation("espeak", "This is a test using espeak TTS.")
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)

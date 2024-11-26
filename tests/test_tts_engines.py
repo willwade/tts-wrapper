@@ -2,6 +2,7 @@ import contextlib
 import os
 import time
 from pathlib import Path
+from unittest.mock import Mock
 
 import pytest
 
@@ -22,6 +23,8 @@ from tts_wrapper import (
     WatsonTTS,
     WitAiClient,
     WitAiTTS,
+    eSpeakClient,
+    eSpeakTTS,
 )
 
 # Dictionary to hold the TTS clients and their respective setup functions
@@ -68,6 +71,10 @@ TTS_CLIENTS = {
     "sherpaonnx": {
         "client": lambda: SherpaOnnxClient(model_path=None, tokens_path=None, voice_id="eng"),
         "class": SherpaOnnxTTS,
+    },
+    "espeak": {
+        "client": lambda: eSpeakClient(),
+        "class": eSpeakTTS
     },
 }
 
