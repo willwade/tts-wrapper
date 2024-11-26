@@ -56,6 +56,10 @@ packages = ["tts_wrapper"]
 [tool.hatch.version]
 source = "uv-dynamic-versioning"
 
+[tool.uv-dynamic-versioning]
+vcs = "git"
+style = "semver"
+
 [project.scripts]
 postinstall = "scripts.install_dependencies:main"
 

@@ -600,7 +600,7 @@ wheels = [
 
 [[package]]
 name = "py3-tts-wrapper"
-version = "0.9.16.post89.dev0+e20c984"
+version = "0.9.16.post90+0c4480d"
 source = { editable = "." }
 dependencies = [
     { name = "numpy" },

@@ -666,22 +666,27 @@ print("Live playback completed")
 
 This will install Python dependencies and system dependencies required for this project. Note that system dependencies will only be installed automatically on Linux.
 
-#### Using Poetry
+#### Using UV
 
-1. Clone the repository:
+1. [Install UV](https://docs.astral.sh/uv/#getting-started)
+   ```sh
+   pip install uv
+   ```
+
+2. Clone the repository:
    ```sh
    git clone https://github.com/willwade/tts-wrapper.git
    cd tts-wrapper
    ```
 
-2. Install Python dependencies:
+3. Install Python dependencies:
    ```sh
-   poetry install
+   uv sync
    ```
 
-3. Install system dependencies (Linux only):
+4. Install system dependencies (Linux only):
    ```sh
-   poetry run postinstall
+   uv run postinstall
    ```
 
 
