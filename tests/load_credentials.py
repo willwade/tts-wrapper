@@ -18,7 +18,8 @@ def check_required_env_vars() -> None:
     """Check that all required environment variables are set."""
     missing_vars = []
     ci_mode = os.getenv("CI")  # Detect CI environment (e.g., GitHub Actions sets this)
-
+    print(os.environ)
+    
     for vars in REQUIRED_ENV_VARS.values():
         for var in vars:
             # First, check directly for the environment variable
