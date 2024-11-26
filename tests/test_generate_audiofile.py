@@ -5,11 +5,8 @@ from pathlib import Path
 import pytest
 
 from tts_wrapper import (
-    SystemTTS,
     ElevenLabsClient,
     ElevenLabsTTS,
-    eSpeakClient,
-    eSpeakTTS,
     GoogleClient,
     GoogleTransClient,
     GoogleTransTTS,
@@ -18,13 +15,16 @@ from tts_wrapper import (
     MicrosoftTTS,
     PollyClient,
     PollyTTS,
-    SystemTTSClient,
     SherpaOnnxClient,
     SherpaOnnxTTS,
+    SystemTTS,
+    SystemTTSClient,
     WatsonClient,
     WatsonTTS,
     WitAiClient,
     WitAiTTS,
+    eSpeakClient,
+    eSpeakTTS,
 )
 
 services = ["polly", "google", "microsoft", "watson", "elevenlabs",
@@ -72,7 +72,7 @@ TTS_CLIENTS = {
     "systemtts": {
         "client_lambda": lambda: SystemTTSClient(),
         "class": SystemTTS,
-    },    
+    },
     "espeak": {
         "client_lambda": lambda: eSpeakClient(),
         "class": eSpeakTTS
@@ -156,13 +156,13 @@ class TestFileCreation(unittest.TestCase):
         if tts_instance:
             # Use synth_to_file to generate and save the audio directly to a file
             tts_instance.synth_to_file(ssml_text, self.file_names[engine_name], "wav")
-            
+
             # Check that the file was created successfully
             assert Path(self.file_names[engine_name]).exists(), f"File for {engine_name} was not created."
-            
+
             # Optionally: Check file size or format
             assert Path(self.file_names[engine_name]).stat().st_size > 0, f"File for {engine_name} is empty."
-            
+
             self.__class__.success_count += 1
         else:
             self.skipTest(f"{engine_name} is not available due to missing credentials.")
@@ -199,7 +199,7 @@ class TestFileCreation(unittest.TestCase):
     @pytest.mark.skipif(not os.getenv("ELEVENLABS_API_KEY"), reason="ElevenLabs credentials not set")
     def test_elevenlabs_audio_creation(self) -> None:
         self._test_audio_creation("elevenlabs", "This is a test using elevenlabs TTS.")
-    
+
     def test_espeak_audio_creation(self) -> None:
         self._test_audio_creation("espeak", "This is a test using espeak TTS.")
 

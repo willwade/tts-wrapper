@@ -7,8 +7,6 @@ import pytest
 
 from tts_wrapper import (
     ElevenLabsClient,
-    eSpeakClient,
-    eSpeakTTS,
     ElevenLabsTTS,
     GoogleClient,
     GoogleTransClient,
@@ -24,6 +22,8 @@ from tts_wrapper import (
     WatsonTTS,
     WitAiClient,
     WitAiTTS,
+    eSpeakClient,
+    eSpeakTTS,
 )
 
 # Dictionary to hold the TTS clients and their respective setup functions
