@@ -38,7 +38,7 @@ jobs:
         run: pip install uv
 
       - name: Install dependencies
-        run: uv sync --dev --extra google --extra watson --extra polly --extra microsoft --extra googletrans --extra witai --extra elevenlabs --extra systemtts --extra controlaudio --extra sherpaonnx
+        run: uv sync --group dev --extra google --extra watson --extra polly --extra microsoft --extra googletrans --extra witai --extra elevenlabs --extra systemtts --extra controlaudio --extra sherpaonnx
 
       - name: Run postinstall script
         run: uv run postinstall
