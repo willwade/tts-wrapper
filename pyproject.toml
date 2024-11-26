@@ -62,8 +62,7 @@ vcs = "git"
 style = "semver"
 
 [project.scripts]
-postinstall = "scripts.install_dependencies:main"
-
+postinstall = "tts_wrapper.preinstall:main"
 
 [tool.pytest.ini_options]
 markers = [
