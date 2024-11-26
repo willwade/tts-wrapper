@@ -17,22 +17,10 @@ REQUIRED_ENV_VARS = {
 def check_required_env_vars() -> None:
     """Check that all required environment variables are set."""
     missing_vars = []
-    ci_mode = os.getenv("CI")  # Detect CI environment (e.g., GitHub Actions sets this)
-    print(os.environ)
-    
     for vars in REQUIRED_ENV_VARS.values():
         for var in vars:
-            # First, check directly for the environment variable
-            value = os.getenv(var)
-
-            # If in CI and not found, check with `secrets.` prefix
-            if not value and ci_mode:
-                value = os.getenv(f"secrets.{var}")
-
-            # If still not found, add to the missing list
-            if not value:
+            if not os.getenv(var):
                 missing_vars.append(var)
-
     if missing_vars:
         msg = f"Missing required environment variables: {', '.join(missing_vars)}"
         raise RuntimeError(msg)
@@ -84,16 +72,12 @@ def credentials_set_in_env(json_file: str) -> bool:
         True if all credentials are set in environment variables; False otherwise.
 
     """
-    ci_mode = os.getenv("CI") 
     with Path(json_file).open() as file:
         data = json.load(file)
         # Check if each credential is already set in the environment
         for service, creds in data.items():
             for key in creds:
                 env_var = f"{service.upper()}_{key.upper()}"
-                value = os.getenv(env_var)
-                if not value and ci_mode:
-                    value = os.getenv(f"secrets.{env_var}")
                 if env_var not in os.environ:
                     return False  # At least one credential is missing
     return True  # All credentials are set in the environment
@@ -103,15 +87,15 @@ def decode_google_creds() -> None:
     """Decode and save the Base64 Google credentials JSON file.
 
     Should only work if `GOOGLE_SA_FILE_B64` is set.
-    Also needs GOOGLE_CREDS_PATH
+    Also needs GOOGLE_SA_PATH
     """
     google_b64_creds = os.getenv("GOOGLE_SA_FILE_B64")
-    google_creds_path = os.getenv("GOOGLE_SA_PATH", "google_creds.json")
+    google_sa_path = os.getenv("GOOGLE_SA_PATH", "google_creds.json")
 
     if google_b64_creds:
         try:
             # Ensure the directory exists
-            creds_path = Path(google_creds_path)
+            creds_path = Path(google_sa_path)
             creds_path.parent.mkdir(parents=True, exist_ok=True)
 
             # Decode and write the credentials
@@ -119,7 +103,7 @@ def decode_google_creds() -> None:
             with creds_path.open("w") as f:
                 f.write(decoded_creds)
             if creds_path.exists() and creds_path.stat().st_size > 0:
-                print(f"Google Service Account JSON created successfully at: {google_creds_path}")
+                print(f"Google Service Account JSON created successfully at: {google_sa_path}")
             else:
                 raise ValueError("Failed to create the Google Service Account file.")
         except (OSError, ValueError) as e:

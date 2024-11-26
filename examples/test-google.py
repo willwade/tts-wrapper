@@ -7,7 +7,7 @@ from tts_wrapper import GoogleClient, GoogleTTS
 # Load credentials
 load_credentials("credentials.json")
 
-client = GoogleClient(credentials=os.getenv("GOOGLE_CREDS_PATH"))
+client = GoogleClient(credentials=os.getenv("GOOGLE_SA_PATH"))
 
 tts = GoogleTTS(client)
 

@@ -185,10 +185,10 @@ or pass the auth file as dict - so in memory
 ```python
 from tts_wrapper import GoogleTTS, GoogleClient
 
-with open(os.getenv("GOOGLE_CREDS_PATH"), "r") as file:
+with open(os.getenv("GOOGLE_SA_PATH"), "r") as file:
     credentials_dict = json.load(file)
 
-client = GoogleClient(credentials=os.getenv('GOOGLE_CREDS_PATH'))
+client = GoogleClient(credentials=os.getenv('GOOGLE_SA_PATH'))
 client = GoogleClient(credentials=credentials_dict)]
 ```
 
