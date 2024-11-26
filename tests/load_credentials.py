@@ -7,7 +7,7 @@ from pathlib import Path
 
 REQUIRED_ENV_VARS = {
     "polly": ["POLLY_REGION", "POLLY_AWS_KEY_ID", "POLLY_AWS_ACCESS_KEY"],
-    "google": ["GOOGLE_CREDS_PATH", "GOOGLE_SA_FILE_B64"],
+    "google": ["GOOGLE_SA_PATH", "GOOGLE_SA_FILE_B64"],
     "microsoft": ["MICROSOFT_TOKEN", "MICROSOFT_REGION"],
     "watson": ["WATSON_API_KEY", "WATSON_REGION", "WATSON_INSTANCE_ID"],
     "elevenlabs": ["ELEVENLABS_API_KEY"],
