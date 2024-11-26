@@ -690,7 +690,7 @@ This will install Python dependencies and system dependencies required for this 
    ```
 
 
-**NOTE**: to get a requirements.txt file for the project use `poetry export --without-hashes --format=requirements.txt > requirements.txt --all-extras` juat be warned that this will include all dependencies including dev ones.
+**NOTE**: to get a requirements.txt file for the project use `uv export --format  requirements-txt --all-extras --no-hashes` juat be warned that this will include all dependencies including dev ones.
 
 ## Release a new build
 
