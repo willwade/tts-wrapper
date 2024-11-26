@@ -7,7 +7,7 @@ from pathlib import Path
 
 REQUIRED_ENV_VARS = {
     "polly": ["POLLY_REGION", "POLLY_AWS_KEY_ID", "POLLY_AWS_ACCESS_KEY"],
-    "google": ["GOOGLE_SA_PATH", "GOOGLE_SA_FILE_B64"],
+    "google": ["GOOGLE_CREDS_PATH", "GOOGLE_SA_FILE_B64"],
     "microsoft": ["MICROSOFT_TOKEN", "MICROSOFT_REGION"],
     "watson": ["WATSON_API_KEY", "WATSON_REGION", "WATSON_INSTANCE_ID"],
     "elevenlabs": ["ELEVENLABS_API_KEY"],
@@ -80,6 +80,7 @@ def credentials_set_in_env(json_file: str) -> bool:
                 env_var = f"{service.upper()}_{key.upper()}"
                 if env_var not in os.environ:
                     return False  # At least one credential is missing
+
     return True  # All credentials are set in the environment
 
 
@@ -91,6 +92,7 @@ def decode_google_creds() -> None:
     """
     google_b64_creds = os.getenv("GOOGLE_SA_FILE_B64")
     google_sa_path = os.getenv("GOOGLE_SA_PATH", "google_creds.json")
+
 
     if google_b64_creds:
         try:
@@ -126,7 +128,6 @@ def set_env_vars_from_json(json_file: str) -> None:
             for key, value in creds.items():
                 env_var = f"{service.upper()}_{key.upper()}"
                 os.environ[env_var] = value  # Set for the current session
-
 
 if __name__ == "__main__":
     # Attempt to load credentials, falling back to JSON files if needed
