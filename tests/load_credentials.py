@@ -17,10 +17,21 @@ REQUIRED_ENV_VARS = {
 def check_required_env_vars() -> None:
     """Check that all required environment variables are set."""
     missing_vars = []
+    ci_mode = os.getenv("CI")  # Detect CI environment (e.g., GitHub Actions sets this)
+
     for vars in REQUIRED_ENV_VARS.values():
         for var in vars:
-            if not os.getenv(var):
+            # First, check directly for the environment variable
+            value = os.getenv(var)
+
+            # If in CI and not found, check with `secrets.` prefix
+            if not value and ci_mode:
+                value = os.getenv(f"secrets.{var}")
+
+            # If still not found, add to the missing list
+            if not value:
                 missing_vars.append(var)
+
     if missing_vars:
         msg = f"Missing required environment variables: {', '.join(missing_vars)}"
         raise RuntimeError(msg)
@@ -72,12 +83,16 @@ def credentials_set_in_env(json_file: str) -> bool:
         True if all credentials are set in environment variables; False otherwise.
 
     """
+    ci_mode = os.getenv("CI") 
     with Path(json_file).open() as file:
         data = json.load(file)
         # Check if each credential is already set in the environment
         for service, creds in data.items():
             for key in creds:
                 env_var = f"{service.upper()}_{key.upper()}"
+                value = os.getenv(env_var)
+                if not value and ci_mode:
+                    value = os.getenv(f"secrets.{env_var}")
                 if env_var not in os.environ:
                     return False  # At least one credential is missing
     return True  # All credentials are set in the environment
