@@ -3,6 +3,7 @@ import os
 import re
 import tarfile
 from io import BytesIO
+from pathlib import Path
 
 import langcodes  # For enriching language data
 import requests
@@ -353,10 +354,20 @@ def fetch_data_from_url(url: str) -> dict:
 def get_supported_languages () -> dict:
     languages_url = "https://huggingface.co/willwade/mms-tts-multilingual-models-onnx/raw/main/languages-supported.json"
     response_json = fetch_data_from_url(languages_url)
-    
+
+    for index, model in enumerate(response_json):
+        iso_code = model["Iso Code"]
+        response_json[index]["Iso Code"] = "mms_" + iso_code
+
+        url = model["ONNX Model URL"]
+        new_url = url.replace("api/models/", "", 1).replace("/tree/", "/resolve/")    
+        model["ONNX Model URL"] = new_url
+        response_json[index]["ONNX Model URL"] = model["ONNX Model URL"]
+
     result_json['languages_supported'] = response_json
-    
+
     return result_json
+
 
 def combine_json_parts(json_part1, json_part2):
     """
@@ -427,7 +438,14 @@ def main() -> None:
     repo = "k2-fsa/sherpa-onnx"
     tag = "tts-models"
     print("Build merged_models.json file\n")
-    get_github_release_assets(repo, tag, merged_models, output_file)
+    merged_models_path = Path(output_file)
+
+    if merged_models_path.exists():
+        print("merged models already exist, getting supported languages")
+        with open(merged_models_path, 'r') as file:
+            merge_models = json.load(file)
+    else:
+        merged_models = get_github_release_assets(repo, tag, merged_models, output_file)
 
     #add languages json to merged_models.json
     print("Get suppported languages\n")

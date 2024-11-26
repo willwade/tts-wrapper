@@ -68,6 +68,8 @@ class SherpaOnnxClient:
                     raise RuntimeError(msg) from e
 
             self.json_models, self.voices_cache = self._load_models_and_voices()
+            #print ("Available voices\n")
+            #print(self.voices_cache)
 
             if voice_id:
                 self.set_voice(voice_id)
@@ -158,12 +160,26 @@ class SherpaOnnxClient:
                 msg = f"Model for model id {model_id} not found in the downloaded file"
                 raise ValueError(msg)
         else:
-            # Default URL if model is not defined
-            model_url = f"https://huggingface.co/willwade/mms-tts-multilingual-models-onnx/resolve/main/{iso_code}/model.onnx?download=true"
-            tokens_url = f"https://huggingface.co/willwade/mms-tts-multilingual-models-onnx/resolve/main/{iso_code}/tokens.txt"
+            # Default URL if model is not defined or iso code is not found
+            model_url = f"https://huggingface.co/willwade/mms-tts-multilingual-models-onnx/resolve/main/eng/model.onnx?download=true"
+            tokens_url = f"https://huggingface.co/willwade/mms-tts-multilingual-models-onnx/resolve/main/eng/tokens.txt"
 
-            model_path = destination_dir / "model.onnx"
-            tokens_path = destination_dir / "tokens.txt"
+            print("voice caches")
+            for model in self.voices_cache:
+                if model.get("Iso Code") == iso_code:
+                    print ("Iso code found")
+                    print(str(model['ONNX Model URL']))
+                    model_url = f"{model['ONNX Model URL']}/model.onnx?download=true"
+                    tokens_url = f"{model['ONNX Model URL']}/tokens.txt"
+                    break
+            print (f"model url: {model_url}")
+            print(f"token url: {tokens_url}")
+            
+            model_path = Path(destination_dir) / "model.onnx"
+            tokens_path = Path(destination_dir) / "tokens.txt"
+
+            print (f"model path: {model_path}")
+            print(f"tokens path: {tokens_path}")
 
             logging.info("Downloading model from %s", model_url)
             self._download_file(model_url, model_path)
@@ -214,30 +230,49 @@ class SherpaOnnxClient:
 
             model_path = model_dir / "model.onnx"
             tokens_path = model_dir / "tokens.txt"
+
+            if not self._check_files_exist(model_path, tokens_path, iso_code):
+                logging.info(
+                    "Downloading model and tokens languages for %s because we can't find it", iso_code,
+                )
+                model_path, tokens_path, lexicon_path, dict_dir = self._download_model_and_tokens(
+                    iso_code, model_dir, "",
+                )
+                logging.info("Model and tokens downloaded to %s", model_dir)
+
+            else:
+                lexicon_path = self._find_file(model_dir, "lexicon.txt")
+                lexicon_path_obj = Path(model_dir) / lexicon_path
+                lexicon_path = str(lexicon_path_obj)
+
+                dict_dir = self.get_dict_dir(model_dir)
+                model_path = self._find_file(model_dir, "onnx")
+                tokens_path = self._find_file(model_dir, "tokens.txt")
+                logging.info("Model and tokens already exist for %s", iso_code)
         else:
             model_dir = Path(self._model_dir)
             model_dir.mkdir(parents=True, exist_ok=True)
             model_path = model_dir
             tokens_path = model_dir
 
-        if not self._check_files_exist(model_path, tokens_path, model_id):
-            logging.info(
-                "Downloading model and tokens for %s because we can't find it", iso_code,
-            )
-            model_path, tokens_path, lexicon_path, dict_dir = self._download_model_and_tokens(
-                iso_code, model_dir, model_id,
-            )
-            logging.info("Model and tokens downloaded to %s", model_dir)
+            if not self._check_files_exist(model_path, tokens_path, model_id):
+                logging.info(
+                    "Downloading model and tokens for %s because we can't find it", model_id,
+                )
+                model_path, tokens_path, lexicon_path, dict_dir = self._download_model_and_tokens(
+                    iso_code, model_dir, model_id,
+                )
+                logging.info("Model and tokens downloaded to %s", model_dir)
 
-        else:
-            lexicon_path = self._find_file(model_dir, "lexicon.txt")
-            lexicon_path_obj = Path(model_dir) / lexicon_path
-            lexicon_path = str(lexicon_path_obj)
+            else:
+                lexicon_path = self._find_file(model_dir, "lexicon.txt")
+                lexicon_path_obj = Path(model_dir) / lexicon_path
+                lexicon_path = str(lexicon_path_obj)
 
-            dict_dir = self.get_dict_dir(model_dir)
-            model_path = self._find_file(model_dir, "onnx")
-            tokens_path = self._find_file(model_dir, "tokens.txt")
-            logging.info("Model and tokens already exist for %s", iso_code)
+                dict_dir = self.get_dict_dir(model_dir)
+                model_path = self._find_file(model_dir, "onnx")
+                tokens_path = self._find_file(model_dir, "tokens.txt")
+                logging.info("Model and tokens already exist for %s", model_id)
 
         return str(model_path), str(tokens_path), lexicon_path, dict_dir
 
@@ -341,7 +376,7 @@ class SherpaOnnxClient:
             for voice in self.voices_cache
         ]
 
-    def set_voice(self, iso_code: str) -> None:
+    def set_voice(self, iso_code="mms_eng") -> None:
         """Set voice using model data."""
         model_path, tokens_path, lexicon_path, dict_dir = self.check_and_download_model(iso_code, self._model_id)
         self.default_model_path = model_path
