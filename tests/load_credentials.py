@@ -7,7 +7,7 @@ from pathlib import Path
 
 REQUIRED_ENV_VARS = {
     "polly": ["POLLY_REGION", "POLLY_AWS_KEY_ID", "POLLY_AWS_ACCESS_KEY"],
-    "google": ["GOOGLE_CREDS_PATH", "GOOGLE_SA_FILE_B64"],
+    "google": ["GOOGLE_SA_PATH", "GOOGLE_SA_FILE_B64"],
     "microsoft": ["MICROSOFT_TOKEN", "MICROSOFT_REGION"],
     "watson": ["WATSON_API_KEY", "WATSON_REGION", "WATSON_INSTANCE_ID"],
     "elevenlabs": ["ELEVENLABS_API_KEY"],
@@ -88,15 +88,16 @@ def decode_google_creds() -> None:
     """Decode and save the Base64 Google credentials JSON file.
 
     Should only work if `GOOGLE_SA_FILE_B64` is set.
-    Also needs GOOGLE_CREDS_PATH
+    Also needs GOOGLE_SA_PATH
     """
     google_b64_creds = os.getenv("GOOGLE_SA_FILE_B64")
-    google_creds_path = os.getenv("GOOGLE_CREDS_PATH", "google_creds.json")
+    google_sa_path = os.getenv("GOOGLE_SA_PATH", "google_creds.json")
+
 
     if google_b64_creds:
         try:
             # Ensure the directory exists
-            creds_path = Path(google_creds_path)
+            creds_path = Path(google_sa_path)
             creds_path.parent.mkdir(parents=True, exist_ok=True)
 
             # Decode and write the credentials
@@ -104,7 +105,7 @@ def decode_google_creds() -> None:
             with creds_path.open("w") as f:
                 f.write(decoded_creds)
             if creds_path.exists() and creds_path.stat().st_size > 0:
-                print(f"Google Service Account JSON created successfully at: {google_creds_path}")
+                print(f"Google Service Account JSON created successfully at: {google_sa_path}")
             else:
                 raise ValueError("Failed to create the Google Service Account file.")
         except (OSError, ValueError) as e:

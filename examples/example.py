@@ -51,7 +51,7 @@ def create_tts_client(service):
         client = WatsonClient(credentials=(api_key, region, instance_id))
         tts = WatsonTTS(client=client)
     elif service == "google":
-        creds_path = os.getenv("GOOGLE_CREDS_PATH")
+        creds_path = os.getenv("GOOGLE_SA_PATH")
         client = GoogleClient(credentials=creds_path)
         tts = GoogleTTS(client=client)
     elif service == "elevenlabs":
