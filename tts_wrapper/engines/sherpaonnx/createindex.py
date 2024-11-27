@@ -364,9 +364,39 @@ def get_supported_languages () -> dict:
         model["ONNX Model URL"] = new_url
         response_json[index]["ONNX Model URL"] = model["ONNX Model URL"]
 
-    result_json['languages_supported'] = response_json
+        response_json[index] = transform_json_structure(response_json[index])
+    #result_json['languages_supported'] = response_json
 
-    return result_json
+    return response_json
+
+def transform_json_structure(input_data):
+    """
+    Transform a single JSON object to the desired format with nested language information.
+    
+    Args:
+        input_data (dict): Input JSON data
+        
+    Returns:
+        dict: Transformed JSON data
+    """
+    # Create language information dictionary
+    language_info = {
+        "Iso Code": input_data["Iso Code"].split('_')[-1],  # Extract 'abi' from 'mms_abi'
+        "Language Name": input_data["Language Name"],
+        "Country": input_data["Country"]
+    }
+    
+    # Create new structure
+    transformed_data = {
+        "id": input_data["Iso Code"],
+        "language": [language_info],  # Put language info in an array
+        "Region": input_data["Region"],
+        "ONNX Exists": input_data["ONNX Exists"],
+        "Sample Exists": input_data["Sample Exists"],
+        "url": input_data["ONNX Model URL"]
+    }
+    
+    return transformed_data
 
 
 def combine_json_parts(json_part1, json_part2):
@@ -382,14 +412,17 @@ def combine_json_parts(json_part1, json_part2):
     """
     # Create a copy of the first dictionary to avoid modifying the original
 
-    combined_json = json_part1.copy()
-    print (json_part1)
+    combined = json_part1.copy()
+
     # Only add 'other' if it doesn't exist in the first dictionary
-    if 'languages_supported' not in combined_json:
-        print("combined json")
-        combined_json.update(json_part2)
+    if 'Iso Code' not in combined:
+        # Create a new combined dictionary starting with the object_json
+        
+        # Add each item from array_json using the ISO code as the key
+        for item in json_part2:
+            combined[item["id"]] = item
     
-    return combined_json
+    return combined    
 
 # Known ISO 639-1 language codes (you can expand this as needed)
 known_lang_codes = {

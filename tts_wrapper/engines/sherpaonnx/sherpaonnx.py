@@ -75,8 +75,8 @@ class SherpaOnnxTTS(AbstractTTS):
     def get_voices(self) -> list[dict[str, Any]]:
         return self._client.get_voices()
 
-    def set_voice(self, voice_id="mms_eng", lang_id: Optional[str] = None) -> None:
-        self._client.set_voice(voice_id)
+    def set_voice(self,lang_id: Optional[str] = None) -> None:
+        self._client.set_voice()
         self.audio_rate = (
             self._client.sample_rate
         )  # Update the audio_rate based on the selected voice
