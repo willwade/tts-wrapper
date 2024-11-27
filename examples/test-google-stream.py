@@ -19,7 +19,7 @@ def main() -> None:
     try:
         # Path to your Google Cloud service account JSON credentials
 
-        client = GoogleClient(credentials=os.getenv("GOOGLE_CREDS_PATH"))
+        client = GoogleClient(credentials=os.getenv("GOOGLE_SA_PATH"))
 
         # Initialize the GoogleTTS engine with the client
         tts = GoogleTTS(client=client)

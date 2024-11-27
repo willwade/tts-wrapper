@@ -185,10 +185,10 @@ or pass the auth file as dict - so in memory
 ```python
 from tts_wrapper import GoogleTTS, GoogleClient
 
-with open(os.getenv("GOOGLE_CREDS_PATH"), "r") as file:
+with open(os.getenv("GOOGLE_SA_PATH"), "r") as file:
     credentials_dict = json.load(file)
 
-client = GoogleClient(credentials=os.getenv('GOOGLE_CREDS_PATH'))
+client = GoogleClient(credentials=os.getenv('GOOGLE_SA_PATH'))
 client = GoogleClient(credentials=credentials_dict)]
 ```
 
@@ -666,26 +666,31 @@ print("Live playback completed")
 
 This will install Python dependencies and system dependencies required for this project. Note that system dependencies will only be installed automatically on Linux.
 
-#### Using Poetry
+#### Using UV
 
-1. Clone the repository:
+1. [Install UV](https://docs.astral.sh/uv/#getting-started)
+   ```sh
+   pip install uv
+   ```
+
+2. Clone the repository:
    ```sh
    git clone https://github.com/willwade/tts-wrapper.git
    cd tts-wrapper
    ```
 
-2. Install Python dependencies:
+3. Install Python dependencies:
    ```sh
-   poetry install
+   uv sync
    ```
 
-3. Install system dependencies (Linux only):
+4. Install system dependencies (Linux only):
    ```sh
-   poetry run postinstall
+   uv run postinstall
    ```
 
 
-**NOTE**: to get a requirements.txt file for the project use `poetry export --without-hashes --format=requirements.txt > requirements.txt --all-extras` juat be warned that this will include all dependencies including dev ones.
+**NOTE**: to get a requirements.txt file for the project use `uv export --format  requirements-txt --all-extras --no-hashes` juat be warned that this will include all dependencies including dev ones.
 
 ## Release a new build
 
