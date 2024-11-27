@@ -3,6 +3,7 @@ import os
 import re
 import tarfile
 from io import BytesIO
+from pathlib import Path
 
 import langcodes  # For enriching language data
 import requests
@@ -10,6 +11,7 @@ import requests
 # Regex to validate ISO language codes (1-8 alphanumeric characters)
 iso_code_pattern = re.compile(r"^[a-zA-Z0-9]{1,8}$")
 lang_code_pattern = re.compile(r"-(?P<lang>[a-z]{2})([_-][A-Z]{2})?")
+result_json = {}
 
 
 def handle_special_cases(developer, name, quality, url):
@@ -242,6 +244,7 @@ def generate_model_id(developer, lang_codes, name, quality) -> str:
 def get_github_release_assets(repo, tag, merged_models, output_file):
     headers = {"Accept": "application/vnd.github.v3+json"}
     releases_url = f"https://api.github.com/repos/{repo}/releases/tags/{tag}"
+    print("Get models from github\n")
     response = requests.get(releases_url, headers=headers)
 
     if response.status_code != 200:
@@ -249,8 +252,10 @@ def get_github_release_assets(repo, tag, merged_models, output_file):
         raise Exception(msg)
 
     release_info = response.json()
-
+    print("For all models in github response, construct the merged_models.json\n")
+    idx = 0
     for asset in release_info.get("assets", []):
+        print(f"Model {asset['name']}\n")
         filename = asset["name"]
         asset_url = asset["browser_download_url"]
 
@@ -331,8 +336,11 @@ def get_github_release_assets(repo, tag, merged_models, output_file):
         merged_models[id] = model_data
 
         # Save after each model is processed
-        save_models(merged_models, output_file)
+        #print ("save models")
+        #save_models(merged_models, output_file)
 
+    #print ("merged _models: ")
+    #print (merged_models)
 
     return merged_models
 
@@ -343,6 +351,78 @@ def fetch_data_from_url(url: str) -> dict:
     response.raise_for_status()
     return response.json()
 
+def get_supported_languages () -> dict:
+    languages_url = "https://huggingface.co/willwade/mms-tts-multilingual-models-onnx/raw/main/languages-supported.json"
+    response_json = fetch_data_from_url(languages_url)
+
+    for index, model in enumerate(response_json):
+        iso_code = model["Iso Code"]
+        response_json[index]["Iso Code"] = "mms_" + iso_code
+
+        url = model["ONNX Model URL"]
+        new_url = url.replace("api/models/", "", 1).replace("/tree/", "/resolve/")    
+        model["ONNX Model URL"] = new_url
+        response_json[index]["ONNX Model URL"] = model["ONNX Model URL"]
+
+        response_json[index] = transform_json_structure(response_json[index])
+    #result_json['languages_supported'] = response_json
+
+    return response_json
+
+def transform_json_structure(input_data):
+    """
+    Transform a single JSON object to the desired format with nested language information.
+    
+    Args:
+        input_data (dict): Input JSON data
+        
+    Returns:
+        dict: Transformed JSON data
+    """
+    # Create language information dictionary
+    language_info = {
+        "Iso Code": input_data["Iso Code"].split('_')[-1],  # Extract 'abi' from 'mms_abi'
+        "Language Name": input_data["Language Name"],
+        "Country": input_data["Country"]
+    }
+    
+    # Create new structure
+    transformed_data = {
+        "id": input_data["Iso Code"],
+        "language": [language_info],  # Put language info in an array
+        "Region": input_data["Region"],
+        "ONNX Exists": input_data["ONNX Exists"],
+        "Sample Exists": input_data["Sample Exists"],
+        "url": input_data["ONNX Model URL"]
+    }
+    
+    return transformed_data
+
+
+def combine_json_parts(json_part1, json_part2):
+    """
+    Combine two JSON dictionaries, only adding 'other' if it doesn't exist in the first dict
+    
+    Args:
+        json_part1 (dict): First JSON part as dictionary
+        json_part2 (dict): Second JSON part as dictionary
+    
+    Returns:
+        dict: Combined JSON object
+    """
+    # Create a copy of the first dictionary to avoid modifying the original
+
+    combined = json_part1.copy()
+
+    # Only add 'other' if it doesn't exist in the first dictionary
+    if 'Iso Code' not in combined:
+        # Create a new combined dictionary starting with the object_json
+        
+        # Add each item from array_json using the ISO code as the key
+        for item in json_part2:
+            combined[item["id"]] = item
+    
+    return combined    
 
 # Known ISO 639-1 language codes (you can expand this as needed)
 known_lang_codes = {
@@ -390,9 +470,23 @@ def main() -> None:
     # Step 2: Fetch GitHub models (VITS, Piper, etc.)
     repo = "k2-fsa/sherpa-onnx"
     tag = "tts-models"
-    get_github_release_assets(repo, tag, merged_models, output_file)
+    print("Build merged_models.json file\n")
+    merged_models_path = Path(output_file)
 
+    if merged_models_path.exists():
+        print("merged models already exist, getting supported languages")
+        with open(merged_models_path, 'r') as file:
+            merge_models = json.load(file)
+    else:
+        merged_models = get_github_release_assets(repo, tag, merged_models, output_file)
 
+    #add languages json to merged_models.json
+    print("Get suppported languages\n")
+    languages_json = get_supported_languages()
+
+    models_languages = combine_json_parts (merged_models, languages_json)
+    print (models_languages)
+    save_models(models_languages, output_file)
 
 if __name__ == "__main__":
     main()

@@ -3,7 +3,7 @@ from pathlib import Path
 
 from tts_wrapper import SherpaOnnxClient, SherpaOnnxTTS
 
-client = SherpaOnnxClient(model_path=None, tokens_path=None)
+client = SherpaOnnxClient(model_path=None, tokens_path=None, model_id=None)
 
 # Initialize the SherpaOnnxTTS engine with the client
 tts = SherpaOnnxTTS(client=client)
@@ -15,13 +15,13 @@ voices = tts.get_voices()
 logging.info(f"Available voices: {voices}")
 
 # Set the desired voice using its ISO code
-iso_code = "eng"  # Replace with a valid ISO code from the voices list
-tts.set_voice(voice_id=iso_code)
-logging.info(f"Voice set to ISO code: {iso_code}")
+#iso_code = "eng"  # Replace with a valid ISO code from the voices list
+tts.set_voice()
+#logging.info(f"Voice set to ISO code: {iso_code}")
 
-        # Define the text to be synthesized
+# Define the text to be synthesized
 text = (
-" Title: The Silent Truth "
+"Title: The Silent Truth "
 "The town of Brookhollow was the kind of place where people left their doors unlocked and trusted everyone they met. Tucked away in the rolling hills of the countryside, it was a town where time seemed to stand still. But on a crisp October morning, something sinister shattered the peace. "
 )
 logging.info(f"Text to synthesize: {text}")
