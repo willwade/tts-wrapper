@@ -39,7 +39,7 @@ TTS_CLIENTS = {
     "google": {
         "client": GoogleClient,
         "class": GoogleTTS,
-        "credential_keys": ["GOOGLE_CREDS_PATH"],
+        "credential_keys": ["GOOGLE_SA_PATH"],
     },
     "microsoft": {
         "client": MicrosoftClient,
