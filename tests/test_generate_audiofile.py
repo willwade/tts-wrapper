@@ -1,7 +1,7 @@
 import os
 import unittest
 from pathlib import Path
-from load_credentials import load_credentials
+#from load_credentials import load_credentials
 
 
 import pytest
@@ -207,5 +207,5 @@ class TestFileCreation(unittest.TestCase):
 
 
 if __name__ == "__main__":
-    load_credentials("credentials.json")
+    #load_credentials("credentials.json")
     unittest.main(verbosity=2)
