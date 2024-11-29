@@ -16,10 +16,8 @@ def process_wav(raw: bytes) -> bytes:
 
 
 def create_temp_filename(suffix="") -> str:
-    random_seq = "".join(random.choice(string.ascii_letters) for _ in range(10))
-    return os.path.join(
-        tempfile.gettempdir(), f"{tempfile.gettempprefix()}_{random_seq}{suffix}",
-    )
+    with tempfile.NamedTemporaryFile(suffix=suffix, delete=False) as temp_file:
+        return temp_file.name
 
 def estimate_word_timings(text: str, wpm: int = 150) -> list[tuple[float, float, str]]:
     # Remove SSML tags
