@@ -28,7 +28,7 @@ dev = [
     "black>=22.1.0",
     "types-requests>=2.27.31",
     "mypy>=0.971",
-    "pytest-cov>=3.0.0"
+    "pytest-cov>=3.0.0",
 ]
 
 [project.optional-dependencies]
