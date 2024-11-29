@@ -76,7 +76,7 @@ class SherpaOnnxClient:
             self.set_voice()
             self.audio_queue = queue.Queue()  # Ensure `queue` is imported
 
-            self.sample_rate = None
+            self.sample_rate = 16000
             
     def _download_file(self, url:str, destination:str) -> None:
         try:
@@ -356,8 +356,14 @@ class SherpaOnnxClient:
         model_path, tokens_path, lexicon_path, dict_dir = self.check_and_download_model(self._model_id)
         self.default_model_path = model_path
         self.default_tokens_path = tokens_path
-        self.default_lexicon_path = lexicon_path
-        self.default_dict_dir_path = dict_dir
+
+        """ if mms language model set lexicon path and dict dir path to empty string """
+        if (self._model_id.startswith("mms_")):
+            self.default_lexicon_path = ""
+            self.default_dict_dir_path = ""
+        else:
+            self.default_lexicon_path = lexicon_path
+            self.default_dict_dir_path = dict_dir
 
         # Initialize the TTS model with the new voice settings
         self._init_onnx()

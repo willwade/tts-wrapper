@@ -1,6 +1,8 @@
 import os
 import unittest
 from pathlib import Path
+#from load_credentials import load_credentials
+
 
 import pytest
 
@@ -66,7 +68,7 @@ TTS_CLIENTS = {
         "class": GoogleTransTTS,
     },
     "sherpaonnx": {
-        "client_lambda": lambda: SherpaOnnxClient(model_path=None, tokens_path=None),
+        "client_lambda": lambda: SherpaOnnxClient(model_path=None, tokens_path=None, model_id="mms_eng"),
         "class": SherpaOnnxTTS,
     },
     "systemtts": {
@@ -123,8 +125,8 @@ class TestFileCreation(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls) -> None:
-        print("GOOGLE_CREDS_PATH:", os.getenv("GOOGLE_CREDS_PATH"))
-        print("File exists:", Path(os.getenv("GOOGLE_CREDS_PATH", "")).exists())
+        print("GOOGLE_SA_PATH:", os.getenv("GOOGLE_SA_PATH"))
+        print("File exists:", Path(os.getenv("GOOGLE_SA_PATH", "")).exists())
 
         cls.manager = ClientManager()
         cls.tts_instances = cls.manager.create_tts_instances(TTS_CLIENTS)
@@ -205,4 +207,5 @@ class TestFileCreation(unittest.TestCase):
 
 
 if __name__ == "__main__":
+    #load_credentials("credentials.json")
     unittest.main(verbosity=2)
