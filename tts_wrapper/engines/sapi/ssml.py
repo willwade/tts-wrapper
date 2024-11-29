@@ -1,5 +1,4 @@
-from tts_wrapper.ssml import BaseSSMLRoot
-from tts_wrapper.ssml import SSMLNode
+from tts_wrapper.ssml import BaseSSMLRoot, SSMLNode
 
 
 class SAPISSML(BaseSSMLRoot):
@@ -17,7 +16,7 @@ class SAPISSML(BaseSSMLRoot):
         if clear:
             self.clear_ssml()
 
-        if isinstance(text, str) and "<" in text:  # Treat raw SSML
+        if isinstance(text, str) and "<" in text:  # Treat as raw SSML
             self._inner.add(SSMLNode("raw", children=[text]))
         else:
             self._inner.add(SSMLNode("text", children=[text]))
@@ -31,7 +30,7 @@ class SAPISSML(BaseSSMLRoot):
         :param kwargs: Attributes for the prosody tag (rate, pitch, volume, range).
         :return: The prosody-wrapped text.
         """
-        attributes = [f'{key}="{value}"' for key, value in kwargs.items()]
+        attributes = [f'{key}="{value}"' for key, value in kwargs.items() if value]
         attr_str = " ".join(attributes)
         return f'<prosody {attr_str}>{text}</prosody>'
 

@@ -1,13 +1,21 @@
 import comtypes.client
 import logging
+import os
+import platform
 import math
 import weakref
 from queue import Queue
 from threading import Thread
 from typing import Any, List, Tuple, Union
+from .ssml import SAPISSML
 
 SAPI4_CLSID = "{EEE78591-FE22-11D0-8BEF-0060081841DE}"
 SAPI5_CLSID = "SAPI.SpVoice"
+
+
+class UnsupportedPlatformError(Exception):
+    """Exception raised when the platform is unsupported."""
+    pass
 
 
 class SAPIClient:
@@ -17,6 +25,10 @@ class SAPIClient:
         Args:
             sapi_version (int): SAPI version to use (4 or 5).
         """
+        if platform.system() != "Windows":
+            raise UnsupportedPlatformError("SAPI is only supported on Windows.")
+        self._ssml = SAPISSML()
+
         if sapi_version == 4:
             self._tts = comtypes.client.CreateObject(SAPI4_CLSID)
         elif sapi_version == 5:
@@ -41,7 +53,13 @@ class SAPIClient:
         """
         voices = self._tts.GetVoices()
         return [
-            {"id": voice.Id, "name": voice.GetDescription()}
+            {
+                "id": voice.Id,
+                "name": voice.GetDescription(),
+                "language_codes": [voice.GetAttribute("Language")],
+                "gender": voice.GetAttribute("Gender"),
+                "age": int(voice.GetAttribute("Age")) if voice.GetAttribute("Age") else 0,
+            }
             for voice in voices
         ]
 
@@ -71,22 +89,24 @@ class SAPIClient:
         else:
             raise KeyError(f"Unknown property: {name}")
 
-    def synth(self, text: str) -> Tuple[bytes, List[dict]]:
+    def synth(self, ssml: str) -> Tuple[bytes, List[dict]]:
         """
-        Synthesize text into audio and return raw data with word timings.
+        Synthesize SSML into audio and return raw data with word timings.
         Args:
-            text (str): Text to synthesize.
+            ssml (str): SSML-formatted text to synthesize.
         Returns:
             Tuple[bytes, List[dict]]: Audio bytes and word timing metadata.
         """
         logging.debug("SAPI synthesis to bytes started.")
         audio_queue = Queue()
         word_timings = []
-
+        if not self._is_ssml(ssml):
+            ssml = self._convert_to_ssml(ssml)
+        
         def audio_writer():
             stream = comtypes.client.CreateObject("SAPI.SpMemoryStream")
             self._tts.AudioOutputStream = stream
-            self._tts.Speak(text)
+            self._tts.Speak(ssml)
             audio_queue.put(stream.GetData())
 
         thread = Thread(target=audio_writer)
@@ -97,22 +117,27 @@ class SAPIClient:
         logging.debug("SAPI synthesis completed.")
         return audio_bytes, word_timings
 
-    def synth_streaming(self, text: str) -> Tuple[Queue, List[dict]]:
+    def synth_streaming(self, ssml: str) -> Tuple[Queue, List[dict]]:
         """
         Stream synthesis and return a queue for audio and word timings.
         Args:
-            text (str): Text to synthesize.
+            ssml (str): SSML-formatted text to synthesize.
         Returns:
             Tuple[Queue, List[dict]]: Audio queue and word timing metadata.
         """
+
+
         logging.debug("SAPI streaming synthesis started.")
         audio_queue = Queue()
         word_timings = []
+        
+        if not self._is_ssml(ssml):
+            ssml = self._convert_to_ssml(ssml)
 
         def audio_writer():
             stream = comtypes.client.CreateObject("SAPI.SpMemoryStream")
             self._tts.AudioOutputStream = stream
-            self._tts.Speak(text)
+            self._tts.Speak(ssml)
             audio_queue.put(stream.GetData())
             audio_queue.put(None)  # End of stream marker
 
