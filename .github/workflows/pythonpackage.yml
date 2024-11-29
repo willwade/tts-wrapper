@@ -112,6 +112,9 @@ jobs:
           $url = "https://github.com/espeak-ng/espeak-ng/releases/download/1.51/espeak-ng-X64.msi"
           Invoke-WebRequest -Uri $url -OutFile espeak-ng.msi
           Start-Process msiexec.exe -ArgumentList '/i', 'espeak-ng.msi', '/quiet', '/norestart' -NoNewWindow -Wait
+          # Add eSpeak NG installation directory to PATH and persist it
+          $espeakPath = "C:\Program Files\eSpeak NG"
+          echo "PATH=$env:PATH;$espeakPath" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8
 
       - name: Verify eSpeak NG Installation
         run: espeak-ng --version
