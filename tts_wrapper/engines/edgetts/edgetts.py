@@ -23,7 +23,7 @@ class EdgeTTS(AbstractTTS):
         """Convert text to audio bytes synchronously."""
         logging.debug("Synthesizing text to audio bytes.")
         ssml = self._ssml.add(text)
-        audio, metadata = asyncio.run(self._client.synth(ssml, self._voice))  # Use asyncio.run here
+        audio, metadata = asyncio.run(self._client.synth(ssml, self._voice)) 
         self.word_timings = self._process_word_timings(metadata)
         self.set_timings(self.word_timings)
         return audio
