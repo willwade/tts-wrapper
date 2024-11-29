@@ -69,7 +69,7 @@ TTS_CLIENTS = {
         "class": GoogleTransTTS,
     },
     "sherpaonnx": {
-        "client": lambda: SherpaOnnxClient(model_path=None, tokens_path=None, voice_id="eng"),
+        "client": lambda: SherpaOnnxClient(model_path=None, tokens_path=None, model_id="mms_eng"),
         "class": SherpaOnnxTTS,
     },
     "espeak": {

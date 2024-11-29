@@ -43,7 +43,7 @@ uwp = ["winrt-runtime>=2.0.1; sys_platform == 'win32'"]
 sherpaonnx = ["sherpa-onnx>=1.10.17", "requests>=2.31.0", "numpy>=1.24.3"]
 googletrans = ["gTTS>=2.5.2"]
 controlaudio = ["pyaudio>=0.2.14"]
-espeak = []
+espeak = [espeak-ng>=1.0.5]
 
 [project.urls]
 "Bug Tracker" = "https://github.com/willwade/tts-wrapper/issues"
