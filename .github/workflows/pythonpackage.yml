@@ -24,6 +24,15 @@ jobs:
         with:
           python-version: 3.11
 
+      - name: Install eSpeak NG on Windows
+        run: |
+          $url = "https://github.com/espeak-ng/espeak-ng/releases/download/1.51/espeak-ng-X64.msi"
+          Invoke-WebRequest -Uri $url -OutFile espeak-ng.msi
+          Start-Process msiexec.exe -ArgumentList '/i', 'espeak-ng.msi', '/quiet', '/norestart' -NoNewWindow -Wait
+
+      - name: Verify eSpeak NG Installation
+        run: espeak-ng --version
+
       - name: Cache dependencies
         uses: actions/cache@v4
         with:
@@ -82,6 +91,27 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
+      - name: Install eSpeak NG on Ubuntu
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install -y espeak-ng
+
+      - name: Install eSpeak NG on macOS
+        if: matrix.os == 'macos-latest'
+        run: |
+          brew install espeak-ng
+
+      - name: Install eSpeak NG on Windows
+        if: matrix.os == 'windows-latest'
+        run: |
+          $url = "https://github.com/espeak-ng/espeak-ng/releases/download/1.51/espeak-ng-X64.msi"
+          Invoke-WebRequest -Uri $url -OutFile espeak-ng.msi
+          Start-Process msiexec.exe -ArgumentList '/i', 'espeak-ng.msi', '/quiet', '/norestart' -NoNewWindow -Wait
+
+      - name: Verify eSpeak NG Installation
+        run: espeak-ng --version
+
       - name: Cache dependencies
         uses: actions/cache@v4
         with:
@@ -91,17 +121,6 @@ jobs:
           key: ${{ runner.os }}-uv-${{ hashFiles('**/pyproject.toml') }}
           restore-keys: |
             ${{ runner.os }}-uv-
-
-      - name: Install system dependencies on Linux
-        if: matrix.os == 'ubuntu-latest'
-        run: |
-          sudo apt-get update -y
-          sudo apt-get install -y portaudio19-dev libttspico-utils ffmpeg espeak-ng
-
-      - name: Install system dependencies on macOS
-        if: matrix.os == 'macos-latest'
-        run: |
-          brew install portaudio ffmpeg
 
       - name: Install `uv`
         run: pip install uv
