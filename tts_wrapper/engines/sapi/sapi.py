@@ -1,5 +1,9 @@
 from tts_wrapper.tts import AbstractTTS
 from .client import SAPIClient
+from collections.abc import Generator
+from typing import Any, Callable, NoReturn, Union
+from .ssml import SAPISSML
+import comtypes
 
 
 class SAPIEngine(AbstractTTS):
@@ -11,6 +15,7 @@ class SAPIEngine(AbstractTTS):
     def synth_to_bytes(self, text: str) -> bytes:
         audio, word_timings = self.client.synth(text)
         self.word_timings = word_timings
+
         return audio
 
     def synth_to_bytestream(self, text: str) -> Generator[bytes, None, None]:

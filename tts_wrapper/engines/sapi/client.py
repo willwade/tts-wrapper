@@ -8,6 +8,8 @@ from queue import Queue
 from threading import Thread
 from typing import Any, List, Tuple, Union
 from .ssml import SAPISSML
+import re
+import comtypes
 
 SAPI4_CLSID = "{EEE78591-FE22-11D0-8BEF-0060081841DE}"
 SAPI5_CLSID = "SAPI.SpVoice"
@@ -28,7 +30,6 @@ class SAPIClient:
         if platform.system() != "Windows":
             raise UnsupportedPlatformError("SAPI is only supported on Windows.")
         self._ssml = SAPISSML()
-
         if sapi_version == 4:
             self._tts = comtypes.client.CreateObject(SAPI4_CLSID)
         elif sapi_version == 5:
@@ -43,7 +44,7 @@ class SAPIClient:
         """Bind events to the TTS engine for real-time updates."""
         if self._sapi_version == 5:
             self._event_sink = SAPI5EventSink(self)
-            self._advise = comtypes.client.GetEvents(self._tts, self._event_sink)
+            self._advise = comtypes.client.GetEvents(self._tts, self._event_sink)         
 
     def get_voices(self) -> List[dict[str, Any]]:
         """
@@ -76,6 +77,7 @@ class SAPIClient:
         raise ValueError(f"Voice with ID {voice_id} not found.")
 
     def set_property(self, name: str, value: Union[str, int, float]) -> None:
+        print("property set")
         """
         Set a property for the TTS engine.
         Args:
@@ -104,18 +106,38 @@ class SAPIClient:
             ssml = self._convert_to_ssml(ssml)
         
         def audio_writer():
+            comtypes.CoInitialize()
+            format = comtypes.client.CreateObject("SAPI.SpAudioFormat")
+            format.Type = 34  # SAFT44kHz16BitMono
             stream = comtypes.client.CreateObject("SAPI.SpMemoryStream")
+            stream.Format = format
+            #print(f"stream format: {stream.Format.Type}")
             self._tts.AudioOutputStream = stream
             self._tts.Speak(ssml)
+
             audio_queue.put(stream.GetData())
 
         thread = Thread(target=audio_writer)
         thread.start()
         thread.join()
 
-        audio_bytes = audio_queue.get()
+        audio_tuple = audio_queue.get()
+        audio_bytes = bytes(audio_tuple)
+        
         logging.debug("SAPI synthesis completed.")
         return audio_bytes, word_timings
+
+    def _is_ssml(self, text: str) -> bool:
+        return bool(re.match(r"^\s*<speak>", text, re.IGNORECASE))
+
+    def _convert_to_ssml(self, text: str) -> str:
+        words = text.split()
+        ssml_parts = ["<speak>"]
+        for i, word in enumerate(words):
+            ssml_parts.append(f'<mark name="word{i}"/>{word}')
+        ssml_parts.append("</speak>")
+        return " ".join(ssml_parts)
+
 
     def synth_streaming(self, ssml: str) -> Tuple[Queue, List[dict]]:
         """
@@ -126,7 +148,7 @@ class SAPIClient:
             Tuple[Queue, List[dict]]: Audio queue and word timing metadata.
         """
 
-
+        comtypes.CoInitialize()
         logging.debug("SAPI streaming synthesis started.")
         audio_queue = Queue()
         word_timings = []
