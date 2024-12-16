@@ -167,189 +167,75 @@ def merge_models(
 # Function to extract language codes from config or URL
 # Updated function to prioritize language extraction
 # Function to extract language codes from config or URL
-def extract_language_code_vits(url, name, developer, config_data=None):
-    """Extracts the language code either from the config file or the URL."""
-    # Try extracting from the config.json first if available
-    if config_data:
-        config_lang = extract_language_code_from_config(config_data)
-        if config_lang:
-            return config_lang
+def extract_language_code_vits(url, developer_type, developer, config_data=None):
+    """Extract language code from VITS model URL or config."""
+    filename = url.split("/")[-1]
 
-    # Special case for models supporting multiple languages
-    if "zh_en" in url or "zh_en" in name:
-        return [("zh", "CN"), ("en", "US")]
-
-    # Override for specific developers (e.g., "cantonese" should map to Cantonese)
-    if developer == "cantonese":
-        return [("zh", "HK")]
-
-    # Handle known developer-specific logic for "mimic3"
-    if developer == "mimic3":
-        lang_match = re.search(r"-(?P<lang>[a-z]{2})([_-][A-Z]{2})?", url)
+    # Handle Piper models (e.g., vits-piper-en_GB-alan-low)
+    if developer == "piper":
+        lang_match = re.search(r'vits-piper-(\w+)_(\w+)-', filename)
         if lang_match:
-            lang_code = lang_match.group("lang")
-            region_match = re.search(r"_([A-Z]{2})", url)  # Extract region
-            region = region_match.group(1) if region_match else "Unknown"
+            lang_code = lang_match.group(1).lower()
+            region = lang_match.group(2)
             return [(lang_code, region)]
-        return [("unknown", "Unknown")]
 
-    # Generic case: match two-letter language codes with optional region (e.g., en_GB, en-US)
-    lang_match = re.search(r"-(?P<lang>[a-z]{2})([_-][A-Z]{2})?", url)
+    # Handle Mimic3 models (e.g., vits-mimic3-pl_PL-m-ailabs_low)
+    if developer == "mimic3":
+        lang_match = re.search(r'vits-mimic3-(\w+)_(\w+)-', filename)
+        if lang_match:
+            lang_code = lang_match.group(1).lower()
+            region = lang_match.group(2)
+            return [(lang_code, region)]
+
+    # Handle Coqui models (e.g., vits-coqui-sv-cv)
+    if developer == "coqui":
+        lang_match = re.search(r'vits-coqui-(\w+)-', filename)
+        if lang_match:
+            lang_code = lang_match.group(1).lower()
+            return [(lang_code, "US")]  # Default to US as region for Coqui
+
+    # Fallback to extracting from config if available
+    if config_data:
+        if isinstance(config_data, dict):
+            lang_code = config_data.get("language", "").lower()
+            if lang_code:
+                return [(lang_code, "US")]
+
+    # Default fallback
+    return [("en", "US")]
+
+
+def extract_piper_language_info(url):
+    """Extract language information from Piper model's MODEL_CARD file."""
+    # Extract language code from the filename pattern: vits-piper-{lang_code}-{name}-{quality}
+    filename = url.split('/')[-1].replace('.tar.bz2', '')
+    if not filename.startswith('vits-piper-'):
+        return None
+        
+    # Pattern: vits-piper-en_GB-name-quality
+    lang_match = re.search(r'vits-piper-(\w+)_(\w+)-', filename)
     if lang_match:
-        lang_code = lang_match.group("lang")
-        region_match = re.search(r"_([A-Z]{2})", url)  # Extract region (e.g., GB, US)
-        region = region_match.group(1) if region_match else "Unknown"
+        lang_code = lang_match.group(1).lower()
+        region = lang_match.group(2)
         return [(lang_code, region)]
-
-    # Handle specific known names like LJSpeech
-    if "ljs" in name.lower():
-        return [("en", "US")]  # LJSpeech is US English by default
-
-    # Default to unknown if no language is found
-    return [("unknown", "Unknown")]
+        
+    return None
 
 
-# Read a JSON file from within a .tar.bz2 archive
-def read_file_from_tar_bz2(url, filename_in_archive):
+def read_file_from_tar_bz2(url, filename_pattern):
     try:
         response = requests.get(url, stream=True)
         if response.status_code == 200:
             fileobj = BytesIO(response.content)
             with tarfile.open(fileobj=fileobj, mode="r:bz2") as tar:
-                found_json = False
                 for member in tar.getmembers():
-                    if member.name.endswith(".json"):
-                        found_json = True
+                    if filename_pattern in member.name:
                         file = tar.extractfile(member)
                         return file.read().decode() if file else None
-                if not found_json:
-                    pass  # Debugging print
-    except Exception:
-        pass  # Error handling
+    except Exception as e:
+        print(f"Error reading {filename_pattern} from {url}: {str(e)}")
     return None
 
-
-# Function to generate a unique model ID
-def generate_model_id(developer, lang_codes, name, quality) -> str:
-    return (
-        f"{developer}-{'_'.join(lang_codes)}-{name}-{quality}"
-        if quality != "unknown"
-        else f"{developer}-{'_'.join(lang_codes)}-{name}"
-    )
-
-
-# Main function for fetching GitHub models
-
-
-def get_github_release_assets(repo, tag, merged_models, output_file):
-    headers = {"Accept": "application/vnd.github.v3+json"}
-    releases_url = f"https://api.github.com/repos/{repo}/releases/tags/{tag}"
-    print("Get models from github\n")
-    response = requests.get(releases_url, headers=headers)
-
-    if response.status_code != 200:
-        msg = f"Failed to fetch release info for tag: {tag}"
-        raise Exception(msg)
-
-    release_info = response.json()
-    print("For all models in github response, construct the merged_models.json\n")
-    idx = 0
-    for asset in release_info.get("assets", []):
-        print(f"Model {asset['name']}\n")
-        filename = asset["name"]
-        asset_url = asset["browser_download_url"]
-
-        # Skip executables and models from the "mms" developer
-        if filename.endswith(".exe") or "-mms-" in filename:
-            continue
-
-        filename_no_ext = re.sub(r"\.tar\.bz2|\.tar\.gz|\.zip", "", filename)
-        parts = filename_no_ext.split("-")
-
-        model_type = parts[0] if parts[0] == "vits" else "unknown"
-        if model_type == "unknown":
-            continue
-
-        developer = parts[1] if len(parts) > 1 else "unknown"
-
-        # Check if the model has already been processed and saved
-        if filename_no_ext in merged_models:
-            continue
-
-        # Read config.json or any other json in the archive
-        config_data = read_file_from_tar_bz2(asset_url, "config.json")
-        if not config_data:
-            config_data = read_file_from_tar_bz2(
-                asset_url, "*.json",
-            )  # Fallback to any JSON
-
-        # If config_data is not None and is a string, attempt to parse it as JSON
-        if config_data:
-            try:
-                config_data = json.loads(config_data)
-            except json.JSONDecodeError:
-                config_data = None
-
-        # Extract language code, prioritizing config.json, fallback to URL
-        lang_codes_and_regions = extract_language_code_vits(
-            filename_no_ext,
-            parts[1] if len(parts) > 1 else "unknown",
-            developer,
-            config_data,
-        )
-
-        name = parts[3] if len(parts) > 3 else "unknown"
-        quality = parts[4] if len(parts) > 4 else "unknown"
-
-        # Handle special edge cases for developer-specific naming/quality issues
-        name, quality = handle_special_cases(developer, name, quality, asset_url)
-
-        # Get detailed language information
-        lang_details = [
-            get_language_data(code, region) for code, region in lang_codes_and_regions
-        ]
-
-        # Get sample rate from config.json if present, otherwise set it to 0
-        sample_rate = (
-            config_data.get("audio", {}).get("sample_rate", 0) if config_data else 0
-        )
-
-        id = generate_model_id(
-            developer, [code for code, _ in lang_codes_and_regions], name, quality,
-        )
-
-        model_data = {
-            "id": id,
-            "model_type": model_type,
-            "developer": developer,
-            "name": name,  # Include the name
-            "language": lang_details,  # Store detailed language data
-            "quality": quality,
-            "sample_rate": sample_rate,  # Use extracted or fallback sample rate
-            "num_speakers": 1,
-            "url": asset_url,
-            "compression": True,
-            "filesize_mb": round(asset["size"] / (1024 * 1024), 2),
-        }
-
-        # Add to merged models
-        merged_models[id] = model_data
-
-        # Save after each model is processed
-        #print ("save models")
-        #save_models(merged_models, output_file)
-
-    #print ("merged _models: ")
-    #print (merged_models)
-
-    return merged_models
-
-
-# Function to fetch data from a URL
-def fetch_data_from_url(url: str) -> dict:
-    response = requests.get(url)
-    response.raise_for_status()
-    return response.json()
 
 def get_supported_languages () -> dict:
     languages_url = "https://huggingface.co/willwade/mms-tts-multilingual-models-onnx/raw/main/languages-supported.json"
@@ -423,6 +309,108 @@ def combine_json_parts(json_part1, json_part2):
             combined[item["id"]] = item
     
     return combined    
+
+# Function to generate a unique model ID
+def generate_model_id(developer, lang_codes, name, quality) -> str:
+    return (
+        f"{developer}-{'_'.join(lang_codes)}-{name}-{quality}"
+        if quality != "unknown"
+        else f"{developer}-{'_'.join(lang_codes)}-{name}"
+    )
+
+# Function to fetch data from a URL
+def fetch_data_from_url(url: str) -> dict:
+    response = requests.get(url)
+    response.raise_for_status()
+    return response.json()
+
+# Main function for fetching GitHub models
+def get_github_release_assets(repo, tag, merged_models, output_file):
+    headers = {"Accept": "application/vnd.github.v3+json"}
+    releases_url = f"https://api.github.com/repos/{repo}/releases/tags/{tag}"
+    print("\nFetching models from GitHub...")
+    response = requests.get(releases_url, headers=headers)
+
+    if response.status_code != 200:
+        msg = f"Failed to fetch release info for tag: {tag}"
+        raise Exception(msg)
+
+    release_info = response.json()
+    assets = release_info.get("assets", [])
+    total_assets = len(assets)
+    print(f"\nProcessing {total_assets} models...")
+    
+    for idx, asset in enumerate(assets, 1):
+        filename = asset["name"]
+        asset_url = asset["browser_download_url"]
+
+        # Skip executables and models from the "mms" developer
+        if filename.endswith(".exe") or "-mms-" in filename:
+            continue
+
+        filename_no_ext = re.sub(r"\.tar\.bz2|\.tar\.gz|\.zip", "", filename)
+        parts = filename_no_ext.split("-")
+
+        model_type = parts[0] if parts[0] == "vits" else "unknown"
+        if model_type == "unknown":
+            continue
+
+        developer = parts[1] if len(parts) > 1 else "unknown"
+        print(f"\n[{idx}/{total_assets}] Processing {filename}")
+
+        # Check if the model has already been processed and saved
+        if filename_no_ext in merged_models:
+            print(f"  → Skipping (already processed)")
+            continue
+
+        # Extract language code, prioritizing config.json, fallback to URL
+        lang_codes_and_regions = extract_language_code_vits(
+            asset_url,
+            parts[0],
+            developer,
+            None  # Skip config data for faster processing
+        )
+        
+        # Print language information
+        for lang_code, region in lang_codes_and_regions:
+            lang_info = get_language_data(lang_code, region)
+            print(f"  → Language: {lang_info['language_name']} ({lang_info['lang_code']}, {lang_info['country']})")
+
+        name = parts[3] if len(parts) > 3 else "unknown"
+        quality = parts[4] if len(parts) > 4 else "unknown"
+
+        # Handle special edge cases for developer-specific naming/quality issues
+        name, quality = handle_special_cases(developer, name, quality, asset_url)
+
+        # Get detailed language information
+        lang_details = [
+            get_language_data(code, region) for code, region in lang_codes_and_regions
+        ]
+
+        id = generate_model_id(
+            developer, [code for code, _ in lang_codes_and_regions], name, quality,
+        )
+
+        model_data = {
+            "id": id,
+            "model_type": model_type,
+            "developer": developer,
+            "name": name,
+            "language": lang_details,
+            "quality": quality,
+            "sample_rate": 22050 if developer == "piper" else 16000,  # Default sample rates
+            "num_speakers": 1,
+            "url": asset_url,
+            "compression": True,
+            "filesize_mb": round(asset["size"] / (1024 * 1024), 2),
+        }
+
+        # Add to merged models
+        merged_models[id] = model_data
+        print(f"  → Added model: {id}")
+
+    print(f"\nProcessed {total_assets} models successfully!")
+    return merged_models
 
 # Known ISO 639-1 language codes (you can expand this as needed)
 known_lang_codes = {
