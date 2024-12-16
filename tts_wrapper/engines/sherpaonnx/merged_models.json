@@ -1,13 +1,13 @@
 {
-    "cantonese-en-xiaomaiiwn": {
-        "id": "cantonese-en-xiaomaiiwn",
+    "cantonese-fs-xiaomaiiwn": {
+        "id": "cantonese-fs-xiaomaiiwn",
         "model_type": "vits",
         "developer": "cantonese",
         "name": "xiaomaiiwn",
         "language": [
             {
-                "lang_code": "en",
-                "language_name": "English",
+                "lang_code": "fs",
+                "language_name": "Unknown language [fs]",
                 "country": "US"
             }
         ],
@@ -27,7 +27,7 @@
             {
                 "lang_code": "bg",
                 "language_name": "Bulgarian",
-                "country": "US"
+                "country": "BG"
             }
         ],
         "quality": "unknown",
@@ -46,7 +46,7 @@
             {
                 "lang_code": "bn",
                 "language_name": "Bangla",
-                "country": "US"
+                "country": "BD"
             }
         ],
         "quality": "unknown",
@@ -65,7 +65,7 @@
             {
                 "lang_code": "cs",
                 "language_name": "Czech",
-                "country": "US"
+                "country": "CZ"
             }
         ],
         "quality": "unknown",
@@ -84,7 +84,7 @@
             {
                 "lang_code": "da",
                 "language_name": "Danish",
-                "country": "US"
+                "country": "DK"
             }
         ],
         "quality": "unknown",
@@ -103,7 +103,7 @@
             {
                 "lang_code": "de",
                 "language_name": "German",
-                "country": "US"
+                "country": "DE"
             }
         ],
         "quality": "unknown",
@@ -179,7 +179,7 @@
             {
                 "lang_code": "es",
                 "language_name": "Spanish",
-                "country": "US"
+                "country": "ES"
             }
         ],
         "quality": "unknown",
@@ -198,7 +198,7 @@
             {
                 "lang_code": "et",
                 "language_name": "Estonian",
-                "country": "US"
+                "country": "EE"
             }
         ],
         "quality": "unknown",
@@ -217,7 +217,7 @@
             {
                 "lang_code": "fi",
                 "language_name": "Finnish",
-                "country": "US"
+                "country": "FI"
             }
         ],
         "quality": "unknown",
@@ -236,7 +236,7 @@
             {
                 "lang_code": "fr",
                 "language_name": "French",
-                "country": "US"
+                "country": "FR"
             }
         ],
         "quality": "unknown",
@@ -255,7 +255,7 @@
             {
                 "lang_code": "ga",
                 "language_name": "Irish",
-                "country": "US"
+                "country": "IE"
             }
         ],
         "quality": "unknown",
@@ -274,7 +274,7 @@
             {
                 "lang_code": "hr",
                 "language_name": "Croatian",
-                "country": "US"
+                "country": "HR"
             }
         ],
         "quality": "unknown",
@@ -293,7 +293,7 @@
             {
                 "lang_code": "lt",
                 "language_name": "Lithuanian",
-                "country": "US"
+                "country": "LT"
             }
         ],
         "quality": "unknown",
@@ -312,7 +312,7 @@
             {
                 "lang_code": "lv",
                 "language_name": "Latvian",
-                "country": "US"
+                "country": "LV"
             }
         ],
         "quality": "unknown",
@@ -331,7 +331,7 @@
             {
                 "lang_code": "mt",
                 "language_name": "Maltese",
-                "country": "US"
+                "country": "MT"
             }
         ],
         "quality": "unknown",
@@ -350,7 +350,7 @@
             {
                 "lang_code": "nl",
                 "language_name": "Dutch",
-                "country": "US"
+                "country": "NL"
             }
         ],
         "quality": "unknown",
@@ -369,7 +369,7 @@
             {
                 "lang_code": "pl",
                 "language_name": "Polish",
-                "country": "US"
+                "country": "PL"
             }
         ],
         "quality": "unknown",
@@ -388,7 +388,7 @@
             {
                 "lang_code": "pt",
                 "language_name": "Portuguese",
-                "country": "US"
+                "country": "BR"
             }
         ],
         "quality": "unknown",
@@ -407,7 +407,7 @@
             {
                 "lang_code": "ro",
                 "language_name": "Romanian",
-                "country": "US"
+                "country": "RO"
             }
         ],
         "quality": "unknown",
@@ -426,7 +426,7 @@
             {
                 "lang_code": "sk",
                 "language_name": "Slovak",
-                "country": "US"
+                "country": "SK"
             }
         ],
         "quality": "unknown",
@@ -445,7 +445,7 @@
             {
                 "lang_code": "sl",
                 "language_name": "Slovenian",
-                "country": "US"
+                "country": "SI"
             }
         ],
         "quality": "unknown",
@@ -464,7 +464,7 @@
             {
                 "lang_code": "sv",
                 "language_name": "Swedish",
-                "country": "US"
+                "country": "SE"
             }
         ],
         "quality": "unknown",
@@ -483,7 +483,7 @@
             {
                 "lang_code": "uk",
                 "language_name": "Ukrainian",
-                "country": "US"
+                "country": "UA"
             }
         ],
         "quality": "unknown",
@@ -493,15 +493,15 @@
         "compression": true,
         "filesize_mb": 63.91
     },
-    "icefall-en-ljspeech-low": {
-        "id": "icefall-en-ljspeech-low",
+    "icefall-fs-ljspeech-low": {
+        "id": "icefall-fs-ljspeech-low",
         "model_type": "vits",
         "developer": "icefall",
         "name": "ljspeech",
         "language": [
             {
-                "lang_code": "en",
-                "language_name": "English",
+                "lang_code": "fs",
+                "language_name": "Unknown language [fs]",
                 "country": "US"
             }
         ],
@@ -512,15 +512,15 @@
         "compression": true,
         "filesize_mb": 30.27
     },
-    "icefall-en-ljspeech-medium": {
-        "id": "icefall-en-ljspeech-medium",
+    "icefall-fs-ljspeech-medium": {
+        "id": "icefall-fs-ljspeech-medium",
         "model_type": "vits",
         "developer": "icefall",
         "name": "ljspeech",
         "language": [
             {
-                "lang_code": "en",
-                "language_name": "English",
+                "lang_code": "fs",
+                "language_name": "Unknown language [fs]",
                 "country": "US"
             }
         ],
@@ -531,15 +531,15 @@
         "compression": true,
         "filesize_mb": 70.13
     },
-    "icefall-en-aishell3": {
-        "id": "icefall-en-aishell3",
+    "icefall-fs-aishell3": {
+        "id": "icefall-fs-aishell3",
         "model_type": "vits",
         "developer": "icefall",
         "name": "aishell3",
         "language": [
             {
-                "lang_code": "en",
-                "language_name": "English",
+                "lang_code": "fs",
+                "language_name": "Unknown language [fs]",
                 "country": "US"
             }
         ],
@@ -550,15 +550,15 @@
         "compression": true,
         "filesize_mb": 30.1
     },
-    "ljs-en-unknown": {
-        "id": "ljs-en-unknown",
+    "ljs-fs-unknown": {
+        "id": "ljs-fs-unknown",
         "model_type": "vits",
         "developer": "ljs",
         "name": "unknown",
         "language": [
             {
-                "lang_code": "en",
-                "language_name": "English",
+                "lang_code": "fs",
+                "language_name": "Unknown language [fs]",
                 "country": "US"
             }
         ],
@@ -569,15 +569,15 @@
         "compression": true,
         "filesize_mb": 103.99
     },
-    "melo-en-en": {
-        "id": "melo-en-en",
+    "melo-fs-en": {
+        "id": "melo-fs-en",
         "model_type": "vits",
         "developer": "melo",
         "name": "en",
         "language": [
             {
-                "lang_code": "en",
-                "language_name": "English",
+                "lang_code": "fs",
+                "language_name": "Unknown language [fs]",
                 "country": "US"
             }
         ],
@@ -588,15 +588,15 @@
         "compression": true,
         "filesize_mb": 155.22
     },
-    "melo-en-zh_en": {
-        "id": "melo-en-zh_en",
+    "melo-fs-zh_en": {
+        "id": "melo-fs-zh_en",
         "model_type": "vits",
         "developer": "melo",
         "name": "zh_en",
         "language": [
             {
-                "lang_code": "en",
-                "language_name": "English",
+                "lang_code": "fs",
+                "language_name": "Unknown language [fs]",
                 "country": "US"
             }
         ],
@@ -626,15 +626,15 @@
         "compression": true,
         "filesize_mb": 76.26
     },
-    "mimic3-en-multi": {
-        "id": "mimic3-en-multi",
+    "mimic3-fs-multi": {
+        "id": "mimic3-fs-multi",
         "model_type": "vits",
         "developer": "mimic3",
         "name": "multi",
         "language": [
             {
-                "lang_code": "en",
-                "language_name": "English",
+                "lang_code": "fs",
+                "language_name": "Unknown language [fs]",
                 "country": "US"
             }
         ],
@@ -683,15 +683,15 @@
         "compression": true,
         "filesize_mb": 76.31
     },
-    "mimic3-en-haaniye": {
-        "id": "mimic3-en-haaniye",
+    "mimic3-fs-haaniye": {
+        "id": "mimic3-fs-haaniye",
         "model_type": "vits",
         "developer": "mimic3",
         "name": "haaniye",
         "language": [
             {
-                "lang_code": "en",
-                "language_name": "English",
+                "lang_code": "fs",
+                "language_name": "Unknown language [fs]",
                 "country": "US"
             }
         ],
@@ -1975,15 +1975,15 @@
         "compression": true,
         "filesize_mb": 64.11
     },
-    "piper-en-glados-medium": {
-        "id": "piper-en-glados-medium",
+    "piper-fs-glados-medium": {
+        "id": "piper-fs-glados-medium",
         "model_type": "vits",
         "developer": "piper",
         "name": "glados",
         "language": [
             {
-                "lang_code": "en",
-                "language_name": "English",
+                "lang_code": "fs",
+                "language_name": "Unknown language [fs]",
                 "country": "US"
             }
         ],
@@ -2089,15 +2089,15 @@
         "compression": true,
         "filesize_mb": 64.13
     },
-    "piper-en-haaniye_low": {
-        "id": "piper-en-haaniye_low",
+    "piper-fs-haaniye_low": {
+        "id": "piper-fs-haaniye_low",
         "model_type": "vits",
         "developer": "piper",
         "name": "haaniye_low",
         "language": [
             {
-                "lang_code": "en",
-                "language_name": "English",
+                "lang_code": "fs",
+                "language_name": "Unknown language [fs]",
                 "country": "US"
             }
         ],
@@ -3210,15 +3210,15 @@
         "compression": true,
         "filesize_mb": 64.15
     },
-    "vctk-en-unknown": {
-        "id": "vctk-en-unknown",
+    "vctk-fs-unknown": {
+        "id": "vctk-fs-unknown",
         "model_type": "vits",
         "developer": "vctk",
         "name": "unknown",
         "language": [
             {
-                "lang_code": "en",
-                "language_name": "English",
+                "lang_code": "fs",
+                "language_name": "Unknown language [fs]",
                 "country": "US"
             }
         ],
@@ -3229,15 +3229,15 @@
         "compression": true,
         "filesize_mb": 144.73
     },
-    "zh-en-unknown": {
-        "id": "zh-en-unknown",
+    "zh-fs-unknown": {
+        "id": "zh-fs-unknown",
         "model_type": "vits",
         "developer": "zh",
         "name": "unknown",
         "language": [
             {
-                "lang_code": "en",
-                "language_name": "English",
+                "lang_code": "fs",
+                "language_name": "Unknown language [fs]",
                 "country": "US"
             }
         ],
@@ -3248,15 +3248,15 @@
         "compression": true,
         "filesize_mb": 140.12
     },
-    "zh-en-abyssinvoker": {
-        "id": "zh-en-abyssinvoker",
+    "zh-fs-abyssinvoker": {
+        "id": "zh-fs-abyssinvoker",
         "model_type": "vits",
         "developer": "zh",
         "name": "abyssinvoker",
         "language": [
             {
-                "lang_code": "en",
-                "language_name": "English",
+                "lang_code": "fs",
+                "language_name": "Unknown language [fs]",
                 "country": "US"
             }
         ],
@@ -3267,15 +3267,15 @@
         "compression": true,
         "filesize_mb": 114.99
     },
-    "zh-en-bronya": {
-        "id": "zh-en-bronya",
+    "zh-fs-bronya": {
+        "id": "zh-fs-bronya",
         "model_type": "vits",
         "developer": "zh",
         "name": "bronya",
         "language": [
             {
-                "lang_code": "en",
-                "language_name": "English",
+                "lang_code": "fs",
+                "language_name": "Unknown language [fs]",
                 "country": "US"
             }
         ],
@@ -3286,15 +3286,15 @@
         "compression": true,
         "filesize_mb": 115.01
     },
-    "zh-en-doom": {
-        "id": "zh-en-doom",
+    "zh-fs-doom": {
+        "id": "zh-fs-doom",
         "model_type": "vits",
         "developer": "zh",
         "name": "doom",
         "language": [
             {
-                "lang_code": "en",
-                "language_name": "English",
+                "lang_code": "fs",
+                "language_name": "Unknown language [fs]",
                 "country": "US"
             }
         ],
@@ -3305,15 +3305,15 @@
         "compression": true,
         "filesize_mb": 114.97
     },
-    "zh-en-echo": {
-        "id": "zh-en-echo",
+    "zh-fs-echo": {
+        "id": "zh-fs-echo",
         "model_type": "vits",
         "developer": "zh",
         "name": "echo",
         "language": [
             {
-                "lang_code": "en",
-                "language_name": "English",
+                "lang_code": "fs",
+                "language_name": "Unknown language [fs]",
                 "country": "US"
             }
         ],
@@ -3324,15 +3324,15 @@
         "compression": true,
         "filesize_mb": 114.97
     },
-    "zh-en-eula": {
-        "id": "zh-en-eula",
+    "zh-fs-eula": {
+        "id": "zh-fs-eula",
         "model_type": "vits",
         "developer": "zh",
         "name": "eula",
         "language": [
             {
-                "lang_code": "en",
-                "language_name": "English",
+                "lang_code": "fs",
+                "language_name": "Unknown language [fs]",
                 "country": "US"
             }
         ],
@@ -3343,15 +3343,15 @@
         "compression": true,
         "filesize_mb": 114.98
     },
-    "zh-en-fanchen-C": {
-        "id": "zh-en-fanchen-C",
+    "zh-fs-fanchen-C": {
+        "id": "zh-fs-fanchen-C",
         "model_type": "vits",
         "developer": "zh",
         "name": "fanchen",
         "language": [
             {
-                "lang_code": "en",
-                "language_name": "English",
+                "lang_code": "fs",
+                "language_name": "Unknown language [fs]",
                 "country": "US"
             }
         ],
@@ -3362,15 +3362,15 @@
         "compression": true,
         "filesize_mb": 113.8
     },
-    "zh-en-fanchen-unity": {
-        "id": "zh-en-fanchen-unity",
+    "zh-fs-fanchen-unity": {
+        "id": "zh-fs-fanchen-unity",
         "model_type": "vits",
         "developer": "zh",
         "name": "fanchen",
         "language": [
             {
-                "lang_code": "en",
-                "language_name": "English",
+                "lang_code": "fs",
+                "language_name": "Unknown language [fs]",
                 "country": "US"
             }
         ],
@@ -3381,15 +3381,15 @@
         "compression": true,
         "filesize_mb": 113.62
     },
-    "zh-en-fanchen-wnj": {
-        "id": "zh-en-fanchen-wnj",
+    "zh-fs-fanchen-wnj": {
+        "id": "zh-fs-fanchen-wnj",
         "model_type": "vits",
         "developer": "zh",
         "name": "fanchen",
         "language": [
             {
-                "lang_code": "en",
-                "language_name": "English",
+                "lang_code": "fs",
+                "language_name": "Unknown language [fs]",
                 "country": "US"
             }
         ],
@@ -3400,15 +3400,15 @@
         "compression": true,
         "filesize_mb": 113.64
     },
-    "zh-en-fanchen-ZhiHuiLaoZhe": {
-        "id": "zh-en-fanchen-ZhiHuiLaoZhe",
+    "zh-fs-fanchen-ZhiHuiLaoZhe": {
+        "id": "zh-fs-fanchen-ZhiHuiLaoZhe",
         "model_type": "vits",
         "developer": "zh",
         "name": "fanchen",
         "language": [
             {
-                "lang_code": "en",
-                "language_name": "English",
+                "lang_code": "fs",
+                "language_name": "Unknown language [fs]",
                 "country": "US"
             }
         ],
@@ -3419,15 +3419,15 @@
         "compression": true,
         "filesize_mb": 113.93
     },
-    "zh-en-fanchen-new": {
-        "id": "zh-en-fanchen-new",
+    "zh-fs-fanchen-new": {
+        "id": "zh-fs-fanchen-new",
         "model_type": "vits",
         "developer": "zh",
         "name": "fanchen",
         "language": [
             {
-                "lang_code": "en",
-                "language_name": "English",
+                "lang_code": "fs",
+                "language_name": "Unknown language [fs]",
                 "country": "US"
             }
         ],
@@ -3438,15 +3438,15 @@
         "compression": true,
         "filesize_mb": 113.87
     },
-    "zh-en-keqing": {
-        "id": "zh-en-keqing",
+    "zh-fs-keqing": {
+        "id": "zh-fs-keqing",
         "model_type": "vits",
         "developer": "zh",
         "name": "keqing",
         "language": [
             {
-                "lang_code": "en",
-                "language_name": "English",
+                "lang_code": "fs",
+                "language_name": "Unknown language [fs]",
                 "country": "US"
             }
         ],
@@ -3457,15 +3457,15 @@
         "compression": true,
         "filesize_mb": 115.01
     },
-    "zh-en-theresa": {
-        "id": "zh-en-theresa",
+    "zh-fs-theresa": {
+        "id": "zh-fs-theresa",
         "model_type": "vits",
         "developer": "zh",
         "name": "theresa",
         "language": [
             {
-                "lang_code": "en",
-                "language_name": "English",
+                "lang_code": "fs",
+                "language_name": "Unknown language [fs]",
                 "country": "US"
             }
         ],
@@ -3476,15 +3476,15 @@
         "compression": true,
         "filesize_mb": 115.01
     },
-    "zh-en-zenyatta": {
-        "id": "zh-en-zenyatta",
+    "zh-fs-zenyatta": {
+        "id": "zh-fs-zenyatta",
         "model_type": "vits",
         "developer": "zh",
         "name": "zenyatta",
         "language": [
             {
-                "lang_code": "en",
-                "language_name": "English",
+                "lang_code": "fs",
+                "language_name": "Unknown language [fs]",
                 "country": "US"
             }
         ],

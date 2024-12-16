@@ -192,17 +192,30 @@ def extract_language_code_vits(url, developer_type, developer, config_data=None)
         lang_match = re.search(r'vits-coqui-(\w+)-', filename)
         if lang_match:
             lang_code = lang_match.group(1).lower()
-            return [(lang_code, "US")]  # Default to US as region for Coqui
+            try:
+                # Get the proper region from langcodes
+                language = langcodes.get(lang_code)
+                region = language.maximize().region
+                if region:
+                    return [(lang_code, region)]
+            except LookupError:
+                pass
+            # If we can't get the region, return Unknown instead of US
+            return [(lang_code, "Unknown")]
 
     # Fallback to extracting from config if available
     if config_data:
         if isinstance(config_data, dict):
             lang_code = config_data.get("language", "").lower()
             if lang_code:
-                return [(lang_code, "US")]
+                return [(lang_code, "Unknown")]
 
-    # Default fallback
-    return [("en", "US")]
+    # Try to extract from URL if no other method worked
+    lang_match = lang_code_pattern.search(url)
+    if lang_match:
+        return [(lang_match.group("lang"), "Unknown")]
+
+    return [("unknown", "Unknown")]
 
 
 def extract_piper_language_info(url):
