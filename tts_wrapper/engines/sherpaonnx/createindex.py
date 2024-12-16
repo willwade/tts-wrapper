@@ -179,13 +179,32 @@ def extract_language_code_vits(url, developer_type, developer, config_data=None)
             region = lang_match.group(2)
             return [(lang_code, region)]
 
-    # Handle Mimic3 models (e.g., vits-mimic3-pl_PL-m-ailabs_low)
+    # Handle Mimic3 models - try URL patterns first
     if developer == "mimic3":
+        # Try standard pattern first (e.g., vits-mimic3-pl_PL-m-ailabs_low)
         lang_match = re.search(r'vits-mimic3-(\w+)_(\w+)-', filename)
         if lang_match:
             lang_code = lang_match.group(1).lower()
             region = lang_match.group(2)
             return [(lang_code, region)]
+            
+        # Try simple pattern (e.g., vits-mimic3-fa-haaniye_low)
+        lang_match = re.search(r'vits-mimic3-([a-z]{2})-', filename.lower())
+        if lang_match:
+            lang_code = lang_match.group(1)
+            try:
+                language = langcodes.get(lang_code)
+                region = language.maximize().region
+                if region:
+                    return [(lang_code, region)]
+            except LookupError:
+                pass
+            return [(lang_code, "Unknown")]
+            
+        # If URL patterns fail, try getting info from README
+        lang_info = extract_mimic3_language_info(url)
+        if lang_info:
+            return lang_info
 
     # Handle Coqui models (e.g., vits-coqui-sv-cv)
     if developer == "coqui":
@@ -200,7 +219,6 @@ def extract_language_code_vits(url, developer_type, developer, config_data=None)
                     return [(lang_code, region)]
             except LookupError:
                 pass
-            # If we can't get the region, return Unknown instead of US
             return [(lang_code, "Unknown")]
 
     # Fallback to extracting from config if available
@@ -232,6 +250,68 @@ def extract_piper_language_info(url):
         region = lang_match.group(2)
         return [(lang_code, region)]
         
+    return None
+
+
+def extract_mimic3_language_info(url):
+    """Extract language information from Mimic3 model's README file."""
+    try:
+        readme_content = read_file_from_tar_bz2(url, "README.md")
+        if not readme_content:
+            return None
+        
+        # Convert bytes to string if necessary
+        if isinstance(readme_content, bytes):
+            readme_content = readme_content.decode('utf-8', errors='ignore')
+        
+        # Try to find language information in the first line
+        first_line = readme_content.split('\n')[0].lower()
+        
+        # Common language mappings
+        language_mappings = {
+            'persian': 'fa',
+            'farsi': 'fa',
+            'english': 'en',
+            'spanish': 'es',
+            'french': 'fr',
+            'german': 'de',
+            'italian': 'it',
+            'portuguese': 'pt',
+            'russian': 'ru',
+            'chinese': 'zh',
+            'japanese': 'ja',
+            'korean': 'ko'
+        }
+        
+        # Try to find any of the language names in the first line
+        for lang_name, lang_code in language_mappings.items():
+            if lang_name in first_line:
+                try:
+                    # Get the proper region from langcodes
+                    language = langcodes.get(lang_code)
+                    region = language.maximize().region
+                    if region:
+                        return [(lang_code, region)]
+                except LookupError:
+                    pass
+                return [(lang_code, "Unknown")]
+        
+        # If we can't find a match, try to find any ISO language code in the URL
+        url_match = re.search(r'vits-mimic3-([a-z]{2})-', url.lower())
+        if url_match:
+            lang_code = url_match.group(1)
+            try:
+                language = langcodes.get(lang_code)
+                region = language.maximize().region
+                if region:
+                    return [(lang_code, region)]
+            except LookupError:
+                pass
+            return [(lang_code, "Unknown")]
+            
+    except Exception as e:
+        print(f"Error extracting Mimic3 language info: {str(e)}")
+    
     return None
 
 
