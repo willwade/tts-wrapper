@@ -5,7 +5,6 @@ from typing import Any, Callable, NoReturn, Union
 from .ssml import SAPISSML
 import comtypes
 
-
 class SAPIEngine(AbstractTTS):
     def __init__(self, sapi_version: int = 5, voice: str = None) -> None:
         super().__init__()
@@ -15,6 +14,7 @@ class SAPIEngine(AbstractTTS):
     def synth_to_bytes(self, text: str) -> bytes:
         audio, word_timings = self.client.synth(text)
         self.word_timings = word_timings
+        self.set_timings(word_timings)
 
         return audio
 

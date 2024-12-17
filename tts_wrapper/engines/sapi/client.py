@@ -10,7 +10,12 @@ from typing import Any, List, Tuple, Union
 from .ssml import SAPISSML
 import re
 import comtypes
+from tts_wrapper.engines.utils import (
+    estimate_word_timings,  # Import the timing estimation function
+)
 
+
+#SAPI4_CLSID = "{179F3D56-1B0B-42B2-A962-59B7EF59FE1B}"
 SAPI4_CLSID = "{EEE78591-FE22-11D0-8BEF-0060081841DE}"
 SAPI5_CLSID = "SAPI.SpVoice"
 
@@ -101,17 +106,19 @@ class SAPIClient:
         """
         logging.debug("SAPI synthesis to bytes started.")
         audio_queue = Queue()
-        word_timings = []
+        
+        #word_timings = []
         if not self._is_ssml(ssml):
             ssml = self._convert_to_ssml(ssml)
         
+        word_timings = estimate_word_timings(ssml)
+
         def audio_writer():
             comtypes.CoInitialize()
             format = comtypes.client.CreateObject("SAPI.SpAudioFormat")
             format.Type = 34  # SAFT44kHz16BitMono
             stream = comtypes.client.CreateObject("SAPI.SpMemoryStream")
             stream.Format = format
-            #print(f"stream format: {stream.Format.Type}")
             self._tts.AudioOutputStream = stream
             self._tts.Speak(ssml)
 
@@ -123,8 +130,9 @@ class SAPIClient:
 
         audio_tuple = audio_queue.get()
         audio_bytes = bytes(audio_tuple)
-        
+               
         logging.debug("SAPI synthesis completed.")
+
         return audio_bytes, word_timings
 
     def _is_ssml(self, text: str) -> bool:
@@ -147,19 +155,21 @@ class SAPIClient:
         Returns:
             Tuple[Queue, List[dict]]: Audio queue and word timing metadata.
         """
-
+        print("start sapi synth_streaming")
         comtypes.CoInitialize()
         logging.debug("SAPI streaming synthesis started.")
         audio_queue = Queue()
         word_timings = []
-        
+
         if not self._is_ssml(ssml):
             ssml = self._convert_to_ssml(ssml)
+
+        word_timings = estimate_word_timings(ssml)
 
         def audio_writer():
             stream = comtypes.client.CreateObject("SAPI.SpMemoryStream")
             self._tts.AudioOutputStream = stream
-            self._tts.Speak(ssml)
+            #self._tts.Speak(ssml)
             audio_queue.put(stream.GetData())
             audio_queue.put(None)  # End of stream marker
 
