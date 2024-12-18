@@ -478,7 +478,7 @@ class AbstractTTS(ABC):
             logging.exception("Error streaming or saving audio")
 
 
-    def setup_stream(self, samplerate: int = 22050,
+    def setup_stream(self, samplerate: int = 44100,
                      channels: int = 1, dtype: str | int = "int16") -> None:
         """
         Set up the audio stream for playback.
