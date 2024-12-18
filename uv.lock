@@ -609,7 +609,7 @@ wheels = [
 
 [[package]]
 name = "py3-tts-wrapper"
-version = "0.9.16.post94+1ab416d"
+version = "0.9.17.post10+00e534d"
 source = { editable = "." }
 dependencies = [
     { name = "numpy" },
@@ -638,6 +638,9 @@ microsoft = [
 ]
 polly = [
     { name = "boto3" },
+]
+sapi = [
+    { name = "comtypes", marker = "sys_platform == 'win32'" },
 ]
 sherpaonnx = [
     { name = "numpy" },
@@ -675,6 +678,7 @@ dev = [
 requires-dist = [
     { name = "azure-cognitiveservices-speech", marker = "extra == 'microsoft'", specifier = ">=1.15.0" },
     { name = "boto3", marker = "extra == 'polly'", specifier = ">=1.34.137" },
+    { name = "comtypes", marker = "sys_platform == 'win32' and extra == 'sapi'", specifier = ">=1.4.8" },
     { name = "google-cloud-texttospeech", marker = "extra == 'google'", specifier = ">=2.12.0" },
     { name = "gtts", marker = "extra == 'googletrans'", specifier = ">=2.5.2" },
     { name = "ibm-watson", marker = "extra == 'watson'", specifier = ">=8.1.0" },

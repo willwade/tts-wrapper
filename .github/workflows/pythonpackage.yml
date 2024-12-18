@@ -136,7 +136,12 @@ jobs:
         run: uv sync --group dev --extra google --extra watson --extra polly --extra microsoft --extra googletrans --extra witai --extra elevenlabs --extra systemtts --extra controlaudio --extra sherpaonnx
 
       - name: Run tests with coverage
-        run: uv run pytest --cov=tts_wrapper -m "not synthetic"
+        run: |
+          if [[ $RUNNER_OS == "Windows" ]]; then
+            uv run pytest --cov=tts_wrapper -m "not synthetic"
+          else
+            uv run pytest --cov=tts_wrapper -m "not synthetic and not sapi"
+          fi
 
       - name: Run all tests with Makefile
         run: uv run make tests

@@ -27,10 +27,12 @@ from tts_wrapper import (
     WitAiTTS,
     eSpeakClient,
     eSpeakTTS,
+    SAPIClient,
+    SAPITTS,
 )
 
 services = ["polly", "google", "microsoft", "watson", "elevenlabs",
-            "witai", "googletrans", "sherpaonnx", "systemtts", "espeak"]
+            "witai", "googletrans", "sherpaonnx", "systemtts", "espeak", "sapi"]
 
 TTS_CLIENTS = {
     "polly": {
@@ -78,8 +80,14 @@ TTS_CLIENTS = {
     "espeak": {
         "client_lambda": lambda: eSpeakClient(),
         "class": eSpeakTTS
-    },
+    }
 }
+
+if sys.platform == "win32":
+    TTS_CLIENTS["sapi"] = {
+        "client_lambda": lambda: SAPIClient(),
+        "class": SAPITTS,
+    }
 
 class ClientManager:
     """Manage the creation and configuration of TTS clients."""
@@ -145,6 +153,7 @@ class TestFileCreation(unittest.TestCase):
             "witai": "witai-test.wav",
             "systemtts": "systemtts-test.wav",
             "espeak": "espeak-test.wav",
+            "sapi": "sapi-test.wav"
         }
 
     def tearDown(self) -> None:
@@ -204,6 +213,10 @@ class TestFileCreation(unittest.TestCase):
 
     def test_espeak_audio_creation(self) -> None:
         self._test_audio_creation("espeak", "This is a test using espeak TTS.")
+
+    @pytest.mark.skipif(sys.platform != "win32", reason="SAPI is only available on Windows")
+    def test_sapi_audio_creation():
+        self._test_audio_creation("sapi", "This is a test using sapi TTS.")
 
 
 if __name__ == "__main__":
