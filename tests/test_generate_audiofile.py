@@ -1,7 +1,7 @@
 import os
 import unittest
 from pathlib import Path
-#from load_credentials import load_credentials
+from load_credentials import load_credentials
 
 
 import pytest
@@ -27,10 +27,12 @@ from tts_wrapper import (
     WitAiTTS,
     eSpeakClient,
     eSpeakTTS,
+    SAPIClient,
+    SAPIEngine,
 )
 
 services = ["polly", "google", "microsoft", "watson", "elevenlabs",
-            "witai", "googletrans", "sherpaonnx", "systemtts", "espeak"]
+            "witai", "googletrans", "sherpaonnx", "systemtts", "espeak", "sapi"]
 
 TTS_CLIENTS = {
     "polly": {
@@ -79,6 +81,10 @@ TTS_CLIENTS = {
         "client_lambda": lambda: eSpeakClient(),
         "class": eSpeakTTS
     },
+    "sapi": {
+        "client": None,
+        "class": SAPIEngine(sapi_version=5)
+    }
 }
 
 class ClientManager:
@@ -95,6 +101,8 @@ class ClientManager:
         """Create a dynamic TTS client based on the provided configuration."""
         if "client_lambda" in config:
             return config["client_lambda"]()
+        if "client" in config and config["client"] == None:
+            return
         if "client" in config:
             client_class = config["client"]
             credential_keys = config.get("credential_keys", [])
@@ -114,8 +122,10 @@ class ClientManager:
         tts_instances = {}
         for name, config in client_configs.items():
             client = self.create_dynamic_client(config)
-            tts_class = config["class"]
-            tts_instance = tts_class(client)
+            if name != "sapi":
+                tts_class = config["class"]
+                tts_instance = tts_class(client)
+
             if tts_instance.check_credentials():
                 tts_instances[name] = tts_instance
         return tts_instances
@@ -125,8 +135,6 @@ class TestFileCreation(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls) -> None:
-        print("GOOGLE_SA_PATH:", os.getenv("GOOGLE_SA_PATH"))
-        print("File exists:", Path(os.getenv("GOOGLE_SA_PATH", "")).exists())
 
         cls.manager = ClientManager()
         cls.tts_instances = cls.manager.create_tts_instances(TTS_CLIENTS)
@@ -145,6 +153,7 @@ class TestFileCreation(unittest.TestCase):
             "witai": "witai-test.wav",
             "systemtts": "systemtts-test.wav",
             "espeak": "espeak-test.wav",
+            "sapi": "sapi-test.wav"
         }
 
     def tearDown(self) -> None:
@@ -205,7 +214,10 @@ class TestFileCreation(unittest.TestCase):
     def test_espeak_audio_creation(self) -> None:
         self._test_audio_creation("espeak", "This is a test using espeak TTS.")
 
+    def test_sapi_audio_creation(self) -> None:
+        self._test_audio_creation("sapi", "This is a test using sapi TTS.")    
+
 
 if __name__ == "__main__":
-    #load_credentials("credentials.json")
+    load_credentials("credentials.json")
     unittest.main(verbosity=2)
