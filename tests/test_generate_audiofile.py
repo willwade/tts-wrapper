@@ -1,7 +1,7 @@
 import os
 import unittest
 from pathlib import Path
-#from load_credentials import load_credentials
+from load_credentials import load_credentials
 
 
 import pytest
@@ -28,11 +28,22 @@ from tts_wrapper import (
     eSpeakClient,
     eSpeakTTS,
     SAPIClient,
-    SAPITTS,
+    SAPIEngine,
 )
 
-services = ["polly", "google", "microsoft", "watson", "elevenlabs",
-            "witai", "googletrans", "sherpaonnx", "systemtts", "espeak", "sapi"]
+services = [
+    "polly",
+    "google",
+    "microsoft",
+    "watson",
+    "elevenlabs",
+    "witai",
+    "googletrans",
+    "sherpaonnx",
+    "systemtts",
+    "espeak",
+    "sapi",
+]
 
 TTS_CLIENTS = {
     "polly": {
@@ -70,17 +81,17 @@ TTS_CLIENTS = {
         "class": GoogleTransTTS,
     },
     "sherpaonnx": {
-        "client_lambda": lambda: SherpaOnnxClient(model_path=None, tokens_path=None, model_id="mms_eng"),
+        "client_lambda": lambda: SherpaOnnxClient(
+            model_path=None, tokens_path=None, model_id="mms_eng"
+        ),
         "class": SherpaOnnxTTS,
     },
     "systemtts": {
         "client_lambda": lambda: SystemTTSClient(),
         "class": SystemTTS,
     },
-    "espeak": {
-        "client_lambda": lambda: eSpeakClient(),
-        "class": eSpeakTTS
-    }
+    "espeak": {"client_lambda": lambda: eSpeakClient(), "class": eSpeakTTS},
+    "sapi": {"client": None, "class": SAPIEngine(sapi_version=5)},
 }
 
 if sys.platform == "win32":
@@ -88,6 +99,7 @@ if sys.platform == "win32":
         "client_lambda": lambda: SAPIClient(),
         "class": SAPITTS,
     }
+
 
 class ClientManager:
     """Manage the creation and configuration of TTS clients."""
@@ -103,6 +115,8 @@ class ClientManager:
         """Create a dynamic TTS client based on the provided configuration."""
         if "client_lambda" in config:
             return config["client_lambda"]()
+        if "client" in config and config["client"] == None:
+            return
         if "client" in config:
             client_class = config["client"]
             credential_keys = config.get("credential_keys", [])
@@ -122,19 +136,20 @@ class ClientManager:
         tts_instances = {}
         for name, config in client_configs.items():
             client = self.create_dynamic_client(config)
-            tts_class = config["class"]
-            tts_instance = tts_class(client)
+            if name != "sapi":
+                tts_class = config["class"]
+                tts_instance = tts_class(client)
+
             if tts_instance.check_credentials():
                 tts_instances[name] = tts_instance
         return tts_instances
+
 
 class TestFileCreation(unittest.TestCase):
     """Unit tests for TTS audio file creation."""
 
     @classmethod
     def setUpClass(cls) -> None:
-        print("GOOGLE_SA_PATH:", os.getenv("GOOGLE_SA_PATH"))
-        print("File exists:", Path(os.getenv("GOOGLE_SA_PATH", "")).exists())
 
         cls.manager = ClientManager()
         cls.tts_instances = cls.manager.create_tts_instances(TTS_CLIENTS)
@@ -153,7 +168,7 @@ class TestFileCreation(unittest.TestCase):
             "witai": "witai-test.wav",
             "systemtts": "systemtts-test.wav",
             "espeak": "espeak-test.wav",
-            "sapi": "sapi-test.wav"
+            "sapi": "sapi-test.wav",
         }
 
     def tearDown(self) -> None:
@@ -169,56 +184,73 @@ class TestFileCreation(unittest.TestCase):
             tts_instance.synth_to_file(ssml_text, self.file_names[engine_name], "wav")
 
             # Check that the file was created successfully
-            assert Path(self.file_names[engine_name]).exists(), f"File for {engine_name} was not created."
+            assert Path(
+                self.file_names[engine_name]
+            ).exists(), f"File for {engine_name} was not created."
 
             # Optionally: Check file size or format
-            assert Path(self.file_names[engine_name]).stat().st_size > 0, f"File for {engine_name} is empty."
+            assert (
+                Path(self.file_names[engine_name]).stat().st_size > 0
+            ), f"File for {engine_name} is empty."
 
             self.__class__.success_count += 1
         else:
             self.skipTest(f"{engine_name} is not available due to missing credentials.")
 
-    @pytest.mark.skipif(not os.getenv("GOOGLE_SA_PATH"), reason="Google credentials not set")
+    @pytest.mark.skipif(
+        not os.getenv("GOOGLE_SA_PATH"), reason="Google credentials not set"
+    )
     def test_google_audio_creation(self) -> None:
         self._test_audio_creation("google", "This is a test using Google TTS.")
 
     def test_googletrans_audio_creation(self) -> None:
-        self._test_audio_creation("googletrans", "This is a test using Google Translate TTS.")
+        self._test_audio_creation(
+            "googletrans", "This is a test using Google Translate TTS."
+        )
 
-    @pytest.mark.skipif(not os.getenv("MICROSOFT_TOKEN"), reason="Microsoft Azure credentials not set")
+    @pytest.mark.skipif(
+        not os.getenv("MICROSOFT_TOKEN"), reason="Microsoft Azure credentials not set"
+    )
     def test_microsoft_audio_creation(self) -> None:
         self._test_audio_creation("microsoft", "This is a test using Microsoft TTS.")
 
-    @pytest.mark.skipif(not os.getenv("POLLY_REGION"), reason="Amazon Polly credentials not set")
+    @pytest.mark.skipif(
+        not os.getenv("POLLY_REGION"), reason="Amazon Polly credentials not set"
+    )
     def test_polly_audio_creation(self) -> None:
         self._test_audio_creation("polly", "This is a test using Amazon Polly TTS.")
 
     def test_sherpaonnx_audio_creation(self) -> None:
         self._test_audio_creation("sherpaonnx", "This is a test using SherpaONNX TTS.")
 
-    @pytest.mark.skipif(not os.getenv("WATSON_API_KEY"), reason="Watson credentials not set")
+    @pytest.mark.skipif(
+        not os.getenv("WATSON_API_KEY"), reason="Watson credentials not set"
+    )
     def test_watson_audio_creation(self) -> None:
         self._test_audio_creation("watson", "This is a test using IBM Watson TTS.")
 
-    @pytest.mark.skipif(not os.getenv("WITAI_TOKEN"), reason="WitAi credentials not set")
+    @pytest.mark.skipif(
+        not os.getenv("WITAI_TOKEN"), reason="WitAi credentials not set"
+    )
     def test_witai_audio_creation(self) -> None:
         self._test_audio_creation("witai", "This is a test using Wit.ai TTS.")
 
     def test_systemtts_audio_creation(self) -> None:
         self._test_audio_creation("systemtts", "This is a test using System TTS.")
 
-    @pytest.mark.skipif(not os.getenv("ELEVENLABS_API_KEY"), reason="ElevenLabs credentials not set")
+    @pytest.mark.skipif(
+        not os.getenv("ELEVENLABS_API_KEY"), reason="ElevenLabs credentials not set"
+    )
     def test_elevenlabs_audio_creation(self) -> None:
         self._test_audio_creation("elevenlabs", "This is a test using elevenlabs TTS.")
 
     def test_espeak_audio_creation(self) -> None:
         self._test_audio_creation("espeak", "This is a test using espeak TTS.")
 
-    @pytest.mark.skipif(sys.platform != "win32", reason="SAPI is only available on Windows")
-    def test_sapi_audio_creation():
+    def test_sapi_audio_creation(self) -> None:
         self._test_audio_creation("sapi", "This is a test using sapi TTS.")
 
 
 if __name__ == "__main__":
-    #load_credentials("credentials.json")
+    load_credentials("credentials.json")
     unittest.main(verbosity=2)
