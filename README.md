@@ -238,6 +238,16 @@ client = WitAiClient(credentials=('token'))
 tts = WitAiTTS(client)
 ```
 
+### Play.HT
+
+```python
+from tts_wrapper import PlayHTClient, PlayHTTTS
+client = PlayHTClient(credentials=('api_key', 'user_id'))
+tts = PlayHTTTS(client)
+```
+
+- **Note**: Play.HT does not support SSML, but we automatically strip SSML tags if present.
+
 ### UWP
 
 ```python
@@ -844,22 +854,15 @@ Create a Service Account:
 2. Go to your profile and click on "Profile + API Key"
 3. Click on Popup and copy "API Key"
 
-## License
-
-This project is licensed under the [MIT License](./LICENSE).
-
-### Play.HT
-
-```python
-from tts_wrapper import PlayHTClient, PlayHTTTS
-client = PlayHTClient(credentials=('api_key', 'user_id'))
-tts = PlayHTTTS(client)
-```
-
-- **Note**: Play.HT does not support SSML, but you can still send SSML text - it will be automatically stripped.
-
 #### Play.HT
 
 1. Sign up at https://play.ht/
 2. Go to your dashboard and click on "API Access"
-3. Copy your API Key and User ID from the dashboard
+3. You'll need two pieces of information:
+   * API Key: Found under "API Key" section
+   * User ID: Found under "User ID" section
+4. Keep both the API Key and User ID secure and do not expose them publicly
+
+## License
+
+This project is licensed under the [MIT License](./LICENSE).
