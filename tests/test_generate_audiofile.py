@@ -1,7 +1,9 @@
 import os
+import sys
 import unittest
 from pathlib import Path
-from load_credentials import load_credentials
+from typing import Dict, Any, Optional
+from .load_credentials import load_credentials
 
 
 import pytest
@@ -105,18 +107,18 @@ class ClientManager:
     """Manage the creation and configuration of TTS clients."""
 
     def __init__(self) -> None:
-        self.credentials = {}  # Store any loaded credentials if needed
+        self.credentials: Dict[str, Any] = {}  # Store any loaded credentials if needed
 
-    def get_credential(self, key: str) -> str:
+    def get_credential(self, key: str) -> Optional[str]:
         """Retrieve a credential value by key from environment variables."""
         return os.getenv(key)
 
-    def create_dynamic_client(self, config: dict) -> object:
+    def create_dynamic_client(self, config: dict) -> Optional[object]:
         """Create a dynamic TTS client based on the provided configuration."""
         if "client_lambda" in config:
             return config["client_lambda"]()
-        if "client" in config and config["client"] == None:
-            return
+        if "client" in config and config["client"] is None:
+            return None
         if "client" in config:
             client_class = config["client"]
             credential_keys = config.get("credential_keys", [])

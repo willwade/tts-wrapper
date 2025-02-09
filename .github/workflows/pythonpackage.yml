@@ -137,14 +137,16 @@ jobs:
 
       - name: Run tests with coverage
         run: |
-          if [[ $RUNNER_OS == "Windows" ]]; then
+          if [ "$RUNNER_OS" = "Windows" ]; then
             uv run pytest --cov=tts_wrapper -m "not synthetic"
           else
             uv run pytest --cov=tts_wrapper -m "not synthetic and not sapi"
           fi
+        shell: bash
 
       - name: Run all tests with Makefile
         run: uv run make tests
+        shell: bash
 
   publish:
     runs-on: ubuntu-latest
