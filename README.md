@@ -1,4 +1,3 @@
-
 # py3-TTS-Wrapper
 
 [![PyPI version](https://badge.fury.io/py/py3-tts-wrapper.svg)](https://badge.fury.io/py/py3-tts-wrapper)
@@ -18,6 +17,7 @@ _TTS-Wrapper_ simplifies using text-to-speech APIs by providing a unified interf
 - ElevenLabs
 - Wit.Ai 
 - eSpeak-NG
+- Play.HT
 
 
 ### Experimental (Not fully featured or in a state of WIP)
@@ -49,6 +49,7 @@ _TTS-Wrapper_ simplifies using text-to-speech APIs by providing a unified interf
 | Watson     | Linux/MacOS/Windows | Online         | Yes  | No                | Yes           |
 | ElevenLabs | Linux/MacOS/Windows | Online         | No   | Yes               | Yes           |
 | Wit.AI     | Linux/MacOS/Windows | Online         | Yes  | No                | No            |
+| Play.HT    | Linux/MacOS/Windows | Online         | No   | Yes               | No            |
 | Sherpa-Onnx| Linux/MacOS/Windows | Offline        | No   | No                | No            |
 | gTTS       | Linux/MacOS/Windows | Online         | No   | No                | No            |
 | UWP        | Windows             | Offline        | No   | Yes               | No            |
@@ -846,3 +847,19 @@ Create a Service Account:
 ## License
 
 This project is licensed under the [MIT License](./LICENSE).
+
+### Play.HT
+
+```python
+from tts_wrapper import PlayHTClient, PlayHTTTS
+client = PlayHTClient(credentials=('api_key', 'user_id'))
+tts = PlayHTTTS(client)
+```
+
+- **Note**: Play.HT does not support SSML, but you can still send SSML text - it will be automatically stripped.
+
+#### Play.HT
+
+1. Sign up at https://play.ht/
+2. Go to your dashboard and click on "API Access"
+3. Copy your API Key and User ID from the dashboard

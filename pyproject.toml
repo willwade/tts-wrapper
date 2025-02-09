@@ -8,7 +8,7 @@ authors = [
 ]
 license = "MIT"
 readme = "README.md"
-keywords = ["tts", "text-to-speech", "speech synthesis", "polly", "sapi", "mms", "gTTS", "witai", "elevenlabs"]
+keywords = ["tts", "text-to-speech", "speech synthesis", "polly", "sapi", "mms", "gTTS", "witai", "elevenlabs", "playht"]
 requires-python = ">=3.10,<3.13"
 
 dependencies = [
@@ -41,6 +41,7 @@ witai = []
 systemtts = ["pyttsx3>=2.98"]
 uwp = ["winrt-runtime>=2.0.1; sys_platform == 'win32'"]
 sherpaonnx = ["sherpa-onnx>=1.10.17"]
+playht = []  # No additional dependencies needed as we use requests which is in core dependencies
 googletrans = ["gTTS>=2.5.2"]
 sapi = ["comtypes>=1.4.8; sys_platform == 'win32'"]
 controlaudio = ["pyaudio>=0.2.14"]
