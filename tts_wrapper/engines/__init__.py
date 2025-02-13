@@ -11,6 +11,7 @@ from .sherpaonnx import *
 from .watson import *
 from .witai import *
 from .espeak import *
+from .playht import *
 
 # Windows-only imports
 if sys.platform == "win32":
