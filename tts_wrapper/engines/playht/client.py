@@ -38,8 +38,9 @@ class PlayHTClient:
         payload = {
             "text": text,
             "voice": options.get("voice", default_voice),
-            "output_format": "mp3",
+            "output_format": "wav",  # Request WAV instead of MP3
             "voice_engine": options.get("voice_engine", "PlayDialog"),
+            "sample_rate": 44100,  # Standard audio rate
         }
         
         # Optional parameters
@@ -55,12 +56,19 @@ class PlayHTClient:
             if param in options:
                 payload[param] = options[param]
         
+        # Set headers based on output format
+        headers = {**self.headers}
+        if payload["output_format"] == "wav":
+            headers["accept"] = "audio/wav"
+        else:
+            headers["accept"] = "audio/mpeg"
+        
         logging.debug("Sending synthesis request to Play.HT:")
         logging.debug(f"URL: {url}")
-        logging.debug(f"Headers: {self.synth_headers}")
+        logging.debug(f"Headers: {headers}")
         logging.debug(f"Payload: {payload}")
         
-        response = requests.post(url, headers=self.synth_headers, json=payload)
+        response = requests.post(url, headers=headers, json=payload)
         
         if response.status_code != 200:
             status = response.status_code

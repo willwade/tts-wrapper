@@ -1,4 +1,5 @@
 from typing import Any, Optional
+import logging
 
 from tts_wrapper.engines.utils import estimate_word_timings
 from tts_wrapper.tts import AbstractTTS
@@ -8,7 +9,15 @@ from .ssml import PlayHTSSML
 
 
 class PlayHTTTS(AbstractTTS):
-    """High-level TTS interface for Play.HT."""
+    """High-level TTS interface for Play.HT.
+    
+    Inherits from AbstractTTS which provides:
+        - pause()
+        - resume()
+        - stop()
+        - speak()
+        - speak_streamed()
+    """
 
     def __init__(
         self,
@@ -20,11 +29,14 @@ class PlayHTTTS(AbstractTTS):
         super().__init__()
         self._client = client
         self._voice = voice
-        self.audio_rate = 24000  # Play.HT uses 24kHz sample rate
+        self.audio_rate = 44100  # Standard audio rate
         self._ssml = PlayHTSSML()
+        self.channels = 1
+        self.sample_width = 2  # 16-bit audio
+        self.chunk_size = 1024
 
     def synth_to_bytes(self, text: Any) -> bytes:
-        """Convert text to speech."""
+        """Convert text to speech and return raw PCM data."""
         text = str(text)
         options = {}
 
@@ -46,8 +58,50 @@ class PlayHTTTS(AbstractTTS):
         timings = estimate_word_timings(text)
         self.set_timings(timings)  # type: ignore
 
-        # Call the client for synthesis
-        return self._client.synth(text, options)
+        # Get WAV data from API
+        wav_data = self._client.synth(text, options)
+        
+        # Always strip WAV header if present to return clean PCM data
+        if wav_data[:4] == b"RIFF":
+            return self._strip_wav_header(wav_data)
+        return wav_data
+
+    def speak_streamed(
+        self,
+        text: str,
+        save_to_file_path: Optional[str] = None,
+        audio_format: Optional[str] = "wav",
+    ) -> None:
+        """Synthesize text and stream it for playback.
+        
+        Optionally save the audio to a file after playback completes.
+        """
+        try:
+            # Get clean PCM data
+            audio_bytes = self.synth_to_bytes(text)
+            
+            # Load the audio into the player
+            self.load_audio(audio_bytes)
+            
+            # Start playback
+            self.play()
+            
+            # Optionally save to file
+            if save_to_file_path:
+                if audio_format == "mp3":
+                    # Get original MP3 data from client
+                    mp3_data = self._client.synth(text, {"output_format": "mp3"})
+                    with open(save_to_file_path, "wb") as f:
+                        f.write(mp3_data)
+                else:
+                    # For WAV, we need to get the original WAV data with header
+                    wav_data = self._client.synth(text, {})
+                    with open(save_to_file_path, "wb") as f:
+                        f.write(wav_data)
+
+        except Exception as e:
+            logging.exception("Error in speak_streamed: %s", e)
+            raise
 
     @property
     def ssml(self) -> PlayHTSSML:
@@ -62,10 +116,5 @@ class PlayHTTTS(AbstractTTS):
         """Sets the voice for the TTS engine."""
         super().set_voice(voice_id, lang_id or "en-US")
         self._voice = voice_id
-
-    def construct_prosody_tag(self, text: str) -> str:
-        """
-        Play.HT doesn't support SSML, so we just return the text as is.
-        The properties are handled in synth_to_bytes via the options dict.
-        """
-        return text 
+        if lang_id:
+            self._lang = lang_id 
