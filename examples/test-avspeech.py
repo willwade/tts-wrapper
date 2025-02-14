@@ -1,4 +1,3 @@
-import os
 import time
 import logging
 from pathlib import Path
@@ -16,118 +15,118 @@ def test_simple_speech():
     except Exception as e:
         print(f"Error in simple speech test: {e}")
 
-
-# Methods for specific tests
-def test_pausing_and_resuming():
-    """Test pausing, resuming, and stopping audio."""
+def test_voice_selection():
+    """Test voice selection and listing."""
     try:
-        tts.set_output_device(2)
-        ssml_text = tts.ssml.construct_prosody(
-            "This is me speaking with espeak.",
-            rate="fast",
-            volume="medium",
-            pitch="high",
-            range="x-high",
-        )
-        tts.speak_streamed(ssml_text)
-
-        # Pause and resume
-        time.sleep(0.3)
-        tts.pause_audio()
-        time.sleep(0.5)
-        tts.resume_audio()
-        time.sleep(1)
-        tts.stop_audio()
-    except Exception as e:
-        print(f"Error in pausing/resuming test: {e}")
-
-def test_saving_audio():
-    """Test saving synthesized audio to a file."""
-    try:
-        ssml_text = tts.ssml.add("A second sentence to save to an audio file", clear=True)
-        output_file = Path(f"output_google.mp3")
-        tts.synth(ssml_text, str(output_file), format="mp3")
-        print(f"Audio content saved to {output_file}")
-    except Exception as e:
-        print(f"Error in saving audio: {e}")
-
-def test_changing_voices():
-    """Test changing voices and synthesizing text."""
-    try:
-        # Get the list of available voices
+        # Get available voices
         voices = tts.get_voices()
-        logging.debug(f"Voices: {voices}")
-        if not voices:
-            print("No voices available.")
-            return
-
-        print("Getting voices...")
-        english_voices = [
-            voice for voice in voices
-            if "English" in (voice.get("name") or [])
-        ]
-
-        if not english_voices:
-            print("No English voices available.")
-            return
-
-        # Select and test the first four English voices
-        for i, voice in enumerate(english_voices[:4], start=1):
-            display_name = voice.get("name", "Unknown voice")
-            voice_id = voice.get("id", "Unknown ID")
-            language_codes = voice.get("language_codes", [])
-            first_language_code = language_codes[0] if language_codes else "Unknown"
-            
-            print(f"Testing voice {i}: {display_name} ({first_language_code}) - ID: {voice_id}")
-            try:
-                # Set the current voice and synthesize text
-                tts.set_voice(voice_id, first_language_code)
-                tts.speak_streamed(f"This is voice {i}. Testing the {display_name} voice.")
-            except Exception as e:
-                print(f"Error testing voice {i}: {e}")
+        print("\nAvailable voices:")
+        for voice in voices:
+            print(f"- {voice['name']} ({voice['language_codes'][0]})")
+        
+        # Try to find and use an English voice
+        english_voices = [v for v in voices if "en" in v["language_codes"][0].lower()]
+        if english_voices:
+            voice = english_voices[0]
+            print(f"\nSetting voice to: {voice['name']}")
+            tts.set_voice(voice["id"])
+            tts.speak("This is a test with a different voice.")
     except Exception as e:
-        print(f"Error in voice changing test: {e}")
+        print(f"Error in voice selection test: {e}")
 
-def test_callbacks():
-    """Test onStart, onEnd, and word callbacks."""
-    def my_callback(word: str, start_time: float, end_time: float) -> None:
-        duration = end_time - start_time
-        print(f"Word: {word}, Start Time: {start_time}, End time: {end_time},  Duration: {duration:.3f}s")
-
-    def on_start() -> None:
-        print("Starting")
-
-    def on_end() -> None:
-        print("Ending")
-
+def test_rate_control():
+    """Test speech rate control."""
     try:
-        text = "Hello, This is a word timing test"
-        tts.connect("onStart", on_start)
-        tts.connect("onEnd", on_end)
-        tts.start_playback_with_callbacks(text, callback=my_callback)
+        # Test different rates
+        rates = ["x-slow", "slow", "medium", "fast", "x-fast"]
+        for rate in rates:
+            print(f"\nTesting rate: {rate}")
+            tts.set_property("rate", rate)
+            tts.speak(f"This is speech at {rate} rate.")
+            time.sleep(2)  # Wait for speech to complete
     except Exception as e:
-        print(f"Error in callback test: {e}")
+        print(f"Error in rate control test: {e}")
 
 def test_volume_control():
     """Test volume control."""
     try:
-        for volume in ["50", "100", "10"]:
+        volumes = ["10", "50", "100"]
+        for volume in volumes:
+            print(f"\nTesting volume: {volume}")
             tts.set_property("volume", volume)
-            print(f"Setting volume to {volume}")
-            text = f"The current volume is at {volume}"
-            text_with_prosody = tts.construct_prosody_tag(text)
-            ssml_text = tts.ssml.add(text_with_prosody, clear=True)
-            tts.speak_streamed(ssml_text)
+            tts.speak(f"This is speech at volume {volume}.")
             time.sleep(2)
     except Exception as e:
         print(f"Error in volume control test: {e}")
 
-# Main execution
+def test_pitch_control():
+    """Test pitch control."""
+    try:
+        pitches = ["x-low", "low", "medium", "high", "x-high"]
+        for pitch in pitches:
+            print(f"\nTesting pitch: {pitch}")
+            tts.set_property("pitch", pitch)
+            tts.speak(f"This is speech with {pitch} pitch.")
+            time.sleep(2)
+    except Exception as e:
+        print(f"Error in pitch control test: {e}")
+
+def test_file_output():
+    """Test saving speech to a file."""
+    try:
+        output_file = Path("output_avsynth.wav")
+        text = "This is a test of saving speech to a file."
+        tts.synth_to_file(text, str(output_file))
+        print(f"\nSaved audio to {output_file}")
+    except Exception as e:
+        print(f"Error in file output test: {e}")
+
+def test_streaming_and_control():
+    """Test streaming with pause/resume/stop controls."""
+    try:
+        text = (
+            "This is a long piece of text that we will use to test streaming "
+            "and playback controls. We will pause in the middle, then resume, "
+            "and finally stop before the end."
+        )
+        
+        print("\nStarting streaming test...")
+        tts.speak_streamed(text)
+        
+        time.sleep(2)  # Let it speak for a bit
+        print("Pausing...")
+        tts.pause()
+        
+        time.sleep(1)  # Pause for a second
+        print("Resuming...")
+        tts.resume()
+        
+        time.sleep(2)  # Let it continue for a bit
+        print("Stopping...")
+        tts.stop()
+    except Exception as e:
+        print(f"Error in streaming test: {e}")
+
 if __name__ == "__main__":
-    # Uncomment any line below to test the corresponding functionality
+    print("Testing AVSynth TTS Engine")
+    print("=========================")
+    
     test_simple_speech()
-    test_pausing_and_resuming()
-    test_saving_audio()
-    # test_changing_voices()
-    # test_callbacks()
-    # test_volume_control()
+    time.sleep(1)
+    
+    test_voice_selection()
+    time.sleep(1)
+    
+    test_rate_control()
+    time.sleep(1)
+    
+    test_volume_control()
+    time.sleep(1)
+    
+    test_pitch_control()
+    time.sleep(1)
+    
+    test_file_output()
+    time.sleep(1)
+    
+    test_streaming_and_control()
