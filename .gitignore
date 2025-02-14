@@ -1,3 +1,4 @@
+.build/*
 creds/*
 .envrc
 venv/
@@ -32,3 +33,4 @@ credentials-private.json
 examples/*.wav
 examples/*.mp3
 tts_wrapper/engines/sherpaonnx/testjson.py
+/tts_wrapper/engines/avsynth/.build
