@@ -80,20 +80,83 @@ class AVSynthTTS(AbstractTTS):
             timings = self._process_word_timings(word_timings)
             self.set_timings(timings)
 
-            # Load audio into player
-            audio_bytes = b"".join(list(audio_stream))
-            self.load_audio(audio_bytes)
-            
-            # Start playback
-            self.play()
+            try:
+                # Load audio into player
+                audio_bytes = b"".join(list(audio_stream))
+                self.load_audio(audio_bytes)
+                
+                # Start playback
+                self.play()
 
-            # Save to file if requested
-            if save_to_file_path:
-                with open(save_to_file_path, "wb") as f:
-                    f.write(audio_bytes)
+                # Save to file if requested
+                if save_to_file_path:
+                    with open(save_to_file_path, "wb") as f:
+                        f.write(audio_bytes)
+
+            except Exception as audio_error:
+                if "PortAudio" in str(audio_error):
+                    logging.info("Audio device error (non-critical): %s", audio_error)
+                else:
+                    raise
 
         except Exception as e:
             logging.exception("Error in speak_streamed: %s", e)
+            raise
+
+    def stop(self) -> None:
+        """Stop audio playback."""
+        try:
+            super().stop()
+        except Exception as e:
+            # Ignore common PortAudio cleanup errors
+            if (
+                "Stream already closed" not in str(e)
+                and "Internal PortAudio error" not in str(e)
+            ):
+                raise
+
+    def pause(self) -> None:
+        """Pause audio playback."""
+        try:
+            super().pause()
+        except Exception as e:
+            # Ignore common PortAudio cleanup errors
+            if (
+                "Stream already closed" not in str(e)
+                and "Internal PortAudio error" not in str(e)
+            ):
+                raise
+
+    def resume(self) -> None:
+        """Resume audio playback."""
+        try:
+            super().resume()
+        except Exception as e:
+            # Ignore common PortAudio cleanup errors
+            if (
+                "Stream already closed" not in str(e)
+                and "Internal PortAudio error" not in str(e)
+            ):
+                raise
+
+    def start_playback_with_callbacks(
+        self, text: str, callback: Any = None
+    ) -> None:
+        """Start playback with word timing callbacks."""
+        try:
+            audio_bytes = self.synth_to_bytes(text)
+            self.load_audio(audio_bytes)
+            
+            try:
+                self.play(callback)
+            except Exception as audio_error:
+                if "PortAudio" in str(audio_error):
+                    logging.info("Audio device error (non-critical): %s", audio_error)
+                else:
+                    raise
+                    
+        except Exception as e:
+            logging.exception("Error in start_playback_with_callbacks: %s", e)
             raise
 
     def get_voices(self) -> list[dict[str, Any]]:

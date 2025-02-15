@@ -106,12 +106,15 @@ struct Synthesize: ParsableCommand {
             var onWordBoundary: ([String: Any]) -> Void
             var onComplete: () -> Void
             var onError: () -> Void
+            var spokenText: String
             
             init(
+                spokenText: String,
                 onWordBoundary: @escaping ([String: Any]) -> Void,
                 onComplete: @escaping () -> Void,
                 onError: @escaping () -> Void
             ) {
+                self.spokenText = spokenText
                 self.onWordBoundary = onWordBoundary
                 self.onComplete = onComplete
                 self.onError = onError
@@ -123,12 +126,26 @@ struct Synthesize: ParsableCommand {
                 willSpeakRangeOfSpeechString characterRange: NSRange,
                 utterance: AVSpeechUtterance
             ) {
-                let word = (utterance.speechString as NSString).substring(with: characterRange)
+                // For SSML, use the actual spoken text length
+                let textLength = Double(spokenText.count)
+                let start = Double(characterRange.location) / textLength
+                let end = Double(characterRange.location + characterRange.length) / textLength
+                
+                // Get the word being spoken, safely
+                let word: String
+                if characterRange.location + characterRange.length <= spokenText.count {
+                    let startIndex = spokenText.index(spokenText.startIndex, offsetBy: characterRange.location)
+                    let endIndex = spokenText.index(startIndex, offsetBy: characterRange.length)
+                    word = String(spokenText[startIndex..<endIndex])
+                } else {
+                    word = ""  // Default to empty if range is invalid
+                }
+                
                 log("Speaking word: \(word)")
                 let timing: [String: Any] = [
                     "word": word,
-                    "start": Double(characterRange.location) / Double(utterance.speechString.count),
-                    "end": Double(characterRange.location + characterRange.length) / Double(utterance.speechString.count)
+                    "start": start,
+                    "end": end
                 ]
                 onWordBoundary(timing)
             }
@@ -144,7 +161,17 @@ struct Synthesize: ParsableCommand {
             }
         }
         
+        // For SSML, extract the plain text content for word boundary calculations
+        let plainText: String
+        if isSSML {
+            // Simple extraction of text content (you might want to make this more sophisticated)
+            plainText = text.replacingOccurrences(of: "<[^>]+>", with: "", options: .regularExpression)
+        } else {
+            plainText = text
+        }
+        
         let delegate = SpeechDelegate(
+            spokenText: plainText,
             onWordBoundary: { timing in
                 wordTimings.append(timing)
             },

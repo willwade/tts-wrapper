@@ -115,19 +115,26 @@ class AVSynthClient:
             text = text.strip()
             is_ssml = text.startswith("<speak>") and text.endswith("</speak>")
             if is_ssml:
+                logging.debug("Detected SSML text: %s", text)
                 cmd.extend(["--is-ssml", "true"])
+            else:
+                logging.debug("Using plain text with options: %s", options)
             
             # Only add these options for non-SSML text
             if not is_ssml:
                 # Convert and add options if provided
                 if "voice" in options:
+                    logging.debug("Setting voice: %s", options["voice"])
                     cmd.extend(["--voice", options["voice"]])
                 
                 # Handle rate, volume, and pitch with shorter lines
                 for prop in ["rate", "volume", "pitch"]:
                     if prop in options:
                         val = str(self._convert_property_value(prop, options[prop]))
+                        logging.debug("Setting %s: %s", prop, val)
                         cmd.extend([f"--{prop}", val])
+            
+            logging.debug("Running command: %s", " ".join(cmd))
             
             # Run with timeout
             try:
@@ -191,16 +198,16 @@ class AVSynthClient:
             # Read header with timeout
             header = b""
             start_time = time.time()
-            while b"\n\n" not in header:
-                if time.time() - start_time > 5:  # 5 second timeout for header
-                    process.kill()
-                    msg = "Timeout waiting for header"
-                    raise RuntimeError(msg)
-                
+            while b"\n\n" not in header and time.time() - start_time < 5:
                 chunk = process.stdout.read(1)
                 if not chunk:
                     break
                 header += chunk
+            
+            if b"\n\n" not in header:
+                process.kill()
+                msg = "Timeout waiting for header"
+                raise RuntimeError(msg)
             
             # Parse word timings from header
             try:
@@ -219,15 +226,19 @@ class AVSynthClient:
                         if not chunk:
                             break
                         yield chunk
+                except (Exception, KeyboardInterrupt) as e:
+                    logging.error("Error in audio stream: %s", e)
                 finally:
                     process.kill()  # Ensure process is terminated
-                    process.wait(timeout=1)  # Wait for process to end
+                    try:
+                        process.wait(timeout=1)  # Wait for process to end
+                    except subprocess.TimeoutExpired:
+                        pass
             
             return generate(), timings
             
-        except subprocess.CalledProcessError as e:
-            logging.error("Streaming synthesis failed: %s", e.stderr)
-            raise
-        except json.JSONDecodeError as e:
-            logging.error("Failed to parse synthesis response: %s", e)
+        except Exception as e:
+            logging.error("Streaming synthesis failed: %s", e)
+            if 'process' in locals():
+                process.kill()
             raise
