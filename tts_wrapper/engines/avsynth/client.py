@@ -111,15 +111,23 @@ class AVSynthClient:
         try:
             cmd = [str(self.bridge_path), "synth", text]
             
-            # Convert and add options if provided
-            if "voice" in options:
-                cmd.extend(["--voice", options["voice"]])
+            # Check if text contains SSML markup
+            text = text.strip()
+            is_ssml = text.startswith("<speak>") and text.endswith("</speak>")
+            if is_ssml:
+                cmd.extend(["--is-ssml", "true"])
             
-            # Handle rate, volume, and pitch with shorter lines
-            for prop in ["rate", "volume", "pitch"]:
-                if prop in options:
-                    val = str(self._convert_property_value(prop, options[prop]))
-                    cmd.extend([f"--{prop}", val])
+            # Only add these options for non-SSML text
+            if not is_ssml:
+                # Convert and add options if provided
+                if "voice" in options:
+                    cmd.extend(["--voice", options["voice"]])
+                
+                # Handle rate, volume, and pitch with shorter lines
+                for prop in ["rate", "volume", "pitch"]:
+                    if prop in options:
+                        val = str(self._convert_property_value(prop, options[prop]))
+                        cmd.extend([f"--{prop}", val])
             
             # Run with timeout
             try:

@@ -15,6 +15,60 @@ def test_simple_speech():
     except Exception as e:
         print(f"Error in simple speech test: {e}")
 
+def test_ssml():
+    """Test SSML functionality."""
+    try:
+        print("\nTesting SSML features:")
+        
+        # Test basic SSML with prosody
+        print("Testing prosody...")
+        ssml = tts.ssml.construct_prosody_tag(
+            "This text should be spoken with modified prosody.",
+            rate="slow",
+            pitch="low",
+            volume="soft"
+        )
+        tts.speak(ssml)
+        time.sleep(3)
+        
+        # Test breaks
+        print("\nTesting breaks...")
+        text = (
+            "This is a sentence<break time='1s'/>"
+            "with a pause<break time='500ms'/>"
+            "and another pause."
+        )
+        tts.speak(text)
+        time.sleep(4)
+        
+        # Test voice changes
+        print("\nTesting voice changes...")
+        voices = tts.get_voices()
+        if len(voices) > 1:
+            voice = voices[1]  # Use second available voice
+            ssml = (
+                f"<voice name='{voice['id']}'>"
+                "This text should be in a different voice."
+                "</voice>"
+            )
+            tts.speak(ssml)
+            time.sleep(3)
+        
+        # Test combined features
+        print("\nTesting combined SSML features...")
+        combined_ssml = (
+            "<prosody rate='slow' pitch='low'>"
+            "This is slow and low pitched"
+            "<break time='500ms'/>"
+            "Still slow and low"
+            "</prosody>"
+        )
+        tts.speak(combined_ssml)
+        time.sleep(4)
+        
+    except Exception as e:
+        print(f"Error in SSML test: {e}")
+
 def test_voice_selection():
     """Test voice selection and listing."""
     try:
@@ -93,25 +147,45 @@ def test_streaming_and_control():
         print("\nStarting streaming test...")
         tts.speak_streamed(text)
         
-        time.sleep(2)  # Let it speak for a bit
-        print("Pausing...")
-        tts.pause()
+        # Give time for playback to start
+        time.sleep(1)
         
-        time.sleep(1)  # Pause for a second
-        print("Resuming...")
-        tts.resume()
-        
-        time.sleep(2)  # Let it continue for a bit
-        print("Stopping...")
-        tts.stop()
+        try:
+            print("Pausing...")
+            tts.pause()
+            time.sleep(1)
+            
+            print("Resuming...")
+            tts.resume()
+            time.sleep(1)
+            
+            print("Stopping...")
+            tts.stop()
+        except Exception as control_error:
+            print(f"Playback control error: {control_error}")
+            # Ensure we stop the audio even if controls fail
+            try:
+                tts.stop()
+            except Exception:
+                pass
+            
     except Exception as e:
         print(f"Error in streaming test: {e}")
+    finally:
+        # Always try to clean up the audio stream
+        try:
+            tts.stop()
+        except Exception:
+            pass
 
 if __name__ == "__main__":
     print("Testing AVSynth TTS Engine")
     print("=========================")
     
     test_simple_speech()
+    time.sleep(1)
+    
+    test_ssml()
     time.sleep(1)
     
     test_voice_selection()

@@ -61,20 +61,39 @@ struct Synthesize: ParsableCommand {
     @Option(name: .long, help: "Pitch multiplier (0.5 - 2.0)")
     var pitch: Float = 1.0
     
+    @Option(name: .long, help: "Whether the text contains SSML markup")
+    var isSSML: Bool = false
+    
     func run() throws {
         log("Starting synthesis")
         
         let synthesizer = AVSpeechSynthesizer()
-        let utterance = AVSpeechUtterance(string: text)
+        let utterance: AVSpeechUtterance
         
-        // Configure utterance
-        if let voiceId = voice {
-            log("Using voice: \(voiceId)")
-            utterance.voice = AVSpeechSynthesisVoice(identifier: voiceId)
+        // Use SSML if available and text contains SSML markup
+        if #available(macOS 13.0, *), isSSML {
+            log("Using SSML synthesis")
+            guard let ssmlUtterance = AVSpeechUtterance(ssmlRepresentation: text) else {
+                throw NSError(
+                    domain: "SpeechBridge",
+                    code: -4,
+                    userInfo: [NSLocalizedDescriptionKey: "Invalid SSML markup"]
+                )
+            }
+            utterance = ssmlUtterance
+        } else {
+            log("Using plain text synthesis")
+            utterance = AVSpeechUtterance(string: text)
+            
+            // Configure utterance (only for non-SSML)
+            if let voiceId = voice {
+                log("Using voice: \(voiceId)")
+                utterance.voice = AVSpeechSynthesisVoice(identifier: voiceId)
+            }
+            utterance.rate = rate
+            utterance.volume = volume
+            utterance.pitchMultiplier = pitch
         }
-        utterance.rate = rate
-        utterance.volume = volume
-        utterance.pitchMultiplier = pitch
         
         var audioData = Data()
         var wordTimings: [[String: Any]] = []
@@ -231,19 +250,39 @@ struct Stream: ParsableCommand {
     @Option(name: .long, help: "Pitch multiplier (0.5 - 2.0)")
     var pitch: Float = 1.0
     
+    @Option(name: .long, help: "Whether the text contains SSML markup")
+    var isSSML: Bool = false
+    
     func run() throws {
         log("Starting streaming synthesis")
         
         let synthesizer = AVSpeechSynthesizer()
-        let utterance = AVSpeechUtterance(string: text)
+        let utterance: AVSpeechUtterance
         
-        if let voiceId = voice {
-            log("Using voice: \(voiceId)")
-            utterance.voice = AVSpeechSynthesisVoice(identifier: voiceId)
+        // Use SSML if available and text contains SSML markup
+        if #available(macOS 13.0, *), isSSML {
+            log("Using SSML synthesis")
+            guard let ssmlUtterance = AVSpeechUtterance(ssmlRepresentation: text) else {
+                throw NSError(
+                    domain: "SpeechBridge",
+                    code: -4,
+                    userInfo: [NSLocalizedDescriptionKey: "Invalid SSML markup"]
+                )
+            }
+            utterance = ssmlUtterance
+        } else {
+            log("Using plain text synthesis")
+            utterance = AVSpeechUtterance(string: text)
+            
+            // Configure utterance (only for non-SSML)
+            if let voiceId = voice {
+                log("Using voice: \(voiceId)")
+                utterance.voice = AVSpeechSynthesisVoice(identifier: voiceId)
+            }
+            utterance.rate = rate
+            utterance.volume = volume
+            utterance.pitchMultiplier = pitch
         }
-        utterance.rate = rate
-        utterance.volume = volume
-        utterance.pitchMultiplier = pitch
         
         var wordTimings: [[String: Any]] = []
         let semaphore = DispatchSemaphore(value: 0)

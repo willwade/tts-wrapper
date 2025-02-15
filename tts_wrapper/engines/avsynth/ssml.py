@@ -6,6 +6,25 @@ from tts_wrapper.ssml import BaseSSMLRoot, SSMLNode
 class AVSynthSSMLNode(SSMLNode):
     """SSML node implementation for AVSynth."""
 
+    def __init__(self, tag: str, attrs: dict = None, children: list = None) -> None:
+        """Initialize the SSML node."""
+        super().__init__(tag, attrs, children)
+        self._children = children or []
+        self._attrs = attrs or {}
+        self._tag = tag
+
+    def add_text(self, text: str) -> None:
+        """Add text to the node."""
+        self._children.append(text)
+
+    def add(self, child: 'SSMLNode') -> None:
+        """Add a child node."""
+        self._children.append(child)
+
+    def clear_ssml(self) -> None:
+        """Clear all children."""
+        self._children = []
+
     def __str__(self) -> str:
         """Convert SSML to text with embedded commands for AVSpeechSynthesizer."""
         if self._tag == "speak":
@@ -54,15 +73,30 @@ class AVSynthSSML(BaseSSMLRoot):
 
     def __init__(self) -> None:
         super().__init__()
-        self._inner = AVSynthSSMLNode("speak")
+        self._root = AVSynthSSMLNode("speak")
         logging.debug("AVSynthSSML initialized")
 
     def __str__(self) -> str:
-        return str(self._inner)
+        return str(self._root)
+
+    def add(self, text: str) -> str:
+        """Add text to the SSML and return the full SSML string."""
+        if self._is_ssml(text):
+            # If it's already SSML, parse and add it
+            self.parse(text)
+        else:
+            # If it's plain text, just add it
+            self._root.add_text(text)
+        return str(self)
+
+    def _is_ssml(self, text: str) -> bool:
+        """Check if text contains SSML markup."""
+        text = text.strip()
+        return text.startswith("<speak>") and text.endswith("</speak>")
 
     def clear_ssml(self) -> None:
         """Clear all SSML content."""
-        self._inner = AVSynthSSMLNode("speak")
+        self._root = AVSynthSSMLNode("speak")
 
     def construct_prosody_tag(
         self, 

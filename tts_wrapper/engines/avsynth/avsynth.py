@@ -16,7 +16,6 @@ class AVSynthTTS(AbstractTTS):
         self._client = client
         self._voice = voice
         self.audio_rate = 22050  # Lower audio rate for more natural speech
-        self._ssml = AVSynthSSML()
         self.channels = 1
         self.sample_width = 2  # 16-bit audio
         self.chunk_size = 1024
@@ -27,21 +26,29 @@ class AVSynthTTS(AbstractTTS):
             "rate": "medium",
             "pitch": "medium"
         }
+        # Initialize SSML support
+        self.ssml = AVSynthSSML()
+
+    def _is_ssml(self, text: str) -> bool:
+        """Check if the text contains SSML markup."""
+        text = text.strip()
+        return text.startswith("<speak>") and text.endswith("</speak>")
 
     def synth_to_bytes(self, text: Any) -> bytes:
         """Convert text to speech."""
         text = str(text)
         options = {}
 
-        # Add voice if set
-        if self._voice:
+        # Add voice if set and text is not SSML
+        if self._voice and not self._is_ssml(text):
             options["voice"] = self._voice
 
-        # Add any set properties
-        for prop in ["rate", "volume", "pitch"]:
-            value = self.get_property(prop)
-            if value is not None:
-                options[prop] = str(value)
+        # Add any set properties (only for non-SSML text)
+        if not self._is_ssml(text):
+            for prop in ["rate", "volume", "pitch"]:
+                value = self.get_property(prop)
+                if value is not None:
+                    options[prop] = str(value)
 
         # Call the client for synthesis
         audio_data, word_timings = self._client.synth(text, options)
