@@ -1,5 +1,6 @@
 import logging
 from typing import Any, Optional, List
+import time
 
 from tts_wrapper.tts import AbstractTTS, WordTiming
 
@@ -20,6 +21,12 @@ class AVSynthTTS(AbstractTTS):
         self.sample_width = 2  # 16-bit audio
         self.chunk_size = 1024
         self.timings: List[WordTiming] = []
+        self._callbacks = {
+            "onStart": None,
+            "onEnd": None
+        }
+        self._stream = None
+        self._audio_data = None
         # Initialize properties with default string values
         self.properties = {
             "volume": "100",
@@ -115,16 +122,23 @@ class AVSynthTTS(AbstractTTS):
             ):
                 raise
 
-    def pause(self) -> None:
-        """Pause audio playback."""
+    def pause(self, duration: float | None = None) -> None:
+        """
+        Pause audio playback.
+        
+        Args:
+            duration: Optional duration to pause for before resuming.
+        """
         try:
-            super().pause()
+            if self._stream and self._stream.is_active():
+                self._stream.stop_stream()
+                if duration is not None:
+                    time.sleep(duration)
+                    self.resume()
         except Exception as e:
-            # Ignore common PortAudio cleanup errors
-            if (
-                "Stream already closed" not in str(e)
-                and "Internal PortAudio error" not in str(e)
-            ):
+            if "PortAudio" in str(e):
+                logging.info("Audio device error (non-critical): %s", e)
+            else:
                 raise
 
     def resume(self) -> None:
@@ -148,7 +162,25 @@ class AVSynthTTS(AbstractTTS):
             self.load_audio(audio_bytes)
             
             try:
-                self.play(callback)
+                # Call onStart callback if registered
+                if self._callbacks["onStart"]:
+                    self._callbacks["onStart"]()
+                
+                # Start playback
+                self.play()
+                
+                # Process word timings
+                if callback and hasattr(self, 'timings'):
+                    for timing in self.timings:
+                        if len(timing) >= 3:
+                            start_time, end_time, word = timing
+                            callback(word, start_time, end_time)
+                            time.sleep(end_time - start_time)
+                
+                # Call onEnd callback if registered
+                if self._callbacks["onEnd"]:
+                    self._callbacks["onEnd"]()
+                    
             except Exception as audio_error:
                 if "PortAudio" in str(audio_error):
                     logging.info("Audio device error (non-critical): %s", audio_error)
