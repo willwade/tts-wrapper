@@ -21,7 +21,7 @@ for voice in voices[:20]:  # Show first 20 voices
     print(f"  Gender: {voice['gender']}")
 
 print("\nTesting first voice: Gordon")
-tts.set_voice("com.apple.ttsbundle.siri_Gordon_en-AU_compact")
+tts.set_voice("com.apple.ttsbundle.siri_Gordon_en_AU_compact")
 tts.set_property("rate", "50")  # 50% speed
 tts.set_property("volume", "100")  # Full volume
 tts.set_property("pitch", "1.0")
@@ -41,29 +41,56 @@ tts.speak("And this is a test with Karen's voice.")
 while tts.isplaying:
     time.sleep(0.1)
 
-print("\nTesting streaming synthesis...")
-text = "Testing streaming synthesis with word timing callbacks."
+print("\nTesting word timing callbacks...")
+text = "This is a test of word timing callbacks in speech synthesis."
 print(f"Text to synthesize: {text}")
 
+
 def word_callback(word: str, start: float, end: float) -> None:
-    print(f"Word: {word}, Start: {start:.2f}s, End: {end:.2f}s")
+    """Called for each word as it's spoken."""
+    duration = end - start
+    print(f"Word: {word:12} Start: {start:5.2f}s  End: {end:5.2f}s  "
+          f"Duration: {duration:5.2f}s")
+
 
 def on_start():
-    print("Audio started playing")
+    """Called when audio playback starts."""
+    print("\nAudio started playing")
+
 
 def on_end():
-    print("Audio finished playing")
+    """Called when audio playback ends."""
+    print("\nAudio finished playing")
 
-# Connect callbacks
+
+# First synthesize to get word timings
+print("\nSynthesizing speech and setting up word timing callbacks...")
+audio_bytes = tts.synth_to_bytes(text)
+
+# Print the word timings we got
+print("\nWord timings received:")
+for start, end, word in tts.timings:
+    duration = end - start
+    print(f"Word: {word:12} Start: {start:5.2f}s  End: {end:5.2f}s  "
+          f"Duration: {duration:5.2f}s")
+
+# Now play with callbacks
+print("\nStarting playback...")
 tts.connect("onStart", on_start)
 tts.connect("onEnd", on_end)
-tts.connect("on_word", word_callback)
+tts.load_audio(audio_bytes)
+tts.play()
 
-# Start playback with callbacks
-tts.start_playback_with_callbacks(text)
-
-# Wait for audio to finish
-while tts.isplaying:
+# Wait for audio to finish with a timeout
+start_time = time.time()
+timeout = 15  # 15 second timeout
+while tts.isplaying and (time.time() - start_time) < timeout:
     time.sleep(0.1)
+
+if tts.isplaying:
+    print("\nWarning: Playback timed out")
+    tts.stop()
+else:
+    print("\nPlayback completed successfully")
 
 print("\nTests completed!")
