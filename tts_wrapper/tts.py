@@ -434,11 +434,15 @@ class AbstractTTS(ABC):
         :param audio_format: Audio format to save (e.g., 'wav', 'mp3', 'flac').
         """
         try:
-            # Synthesize audio to bytes for playback
-            audio_bytes = self.synth_to_bytes(text)
+            # Collect all audio data from the stream
+            audio_bytes = b"".join(self.synth_to_bytestream(text))
+            
+            # Check for WAV header
             if audio_bytes[:4] == b"RIFF":
                 audio_bytes = self._strip_wav_header(audio_bytes)
                 logging.info("Stripping wav header from streamed audio")
+            
+            # Convert to numpy array for sounddevice playback
             audio_data = np.frombuffer(audio_bytes, dtype=np.int16)
             self.audio_bytes = audio_data.tobytes()
             self.position = 0
@@ -452,31 +456,20 @@ class AbstractTTS(ABC):
                 self.setup_stream()
 
             # Start playback in a separate thread
-            self.play_thread = threading.Thread(target=self._start_stream)
-            self.play_thread.start()
-
-            # Wait for the playback thread to complete
-            self.play_thread.join()
+            self._start_stream()
 
             # After streaming is finished, save the file if requested
             if save_to_file_path:
-                pcm_data = np.frombuffer(audio_bytes, dtype=np.int16)
                 audio_format = audio_format if audio_format else "wav"
                 converted_audio = self._convert_audio(
-                    pcm_data, audio_format, self.audio_rate,
+                    audio_data, audio_format, self.audio_rate
                 )
-
-                with Path(save_to_file_path).open("wb") as f:
+                with open(save_to_file_path, "wb") as f:
                     f.write(converted_audio)
-                logging.info(
-                    "Audio saved to %s in %s format.",
-                    save_to_file_path,
-                    audio_format,
-                )
 
-        except Exception:
-            logging.exception("Error streaming or saving audio")
-
+        except Exception as e:
+            logging.error("Error streaming or saving audio", exc_info=True)
+            raise
 
     def setup_stream(self, samplerate: int = 44100,
                      channels: int = 1, dtype: str | int = "int16") -> None:

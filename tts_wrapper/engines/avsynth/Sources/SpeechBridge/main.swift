@@ -312,111 +312,165 @@ struct Stream: ParsableCommand {
         }
         
         var wordTimings: [[String: Any]] = []
-        let semaphore = DispatchSemaphore(value: 0)
+        let synthesisComplete = DispatchSemaphore(value: 0)
+        let audioComplete = DispatchSemaphore(value: 0)
         var hasError = false
-        
-        class SpeechDelegate: NSObject, AVSpeechSynthesizerDelegate {
-            var onWordBoundary: ([String: Any]) -> Void
-            var onComplete: () -> Void
-            var onError: () -> Void
-            
-            init(
-                onWordBoundary: @escaping ([String: Any]) -> Void,
-                onComplete: @escaping () -> Void,
-                onError: @escaping () -> Void
-            ) {
-                self.onWordBoundary = onWordBoundary
-                self.onComplete = onComplete
-                self.onError = onError
-                super.init()
-            }
-            
-            func speechSynthesizer(
-                _ synthesizer: AVSpeechSynthesizer,
-                willSpeakRangeOfSpeechString characterRange: NSRange,
-                utterance: AVSpeechUtterance
-            ) {
-                let word = (utterance.speechString as NSString).substring(with: characterRange)
-                log("Speaking word: \(word)")
-                let timing: [String: Any] = [
-                    "word": word,
-                    "start": Double(characterRange.location) / Double(utterance.speechString.count),
-                    "end": Double(characterRange.location + characterRange.length) / Double(utterance.speechString.count)
-                ]
-                onWordBoundary(timing)
-            }
-            
-            func speechSynthesizer(_ synthesizer: AVSpeechSynthesizer, didFinish utterance: AVSpeechUtterance) {
-                log("Synthesis finished")
-                onComplete()
-            }
-            
-            func speechSynthesizer(_ synthesizer: AVSpeechSynthesizer, didEncounterError error: Error, utterance: AVSpeechUtterance) {
-                log("Synthesis error: \(error)")
-                onError()
-            }
-        }
-        
-        let delegate = SpeechDelegate(
-            onWordBoundary: { timing in
-                wordTimings.append(timing)
-            },
-            onComplete: {
-                log("Marking synthesis as complete")
-                semaphore.signal()
-            },
-            onError: {
-                log("Marking synthesis as failed")
-                hasError = true
-                semaphore.signal()
-            }
-        )
-        synthesizer.delegate = delegate
         
         // Set up audio engine
         let audioEngine = AVAudioEngine()
         let mainMixer = audioEngine.mainMixerNode
-        let playerNode = AVAudioPlayerNode()
-        audioEngine.attach(playerNode)
-        
         let format = mainMixer.outputFormat(forBus: 0)
-        audioEngine.connect(playerNode, to: mainMixer, format: format)
         
-        do {
-            // Send header with word timings
-            let header: [String: Any] = ["word_timings": wordTimings]
-            if let headerData = try? JSONSerialization.data(withJSONObject: header),
-               let headerString = String(data: headerData, encoding: .utf8) {
-                print(headerString)
-                print("\n\n")  // Delimiter between header and audio data
-                fflush(stdout)
-            }
+        // First, send audio format information
+        let formatInfo: [String: Any] = [
+            "sample_rate": format.sampleRate,
+            "channels": format.channelCount,
+            "bits_per_sample": 16,  // We'll convert to 16-bit PCM
+            "is_float": false
+        ]
+        
+        if let formatData = try? JSONSerialization.data(withJSONObject: formatInfo),
+           let formatString = String(data: formatData, encoding: .utf8) {
+            print(formatString)
+            print("\n---AUDIO_START---\n")  // Clear delimiter
+            fflush(stdout)
+        }
+        
+        // Install tap before starting synthesis
+        log("Installing audio tap")
+        mainMixer.installTap(onBus: 0, bufferSize: 4096, format: format) { buffer, _ in
+            let frameCount = Int(buffer.frameLength)
+            var pcmData = Data()
             
-            log("Installing audio tap")
-            // Capture and stream audio
-            mainMixer.installTap(onBus: 0, bufferSize: 1024, format: format) { buffer, _ in
-                let channels = UnsafeBufferPointer(start: buffer.floatChannelData?[0], count: Int(buffer.frameLength))
-                let samples = Array(channels)
-                let pcmData = samples.withUnsafeBytes { Data($0) }
+            if let channelData = buffer.floatChannelData?[0] {
+                // Convert float samples to 16-bit PCM
+                for i in 0..<frameCount {
+                    let sample = channelData[i]
+                    let intSample = Int16(max(-1.0, min(1.0, sample)) * 32767.0)
+                    pcmData.append(UInt8(intSample & 0xFF))
+                    pcmData.append(UInt8((intSample >> 8) & 0xFF))
+                }
                 FileHandle.standardOutput.write(pcmData)
                 fflush(stdout)
             }
-            
+        }
+        
+        do {
             log("Starting audio engine")
             try audioEngine.start()
-            playerNode.play()
             
-            log("Starting synthesis")
-            synthesizer.write(utterance) { buffer in
-                if let audioBuffer = buffer as? AVAudioPCMBuffer {
-                    playerNode.scheduleBuffer(audioBuffer)
+            // Set up delegate for synthesis events
+            class SpeechDelegate: NSObject, AVSpeechSynthesizerDelegate {
+                var onWordBoundary: ([String: Any]) -> Void
+                var onComplete: () -> Void
+                var onError: () -> Void
+                var spokenText: String
+                
+                init(
+                    spokenText: String,
+                    onWordBoundary: @escaping ([String: Any]) -> Void,
+                    onComplete: @escaping () -> Void,
+                    onError: @escaping () -> Void
+                ) {
+                    self.spokenText = spokenText
+                    self.onWordBoundary = onWordBoundary
+                    self.onComplete = onComplete
+                    self.onError = onError
+                    super.init()
+                }
+                
+                func speechSynthesizer(
+                    _ synthesizer: AVSpeechSynthesizer,
+                    willSpeakRangeOfSpeechString characterRange: NSRange,
+                    utterance: AVSpeechUtterance
+                ) {
+                    // For SSML, use the actual spoken text length
+                    let textLength = Double(spokenText.count)
+                    let start = Double(characterRange.location) / textLength
+                    let end = Double(characterRange.location + characterRange.length) / textLength
+                    
+                    // Get the word being spoken, safely
+                    let word: String
+                    if characterRange.location + characterRange.length <= spokenText.count {
+                        let startIndex = spokenText.index(spokenText.startIndex, offsetBy: characterRange.location)
+                        let endIndex = spokenText.index(startIndex, offsetBy: characterRange.length)
+                        word = String(spokenText[startIndex..<endIndex])
+                    } else {
+                        word = ""  // Default to empty if range is invalid
+                    }
+                    
+                    log("Speaking word: \(word)")
+                    let timing: [String: Any] = [
+                        "word": word,
+                        "start": start,
+                        "end": end
+                    ]
+                    onWordBoundary(timing)
+                }
+                
+                func speechSynthesizer(_ synthesizer: AVSpeechSynthesizer, didFinish utterance: AVSpeechUtterance) {
+                    log("Synthesis finished")
+                    onComplete()
+                }
+                
+                func speechSynthesizer(_ synthesizer: AVSpeechSynthesizer, didEncounterError error: Error, utterance: AVSpeechUtterance) {
+                    log("Synthesis error: \(error)")
+                    onError()
                 }
             }
             
-            log("Waiting for completion")
-            // Wait for completion with timeout
+            // For SSML, extract the plain text content for word boundary calculations
+            let plainText: String
+            if isSSML {
+                // Simple extraction of text content (you might want to make this more sophisticated)
+                plainText = text.replacingOccurrences(of: "<[^>]+>", with: "", options: .regularExpression)
+            } else {
+                plainText = text
+            }
+            
+            let delegate = SpeechDelegate(
+                spokenText: plainText,
+                onWordBoundary: { timing in
+                    wordTimings.append(timing)
+                    // Send word timing immediately
+                    if let timingData = try? JSONSerialization.data(withJSONObject: timing),
+                       let timingString = String(data: timingData, encoding: .utf8) {
+                        print("\n---WORD_TIMING---\n\(timingString)\n---AUDIO_CONTINUE---\n")
+                        fflush(stdout)
+                    }
+                },
+                onComplete: {
+                    log("Synthesis complete")
+                    synthesisComplete.signal()
+                },
+                onError: {
+                    log("Synthesis error occurred")
+                    hasError = true
+                    synthesisComplete.signal()
+                }
+            )
+            
+            synthesizer.delegate = delegate
+            
+            // Start synthesis
+            log("Starting synthesis")
+            synthesizer.write(utterance) { buffer in
+                if let audioBuffer = buffer as? AVAudioPCMBuffer {
+                    // Schedule buffer for playback
+                    let playerNode = AVAudioPlayerNode()
+                    audioEngine.attach(playerNode)
+                    audioEngine.connect(playerNode, to: mainMixer, format: format)
+                    playerNode.scheduleBuffer(audioBuffer, completionHandler: nil)
+                    playerNode.play()
+                    
+                    // Log progress
+                    log("Audio buffer processed: \(audioBuffer.frameLength) frames")
+                }
+            }
+            
+            // Wait for synthesis to complete
             let timeout = DispatchTime.now() + .seconds(30)
-            if semaphore.wait(timeout: timeout) == .timedOut {
+            if synthesisComplete.wait(timeout: timeout) == .timedOut {
                 log("Synthesis timed out")
                 throw NSError(domain: "SpeechBridge", code: -1, userInfo: [NSLocalizedDescriptionKey: "Synthesis timed out"])
             }
@@ -426,20 +480,23 @@ struct Stream: ParsableCommand {
                 throw NSError(domain: "SpeechBridge", code: -2, userInfo: [NSLocalizedDescriptionKey: "Synthesis failed"])
             }
             
-            log("Synthesis completed successfully")
+            // Allow time for final audio to play
+            Thread.sleep(forTimeInterval: 0.5)
             
-            // Clean up
-            playerNode.stop()
-            audioEngine.stop()
-            audioEngine.mainMixerNode.removeTap(onBus: 0)
+            log("Synthesis completed successfully")
+            print("\n---AUDIO_END---\n")
+            fflush(stdout)
             
         } catch {
             log("Error during synthesis: \(error)")
-            playerNode.stop()
             audioEngine.stop()
             audioEngine.mainMixerNode.removeTap(onBus: 0)
             throw error
         }
+        
+        // Clean up
+        audioEngine.stop()
+        audioEngine.mainMixerNode.removeTap(onBus: 0)
     }
 }
 

@@ -1,204 +1,69 @@
-import time
 import logging
-from pathlib import Path
-from tts_wrapper import AVSynthClient, AVSynthTTS
+from tts_wrapper.engines.avsynth import AVSynthClient, AVSynthTTS
+import time
 
 logging.basicConfig(level=logging.DEBUG)
 
+# Initialize client
 client = AVSynthClient()
 tts = AVSynthTTS(client)
 
-def test_simple_speech():
-    """Test simple speech synthesis."""
-    try:
-        tts.speak("This is a simple test of the AVSynth TTS engine.")
-    except Exception as e:
-        print(f"Error in simple speech test: {e}")
+print("Testing AVSynth TTS Engine")
+print("=========================\n")
 
-def test_ssml():
-    """Test SSML functionality."""
-    try:
-        print("\nTesting SSML features:")
-        
-        # Test basic SSML with prosody
-        print("Testing basic prosody...")
-        text = "This text should be spoken slowly."
-        ssml = f"<speak><prosody rate='slow'>{text}</prosody></speak>"
-        print(f"SSML being sent: {ssml}")
-        tts.speak(ssml)
-        time.sleep(3)
-        
-        # Test simple break
-        print("\nTesting simple break...")
-        text = "<speak>This is a sentence<break time='1s'/>after a pause.</speak>"
-        print(f"SSML being sent: {text}")
-        tts.speak(text)
-        time.sleep(4)
-        
-        # Test simple voice change
-        print("\nTesting voice change...")
-        voices = tts.get_voices()
-        if len(voices) > 1:
-            voice = next((v for v in voices if "en" in v["language_codes"][0].lower()), voices[0])
-            text = f"<speak><voice name='{voice['id']}'>This text should be in a different voice.</voice></speak>"
-            print(f"SSML being sent: {text}")
-            tts.speak(text)
-            time.sleep(3)
-        
-    except Exception as e:
-        print(f"Error in SSML test: {e}")
+print("\nTesting voice capabilities:")
+voices = tts.get_voices()
+print(f"\nFound {len(voices)} voices:")
+for voice in voices[:20]:  # Show first 20 voices
+    # Get first language code from the list
+    language = voice['language_codes'][0] if voice['language_codes'] else 'unknown'
+    print(f"- {voice['name']} ({language}) [ID: {voice['id']}]")
+    print(f"  Gender: {voice['gender']}")
 
-def test_voice_selection():
-    """Test voice selection and listing."""
-    try:
-        # Get available voices
-        voices = tts.get_voices()
-        print("\nAvailable voices:")
-        for voice in voices:
-            print(f"- {voice['name']} ({voice['language_codes'][0]})")
-        
-        # Try to find an English voice
-        english_voices = [v for v in voices if "en" in v["language_codes"][0].lower()]
-        if english_voices:
-            voice = english_voices[0]
-            print(f"\nSetting voice to: {voice['name']} ({voice['id']})")
-            tts.set_voice(voice["id"])
-            # Test with simple text first
-            print("Testing with simple text...")
-            tts.speak("This is a test with an English voice.")
-            time.sleep(2)
-        else:
-            print("No English voices found!")
+print("\nTesting first voice: Gordon")
+tts.set_voice("com.apple.ttsbundle.siri_Gordon_en-AU_compact")
+tts.set_property("rate", "50")  # 50% speed
+tts.set_property("volume", "100")  # Full volume
+tts.set_property("pitch", "1.0")
+print("Speaking with Gordon's voice...")
+tts.speak("This is a test with Gordon's voice.")
 
-    except Exception as e:
-        print(f"Error in voice selection test: {e}")
+# Wait for audio to finish
+while tts.isplaying:
+    time.sleep(0.1)
 
-def test_rate_control():
-    """Test speech rate control."""
-    try:
-        # Test different rates
-        rates = ["x-slow", "slow", "medium", "fast", "x-fast"]
-        for rate in rates:
-            print(f"\nTesting rate: {rate}")
-            tts.set_property("rate", rate)
-            tts.speak(f"This is speech at {rate} rate.")
-            time.sleep(2)  # Wait for speech to complete
-    except Exception as e:
-        print(f"Error in rate control test: {e}")
+print("\nTesting second voice: Karen")
+tts.set_voice("com.apple.voice.compact.en-AU.Karen")
+print("Speaking with Karen's voice...")
+tts.speak("And this is a test with Karen's voice.")
 
-def test_volume_control():
-    """Test volume control."""
-    try:
-        volumes = ["10", "50", "100"]
-        for volume in volumes:
-            print(f"\nTesting volume: {volume}")
-            tts.set_property("volume", volume)
-            tts.speak(f"This is speech at volume {volume}.")
-            time.sleep(2)
-    except Exception as e:
-        print(f"Error in volume control test: {e}")
+# Wait for audio to finish
+while tts.isplaying:
+    time.sleep(0.1)
 
-def test_pitch_control():
-    """Test pitch control."""
-    try:
-        pitches = ["x-low", "low", "medium", "high", "x-high"]
-        for pitch in pitches:
-            print(f"\nTesting pitch: {pitch}")
-            tts.set_property("pitch", pitch)
-            tts.speak(f"This is speech with {pitch} pitch.")
-            time.sleep(2)
-    except Exception as e:
-        print(f"Error in pitch control test: {e}")
+print("\nTesting streaming synthesis...")
+text = "Testing streaming synthesis with word timing callbacks."
+print(f"Text to synthesize: {text}")
 
-def test_file_output():
-    """Test saving speech to a file."""
-    try:
-        output_file = Path("output_avsynth.wav")
-        text = "This is a test of saving speech to a file."
-        tts.synth_to_file(text, str(output_file))
-        print(f"\nSaved audio to {output_file}")
-    except Exception as e:
-        print(f"Error in file output test: {e}")
+def word_callback(word: str, start: float, end: float) -> None:
+    print(f"Word: {word}, Start: {start:.2f}s, End: {end:.2f}s")
 
-def cleanup_audio():
-    """Safely cleanup audio resources."""
-    try:
-        tts.stop()
-    except Exception as e:
-        if "Stream already closed" not in str(e) and "Internal PortAudio error" not in str(e):
-            logging.error("Error during cleanup: %s", e)
+def on_start():
+    print("Audio started playing")
 
-def test_streaming_and_control():
-    """Test streaming with pause/resume/stop controls."""
-    try:
-        # Very short text for testing
-        text = "Testing streaming."
-        
-        print("\nStarting streaming test...")
-        tts.speak_streamed(text)
-        
-        # Quick control test
-        time.sleep(0.3)
-        print("Stopping...")
-        cleanup_audio()
-            
-    except Exception as e:
-        if "PortAudio" in str(e):
-            print("Audio device error - this is usually not critical")
-            logging.debug("Audio error details: %s", e)
-        else:
-            print(f"Error in streaming test: {e}")
-    finally:
-        cleanup_audio()
+def on_end():
+    print("Audio finished playing")
 
-def test_callbacks():
-    """Test word timing callbacks."""
-    def my_callback(word: str, start_time: float, end_time: float) -> None:
-        duration = end_time - start_time
-        print(f"Word: {word}, Duration: {duration:.3f}s")
+# Connect callbacks
+tts.connect("onStart", on_start)
+tts.connect("onEnd", on_end)
+tts.connect("on_word", word_callback)
 
-    def on_start() -> None:
-        print("Speech started")
+# Start playback with callbacks
+tts.start_playback_with_callbacks(text)
 
-    def on_end() -> None:
-        print("Speech ended")
+# Wait for audio to finish
+while tts.isplaying:
+    time.sleep(0.1)
 
-    try:
-        print("\nTesting callbacks...")
-        text = "Testing word callbacks."
-        tts.connect("onStart", on_start)
-        tts.connect("onEnd", on_end)
-        tts.start_playback_with_callbacks(text, callback=my_callback)
-        time.sleep(2)
-    except Exception as e:
-        if "PortAudio" in str(e):
-            print("Audio device error - this is usually not critical")
-            logging.debug("Audio error details: %s", e)
-        else:
-            print(f"Error in callback test: {e}")
-    finally:
-        cleanup_audio()
-
-if __name__ == "__main__":
-    print("Testing AVSynth TTS Engine")
-    print("=========================")
-    
-    try:
-        # Basic speech test
-        test_simple_speech()
-        time.sleep(0.5)
-        
-        # Test streaming with controls
-        test_streaming_and_control()
-        time.sleep(0.5)
-        
-        # Test callbacks (most important for current task)
-        print("\nTesting word timing callbacks...")
-        test_callbacks()
-        
-        print("\nTests completed!")
-    
-    except KeyboardInterrupt:
-        print("\nTests interrupted by user")
-    finally:
-        cleanup_audio()
+print("\nTests completed!")

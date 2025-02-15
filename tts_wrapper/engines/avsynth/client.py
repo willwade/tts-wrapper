@@ -2,9 +2,9 @@ import logging
 import subprocess
 import json
 import base64
-from typing import Any, Tuple, List, Generator
+from typing import Any, Tuple, List, Generator, Dict, Optional, IO
 from pathlib import Path
-import time
+from importlib import resources
 
 
 class AVSynthClient:
@@ -13,10 +13,22 @@ class AVSynthClient:
     def __init__(self) -> None:
         """Initialize the AVSynth client."""
         self._check_swift_bridge()
-        self.bridge_path = Path(__file__).parent / ".build/debug/SpeechBridge"
+        self.bridge_path = self._get_bridge_path()
         if not self.bridge_path.exists():
-            # Try to build if not exists
             self._build_bridge()
+
+    def _get_bridge_path(self) -> Path:
+        """Get the path to the Swift bridge executable."""
+        # First try the package resources
+        try:
+            with resources.path(
+                "tts_wrapper.engines.avsynth", 
+                "SpeechBridge"
+            ) as bridge_path:
+                return bridge_path
+        except Exception:
+            # Fall back to local build directory
+            return Path(__file__).parent / ".build/debug/SpeechBridge"
 
     def _check_swift_bridge(self) -> None:
         """Check if Swift is available and we're on macOS."""
@@ -87,7 +99,11 @@ class AVSynthClient:
                     return 0.4  # Default to medium rate
             elif prop == "volume":
                 try:
-                    return float(value) / 100
+                    # Convert string value to float, keeping it between 0.0 and 1.0
+                    vol = float(value)
+                    if vol > 1.0:  # If value is given as percentage
+                        vol = vol / 100.0
+                    return min(max(vol, 0.0), 1.0)
                 except ValueError:
                     return 1.0  # Default to full volume
             elif prop == "pitch":
@@ -168,77 +184,107 @@ class AVSynthClient:
             raise
 
     def synth_streaming(
-        self, text: str, options: dict
-    ) -> Tuple[Generator[bytes, None, None], List[dict]]:
-        """Stream synthesized speech using AVSpeechSynthesizer."""
+        self, 
+        text: str, 
+        options: Optional[Dict[str, Any]] = None
+    ) -> tuple[Generator[bytes, None, None], list[Dict[str, Any]]]:
+        """Stream synthesized speech and word timings."""
+        if options is None:
+            options = {}
+
+        # Build command
+        cmd = [str(self.bridge_path), "stream", text]
+        for key, value in options.items():
+            cmd.extend([f"--{key}", str(value)])
+
+        # Start process
+        process = subprocess.Popen(
+            cmd,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            bufsize=0,
+        )
+
+        if process.stdout is None:
+            raise RuntimeError("Failed to open subprocess stdout")
+            
+        stdout: IO[bytes] = process.stdout
+
+        # Read format info first
+        format_info = ""
+        while True:
+            line = stdout.readline()
+            if not line:
+                raise RuntimeError("Unexpected end of stream")
+            line_str = line.decode("utf-8").strip()
+            if line_str == "---AUDIO_START---":
+                break
+            format_info += line_str
+
         try:
-            cmd = [str(self.bridge_path), "stream", text]
-            
-            # Add voice and other properties
-            if "voice" in options:
-                cmd.extend(["--voice", options["voice"]])
-            
-            # Handle rate, volume, and pitch with shorter lines
-            for prop in ["rate", "volume", "pitch"]:
-                if prop in options:
-                    val = str(self._convert_property_value(prop, options[prop]))
-                    cmd.extend([f"--{prop}", val])
-            
-            process = subprocess.Popen(
-                cmd,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                bufsize=1024
-            )
-            
-            if process.stdout is None:
-                msg = "Failed to open subprocess stdout"
-                raise RuntimeError(msg)
-            
-            # Read header with timeout
-            header = b""
-            start_time = time.time()
-            while b"\n\n" not in header and time.time() - start_time < 5:
-                chunk = process.stdout.read(1)
+            format_data = json.loads(format_info)
+            logging.debug("Audio format: %s", format_data)
+        except json.JSONDecodeError:
+            logging.error("Failed to parse format info: %s", format_info)
+            format_data = {}
+
+        word_timings = []
+        buffer = bytearray()
+        
+        def stream_generator():
+            nonlocal buffer
+            while True:
+                # Read a chunk of data
+                chunk = stdout.read(4096)
                 if not chunk:
                     break
-                header += chunk
-            
-            if b"\n\n" not in header:
-                process.kill()
-                msg = "Timeout waiting for header"
-                raise RuntimeError(msg)
-            
-            # Parse word timings from header
-            try:
-                header_str = header.decode().split("\n\n")[0]
-                timings = json.loads(header_str)["word_timings"]
-            except (json.JSONDecodeError, IndexError, KeyError) as e:
-                process.kill()
-                logging.error("Failed to parse header: %s", e)
-                raise RuntimeError("Failed to parse header from Swift bridge")
-            
-            def generate() -> Generator[bytes, None, None]:
-                try:
-                    assert process.stdout is not None
-                    while True:
-                        chunk = process.stdout.read(1024)
-                        if not chunk:
-                            break
-                        yield chunk
-                except (Exception, KeyboardInterrupt) as e:
-                    logging.error("Error in audio stream: %s", e)
-                finally:
-                    process.kill()  # Ensure process is terminated
+
+                # Convert to string to check for markers
+                chunk_str = chunk.decode('utf-8', errors='ignore')
+                
+                # Check for word timing or end markers
+                if "---WORD_TIMING---" in chunk_str:
+                    # Split the chunk at the timing marker
+                    parts = chunk_str.split("---WORD_TIMING---")
+                    
+                    # Process the audio data before the marker
+                    if parts[0]:
+                        audio_data = parts[0].encode('utf-8')
+                        if buffer:
+                            audio_data = bytes(buffer) + audio_data
+                            buffer.clear()
+                        yield audio_data
+                    
+                    # Process the timing data
+                    timing_str = (
+                        parts[1].split("---AUDIO_CONTINUE---")[0].strip()
+                    )
                     try:
-                        process.wait(timeout=1)  # Wait for process to end
-                    except subprocess.TimeoutExpired:
-                        pass
-            
-            return generate(), timings
-            
-        except Exception as e:
-            logging.error("Streaming synthesis failed: %s", e)
-            if 'process' in locals():
-                process.kill()
-            raise
+                        timing_data = json.loads(timing_str)
+                        word_timings.append(timing_data)
+                    except json.JSONDecodeError:
+                        logging.error("Failed to parse word timing: %s", timing_str)
+                    
+                    # Process any remaining audio data
+                    remaining = parts[1].split("---AUDIO_CONTINUE---")[1]
+                    if remaining:
+                        yield remaining.encode('utf-8')
+                    
+                elif "---AUDIO_END---" in chunk_str:
+                    # Process any data before the end marker
+                    final_data = chunk_str.split("---AUDIO_END---")[0].encode('utf-8')
+                    if buffer:
+                        final_data = bytes(buffer) + final_data
+                        buffer.clear()
+                    if final_data:
+                        yield final_data
+                    break
+                
+                else:
+                    # Regular audio data
+                    if buffer:
+                        chunk = bytes(buffer) + chunk
+                        buffer.clear()
+                    yield chunk
+
+        return stream_generator(), word_timings
