@@ -15,7 +15,7 @@ class AVSynthTTS(AbstractTTS):
         super().__init__()
         self._client = client
         self._voice = voice
-        self.audio_rate = 44100  # Standard audio rate
+        self.audio_rate = 22050  # Lower audio rate for more natural speech
         self._ssml = AVSynthSSML()
         self.channels = 1
         self.sample_width = 2  # 16-bit audio

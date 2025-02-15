@@ -70,19 +70,21 @@ class AVSynthClient:
             value = value.lower()
             if prop == "rate":
                 rate_map = {
-                    "x-slow": 0.3,  # Much slower
-                    "slow": 0.4,    # Slower
-                    "medium": 0.5,  # Normal speed
-                    "fast": 0.6,    # Faster
-                    "x-fast": 0.7   # Much faster
+                    "x-slow": 0.1,    # Very slow
+                    "slow": 0.25,     # Slow
+                    "medium": 0.4,    # Normal speed (slightly slower than default)
+                    "fast": 0.5,      # Default AVSpeech rate
+                    "x-fast": 0.6     # Fast but not too fast
                 }
                 if value in rate_map:
                     return rate_map[value]
                 try:
                     # Convert percentage to rate value (50 = normal speed)
-                    return 0.5 * (float(value) / 50.0)
+                    # Scale to a reasonable range (0.1 to 0.6)
+                    percentage = float(value)
+                    return 0.1 + (percentage / 100.0) * 0.5
                 except ValueError:
-                    return 0.5  # Default to medium rate
+                    return 0.4  # Default to medium rate
             elif prop == "volume":
                 try:
                     return float(value) / 100
