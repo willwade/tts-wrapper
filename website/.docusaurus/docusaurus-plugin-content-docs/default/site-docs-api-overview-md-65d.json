@@ -1,0 +1,20 @@
+{
+  "id": "api/overview",
+  "title": "API Overview",
+  "description": "TTS Wrapper's API is designed to be intuitive and consistent across different TTS engines. This overview will help you understand the main components and their relationships.",
+  "source": "@site/docs/api/overview.md",
+  "sourceDirName": "api",
+  "slug": "/api/overview",
+  "permalink": "/tts-wrapper/docs/api/overview",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/willwade/tts-wrapper/tree/main/website/docs/api/overview.md",
+  "tags": [],
+  "version": "current",
+  "frontMatter": {},
+  "sidebar": "docs",
+  "previous": {
+    "title": "Basic Usage",
+    "permalink": "/tts-wrapper/docs/guides/basic-usage"
+  }
+}

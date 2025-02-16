@@ -1,0 +1,24 @@
+{
+  "id": "installation",
+  "title": "installation",
+  "description": "",
+  "source": "@site/docs/installation.md",
+  "sourceDirName": ".",
+  "slug": "/installation",
+  "permalink": "/tts-wrapper/docs/installation",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/willwade/tts-wrapper/tree/main/website/docs/installation.md",
+  "tags": [],
+  "version": "current",
+  "frontMatter": {},
+  "sidebar": "docs",
+  "previous": {
+    "title": "Introduction",
+    "permalink": "/tts-wrapper/docs/intro"
+  },
+  "next": {
+    "title": "quickstart",
+    "permalink": "/tts-wrapper/docs/quickstart"
+  }
+}

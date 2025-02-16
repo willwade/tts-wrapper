@@ -1,0 +1,78 @@
+{
+  "/tts-wrapper/__docusaurus/debug-c5a": {
+    "__comp": "__comp---theme-debug-config-23-a-2ff",
+    "__context": {
+      "plugin": "plugin---tts-wrapper-docusaurus-debugb-38-95d"
+    }
+  },
+  "/tts-wrapper/__docusaurus/debug/config-aed": {
+    "__comp": "__comp---theme-debug-config-23-a-2ff",
+    "__context": {
+      "plugin": "plugin---tts-wrapper-docusaurus-debugb-38-95d"
+    }
+  },
+  "/tts-wrapper/__docusaurus/debug/content-a42": {
+    "__comp": "__comp---theme-debug-contentba-8-ce7",
+    "__context": {
+      "plugin": "plugin---tts-wrapper-docusaurus-debugb-38-95d"
+    },
+    "__props": "__props---tts-wrapper-docusaurus-debug-contentf-36-b1e"
+  },
+  "/tts-wrapper/__docusaurus/debug/globalData-4d3": {
+    "__comp": "__comp---theme-debug-global-dataede-0fa",
+    "__context": {
+      "plugin": "plugin---tts-wrapper-docusaurus-debugb-38-95d"
+    }
+  },
+  "/tts-wrapper/__docusaurus/debug/metadata-371": {
+    "__comp": "__comp---theme-debug-site-metadata-68-e-3d4",
+    "__context": {
+      "plugin": "plugin---tts-wrapper-docusaurus-debugb-38-95d"
+    }
+  },
+  "/tts-wrapper/__docusaurus/debug/registry-116": {
+    "__comp": "__comp---theme-debug-registry-679-501",
+    "__context": {
+      "plugin": "plugin---tts-wrapper-docusaurus-debugb-38-95d"
+    }
+  },
+  "/tts-wrapper/__docusaurus/debug/routes-e92": {
+    "__comp": "__comp---theme-debug-routes-946-699",
+    "__context": {
+      "plugin": "plugin---tts-wrapper-docusaurus-debugb-38-95d"
+    }
+  },
+  "/tts-wrapper/docs-a11": {
+    "__comp": "__comp---theme-docs-root-5-e-9-0b6",
+    "__context": {
+      "plugin": "plugin---tts-wrapper-docsaba-5b8"
+    }
+  },
+  "/tts-wrapper/docs-aef": {
+    "__comp": "__comp---theme-doc-version-roota-7-b-5de",
+    "__props": "__props---tts-wrapper-docs-02-f-47a"
+  },
+  "/tts-wrapper/docs-adf": {
+    "__comp": "__comp---theme-doc-roota-94-67a"
+  },
+  "/tts-wrapper/docs/api/overview-23c": {
+    "__comp": "__comp---theme-doc-item-178-a40",
+    "content": "content---tts-wrapper-docs-api-overview-65-d-c41"
+  },
+  "/tts-wrapper/docs/guides/basic-usage-a92": {
+    "__comp": "__comp---theme-doc-item-178-a40",
+    "content": "content---tts-wrapper-docs-guides-basic-usage-102-a96"
+  },
+  "/tts-wrapper/docs/installation-a07": {
+    "__comp": "__comp---theme-doc-item-178-a40",
+    "content": "content---tts-wrapper-docs-installation-3-b-8-56b"
+  },
+  "/tts-wrapper/docs/intro-63e": {
+    "__comp": "__comp---theme-doc-item-178-a40",
+    "content": "content---tts-wrapper-docs-intro-0-e-3-76e"
+  },
+  "/tts-wrapper/docs/quickstart-da6": {
+    "__comp": "__comp---theme-doc-item-178-a40",
+    "content": "content---tts-wrapper-docs-quickstart-807-1ce"
+  }
+}

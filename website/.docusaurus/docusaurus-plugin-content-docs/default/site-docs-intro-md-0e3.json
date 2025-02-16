@@ -1,0 +1,20 @@
+{
+  "id": "intro",
+  "title": "Introduction",
+  "description": "TTS Wrapper is a powerful Python library that provides a unified interface for working with multiple Text-to-Speech (TTS) services. Whether you're using cloud-based services like AWS Polly, Google Cloud TTS, or local solutions like eSpeak, TTS Wrapper makes it easy to integrate and switch between different TTS engines.",
+  "source": "@site/docs/intro.md",
+  "sourceDirName": ".",
+  "slug": "/intro",
+  "permalink": "/tts-wrapper/docs/intro",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/willwade/tts-wrapper/tree/main/website/docs/intro.md",
+  "tags": [],
+  "version": "current",
+  "frontMatter": {},
+  "sidebar": "docs",
+  "next": {
+    "title": "installation",
+    "permalink": "/tts-wrapper/docs/installation"
+  }
+}

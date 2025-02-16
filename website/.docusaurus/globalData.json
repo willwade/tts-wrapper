@@ -1,0 +1,53 @@
+{
+  "docusaurus-plugin-content-docs": {
+    "default": {
+      "path": "/tts-wrapper/docs",
+      "versions": [
+        {
+          "name": "current",
+          "label": "Next",
+          "isLast": true,
+          "path": "/tts-wrapper/docs",
+          "mainDocId": "intro",
+          "docs": [
+            {
+              "id": "api/overview",
+              "path": "/tts-wrapper/docs/api/overview",
+              "sidebar": "docs"
+            },
+            {
+              "id": "guides/basic-usage",
+              "path": "/tts-wrapper/docs/guides/basic-usage",
+              "sidebar": "docs"
+            },
+            {
+              "id": "installation",
+              "path": "/tts-wrapper/docs/installation",
+              "sidebar": "docs"
+            },
+            {
+              "id": "intro",
+              "path": "/tts-wrapper/docs/intro",
+              "sidebar": "docs"
+            },
+            {
+              "id": "quickstart",
+              "path": "/tts-wrapper/docs/quickstart",
+              "sidebar": "docs"
+            }
+          ],
+          "draftIds": [],
+          "sidebars": {
+            "docs": {
+              "link": {
+                "path": "/tts-wrapper/docs/intro",
+                "label": "intro"
+              }
+            }
+          }
+        }
+      ],
+      "breadcrumbs": true
+    }
+  }
+}
