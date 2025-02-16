@@ -38,7 +38,6 @@ polly = ["boto3>=1.34.137"]
 microsoft = ["azure-cognitiveservices-speech>=1.15.0"]
 elevenlabs = []
 witai = []
-systemtts = ["pyttsx3>=2.98"]
 uwp = ["winrt-runtime>=2.0.1; sys_platform == 'win32'"]
 sherpaonnx = ["sherpa-onnx>=1.10.17"]
 playht = []  # No additional dependencies needed as we use requests which is in core dependencies

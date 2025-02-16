@@ -9,7 +9,6 @@ optional_dependencies = {
     "boto3": ("tts_wrapper", "PollyTTS", "PollyClient"),
     "ibm_watson": ("tts_wrapper", "WatsonTTS", "WatsonClient"),
     "google_cloud_texttospeech": ("tts_wrapper", "GoogleTTS", "GoogleClient"),
-    "pyttsx3": ("tts_wrapper", "SystemTTS", "SystemTTSClient"),
     "azure_cognitiveservices_speech": ("tts_wrapper", "MicrosoftTTS", "MicrosoftClient"),
     "requests": ("tts_wrapper", "ElevenLabsTTS", "ElevenLabsClient"),  # Used by ElevenLabs and WitAI
     "piper-tts": ("tts_wrapper", "PiperTTS", "PiperClient"),  # Assuming piper-tts needs to be added

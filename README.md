@@ -18,6 +18,8 @@ _TTS-Wrapper_ simplifies using text-to-speech APIs by providing a unified interf
 - Wit.Ai 
 - eSpeak-NG
 - Play.HT
+- AVSynth (macOS only)
+- SAPI (Windows only)
 
 
 ### Experimental (Not fully featured or in a state of WIP)
@@ -25,7 +27,6 @@ _TTS-Wrapper_ simplifies using text-to-speech APIs by providing a unified interf
 - PicoTTS
 - UWP (WinRT) Speech system (win 10+)
 - Sherpa-Onnx (focusing on MMS models for now)
-- SAPI/NSSS (Microsoft Speech API)/NSSS
 
 
 ## Features
@@ -50,12 +51,8 @@ _TTS-Wrapper_ simplifies using text-to-speech APIs by providing a unified interf
 | ElevenLabs | Linux/MacOS/Windows | Online         | No   | Yes               | Yes           |
 | Wit.AI     | Linux/MacOS/Windows | Online         | Yes  | No                | No            |
 | Play.HT    | Linux/MacOS/Windows | Online         | No   | Yes               | No            |
-| Sherpa-Onnx| Linux/MacOS/Windows | Offline        | No   | No                | No            |
-| gTTS       | Linux/MacOS/Windows | Online         | No   | No                | No            |
-| UWP        | Windows             | Offline        | No   | Yes               | No            |
-| SAPI       | Windows             | Offline        | Yes  | Yes               | Yes           |
-| NSS        | MacOS               | Offline        | Yes  | Yes               | Yes           |
-| eSpeak     | Linux/MacOS/Windows | Offline        | Yes  | Yes               | Yes           |
+| AVSynth    | MacOS              | Offline        | Yes  | Yes               | Yes           |
+| SAPI       | Windows            | Offline        | Yes  | Yes               | Yes           |
 
 
 ### Methods for each engine
@@ -267,19 +264,6 @@ tts = eSpeakTTS(client)
 ```
 
 Note: It relies on know extra libraries except you need to instal espeak-ng
-
-### SAPI/eSpeak/NSSS
-
-```python
-from tts_wrapper import SystemTTSClient, SystemTTS
-client = SystemTTSClient('espeak') # eSpeak
-client = SystemTTSClient('sapi') #SAPI
-client = SystemTTSClient('nsss') #NSSS MacOS
-# Initialize the TTS engine
-tts = SystemTTSClient(client)
-```
-
-**Just note: We cant do word timings in this.**
 
 
 ### GoogleTrans
