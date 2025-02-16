@@ -275,24 +275,31 @@ from tts_wrapper import eSpeakClient, eSpeakTTS
 
 client = eSpeakClient()
 tts = eSpeakTTS(client)
-
 ```
 
-Note: It relies on know extra libraries except you need to instal espeak-ng
+Note: Requires espeak-ng to be installed on your system.
 
-#### SAPI/eSpeak/NSSS
+#### SAPI (Windows)
 
 ```python
-from tts_wrapper import SystemTTSClient, SystemTTS
-client = SystemTTSClient('espeak') # eSpeak
-client = SystemTTSClient('sapi') #SAPI
-client = SystemTTSClient('nsss') #NSSS MacOS
-# Initialize the TTS engine
-tts = SystemTTSClient(client)
+from tts_wrapper import SAPIClient, SAPITTS
+
+client = SAPIClient()
+tts = SAPITTS(client)
 ```
 
-**Just note: We cant do word timings in this.**
+Note: Only available on Windows systems.
 
+#### AVSynth (macOS)
+
+```python
+from tts_wrapper import AVSynthClient, AVSynthTTS
+
+client = AVSynthClient()
+tts = AVSynthTTS(client)
+```
+
+Note: Only available on macOS. Provides high-quality speech synthesis with word timing support and voice property control.
 
 #### GoogleTrans
 
