@@ -86,6 +86,11 @@ export default [
     ]
   },
   {
+    path: '/tts-wrapper/',
+    component: ComponentCreator('/tts-wrapper/', '61d'),
+    exact: true
+  },
+  {
     path: '*',
     component: ComponentCreator('*'),
   },
