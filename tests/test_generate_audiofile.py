@@ -21,8 +21,6 @@ from tts_wrapper import (
     PollyTTS,
     SherpaOnnxClient,
     SherpaOnnxTTS,
-    SystemTTS,
-    SystemTTSClient,
     WatsonClient,
     WatsonTTS,
     WitAiClient,
@@ -75,10 +73,6 @@ OFFLINE_CLIENTS = {
             model_path=None, tokens_path=None, model_id="mms_eng"
         ),
         "class": SherpaOnnxTTS,
-    },
-    "systemtts": {
-        "client_lambda": lambda: SystemTTSClient(),
-        "class": SystemTTS,
     },
     "espeak": {"client_lambda": lambda: eSpeakClient(), "class": eSpeakTTS},
 }
@@ -277,10 +271,31 @@ class TestOnlineEngines(BaseTestFileCreation):
             self.skipTest("Polly client not properly initialized")
             
         try:
-            self._test_audio_creation("polly", "This is a test using Amazon Polly TTS.")
+            # Create a temporary file for the test
+            test_file = "polly-test.wav"
+            if os.path.exists(test_file):
+                os.remove(test_file)
+                
+            # Synthesize a short text
+            polly.synth_to_file("This is a test using Amazon Polly TTS.", test_file, "wav")
+            
+            # Verify the file was created
+            self.assertTrue(os.path.exists(test_file))
+            self.assertGreater(os.path.getsize(test_file), 0)
+            
         except Exception as e:
             logging.error(f"Error in Polly test: {str(e)}")
             self.skipTest(f"Polly test failed: {str(e)}")
+            
+        finally:
+            # Cleanup
+            if hasattr(polly, 'cleanup'):
+                polly.cleanup()
+            if os.path.exists(test_file):
+                try:
+                    os.remove(test_file)
+                except OSError:
+                    pass
 
     @pytest.mark.skipif(not os.getenv("WATSON_API_KEY"), reason="Watson credentials not set")
     def test_watson_audio_creation(self) -> None:

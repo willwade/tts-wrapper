@@ -224,14 +224,18 @@ class AbstractTTS(ABC):
         Parameters
         ----------
         audio_bytes : bytes
-            The audio data to be loaded into the player.
-
+            The raw audio data to be loaded into the player.
+            Must be PCM data in int16 format.
         """
-        import pyaudio
-        self.pyaudio = pyaudio.PyAudio()
         if not audio_bytes:
             msg = "Audio bytes cannot be empty"
             raise ValueError(msg)
+            
+        import pyaudio
+        self.pyaudio = pyaudio.PyAudio()
+        
+        # Convert to numpy array for internal processing
+        self._audio_array = np.frombuffer(audio_bytes, dtype=np.int16)
         self.audio_bytes = audio_bytes
         self.position = 0
 
@@ -258,6 +262,7 @@ class AbstractTTS(ABC):
         """Run main playback loop in a separate thread."""
         try:
             self._create_stream()
+            self._trigger_callback("onStart")  # Trigger onStart when playback actually starts
             self._on_end_triggered = False  # Reset the guard flag at the start of playback
 
             while self.isplaying and self.position < len(self.audio_bytes):
@@ -418,65 +423,59 @@ class AbstractTTS(ABC):
         except Exception:
             logging.exception("Error playing audio")
 
-    def speak_streamed(
-        self,
-        text: str,
-        save_to_file_path: str | None = None,
-        audio_format: str | None = "wav",
-    ) -> None:
+    def speak_streamed(self, text: str | SSML) -> None:
         """
-        Synthesize text and stream it for playback using sounddevice.
-
-        Optionally save the audio to a file after playback completes.
-
-        :param text: The text to synthesize and stream.
-        :param save_to_file_path: Path to save the audio file (optional).
-        :param audio_format: Audio format to save (e.g., 'wav', 'mp3', 'flac').
+        Synthesize text to speech and stream it for playback.
+        
+        Args:
+            text: The text to synthesize, can be plain text or SSML
         """
         try:
-            # Synthesize audio to bytes for playback
-            audio_bytes = self.synth_to_bytes(text)
-            if audio_bytes[:4] == b"RIFF":
-                audio_bytes = self._strip_wav_header(audio_bytes)
-                logging.info("Stripping wav header from streamed audio")
-            audio_data = np.frombuffer(audio_bytes, dtype=np.int16)
-            self.audio_bytes = audio_data.tobytes()
-            self.position = 0
-            self.playing.set()
-            self._trigger_callback("onStart")
-
-            # Setup the audio stream
-            with self.stream_lock:
-                if self.stream:
-                    self.stream.close()
-                self.setup_stream()
-
-            # Start playback in a separate thread
-            self.play_thread = threading.Thread(target=self._start_stream)
-            self.play_thread.start()
-
-            # Wait for the playback thread to complete
-            self.play_thread.join()
-
-            # After streaming is finished, save the file if requested
-            if save_to_file_path:
-                pcm_data = np.frombuffer(audio_bytes, dtype=np.int16)
-                audio_format = audio_format if audio_format else "wav"
-                converted_audio = self._convert_audio(
-                    pcm_data, audio_format, self.audio_rate,
-                )
-
-                with Path(save_to_file_path).open("wb") as f:
-                    f.write(converted_audio)
-                logging.info(
-                    "Audio saved to %s in %s format.",
-                    save_to_file_path,
-                    audio_format,
-                )
-
-        except Exception:
-            logging.exception("Error streaming or saving audio")
-
+            # Try streaming synthesis first
+            if hasattr(self, 'synth_to_bytestream'):
+                # Get the streaming generator and word timings
+                generator, word_timings = self.synth_to_bytestream(text)
+                
+                # Set word timings for callbacks
+                self.set_timings([
+                    (timing["start"], timing["end"], timing["word"])
+                    for timing in word_timings
+                ])
+                
+                # Collect all audio data
+                audio_data = b"".join(generator)
+            else:
+                # Fall back to non-streaming synthesis
+                audio_data = self.synth_to_bytes(text)
+                
+                # For non-streaming engines, create simple word timings
+                # Extract plain text from SSML if needed
+                plain_text = str(text) if isinstance(text, str) else text.get_text()
+                
+                # Estimate duration based on audio length
+                audio_array = np.frombuffer(audio_data, dtype=np.int16)
+                duration = len(audio_array) / self.audio_rate
+                words = plain_text.split()
+                word_duration = duration / len(words)
+                
+                # Create evenly spaced word timings
+                word_timings = []
+                for i, word in enumerate(words):
+                    start_time = i * word_duration
+                    end_time = (i + 1) * word_duration
+                    word_timings.append((start_time, end_time, word))
+                self.set_timings(word_timings)
+            
+            # Check for WAV header and strip if present
+            if audio_data.startswith(b'RIFF'):
+                audio_data = audio_data[44:]  # Skip WAV header
+            
+            # Start playback
+            self.load_audio(audio_data)
+            self.play()  # onStart will be triggered in _playback_loop
+            
+        except Exception as e:
+            logging.exception("Error in speak_streamed: %s", e)
 
     def setup_stream(self, samplerate: int = 44100,
                      channels: int = 1, dtype: str | int = "int16") -> None:

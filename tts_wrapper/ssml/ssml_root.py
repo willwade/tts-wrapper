@@ -12,3 +12,7 @@ class BaseSSMLRoot(AbstractSSMLNode):
     def add(self, child: Child) -> "AbstractSSMLNode":
         self._inner.add(child)
         return self
+
+    def get_text(self) -> str:
+        """Extract plain text from SSML by concatenating all text children."""
+        return self._inner.get_text()

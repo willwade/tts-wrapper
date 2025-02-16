@@ -7,6 +7,11 @@
 
 _TTS-Wrapper_ simplifies using text-to-speech APIs by providing a unified interface across multiple services, allowing easy integration and manipulation of TTS capabilities.
 
+## Requirements
+
+- Python 3.10 or higher
+- System dependencies (see below)
+- API credentials for online services
 
 ## Supported Services
 
@@ -18,15 +23,14 @@ _TTS-Wrapper_ simplifies using text-to-speech APIs by providing a unified interf
 - Wit.Ai 
 - eSpeak-NG
 - Play.HT
-
+- AVSynth (macOS only)
+- SAPI (Windows only)
+- Sherpa-Onnx (NB: Means you can run any ONNX model you want - eg Piper or MMS models)
 
 ### Experimental (Not fully featured or in a state of WIP)
 
 - PicoTTS
 - UWP (WinRT) Speech system (win 10+)
-- Sherpa-Onnx (focusing on MMS models for now)
-- SAPI/NSSS (Microsoft Speech API)/NSSS
-
 
 ## Features
 - **Text to Speech**: Convert text into spoken audio.
@@ -39,55 +43,67 @@ _TTS-Wrapper_ simplifies using text-to-speech APIs by providing a unified interf
 - **Volume, Pitch, and Rate Controls** Control volume, pitch and rate with unified methods
 
 
-## Feature set overview
+## Feature Matrix
 
-| Engine     | OS                  | Online/Offline | SSML | Rate/Volume/Pitch | onWord events |
-|------------|---------------------|----------------|------|-------------------|---------------|
-| Polly      | Linux/MacOS/Windows | Online         | Yes  | Yes               | Yes           |
-| Google     | Linux/MacOS/Windows | Online         | Yes  | Yes               | Yes           |
-| Azure      | Linux/MacOS/Windows | Online         | Yes  | Yes               | Yes           |
-| Watson     | Linux/MacOS/Windows | Online         | Yes  | No                | Yes           |
-| ElevenLabs | Linux/MacOS/Windows | Online         | No   | Yes               | Yes           |
-| Wit.AI     | Linux/MacOS/Windows | Online         | Yes  | No                | No            |
-| Play.HT    | Linux/MacOS/Windows | Online         | No   | Yes               | No            |
-| Sherpa-Onnx| Linux/MacOS/Windows | Offline        | No   | No                | No            |
-| gTTS       | Linux/MacOS/Windows | Online         | No   | No                | No            |
-| UWP        | Windows             | Offline        | No   | Yes               | No            |
-| SAPI       | Windows             | Offline        | Yes  | Yes               | Yes           |
-| NSS        | MacOS               | Offline        | Yes  | Yes               | Yes           |
-| eSpeak     | Linux/MacOS/Windows | Offline        | Yes  | Yes               | Yes           |
-
-
-### Methods for each engine
-
-| Method                    | Description                                  | Available Engines       |
-|---------------------------|----------------------------------------------|-------------------------|
-| `speak()`                 | Plays synthesized speech directly.           | All engines             |
-| `synth_to_file()`         | Synthesizes speech and saves it to a file.   | All engines             |
-| `speak_streamed()`        | Streams synthesized speech.                  | All engines             |
-| `set_property()`          | Sets properties like rate, volume, pitch.    | All engines             |
-| `get_voices()`            | Retrieves available voices.                  | All engines             |
-| `connect()`               | Connects callback functions for events.      | Polly, Microsoft, Google, Watson, eSpeak |
-| `pause_audio()`           | Pauses ongoing speech playback.              | All engines             |
-| `resume_audio()`          | Resumes paused speech playback.              | All engines             |
-| `stop_audio()`            | Stops ongoing speech playback.               | All engines             |
-| `set_output_device('id')` | Stops ongoing speech playback.               | All engines             |
-| `check_credentials()`     | True or False if Credentials are ok          | All engines             |
+| Engine     | Platform            | Online/Offline | SSML | Word Boundaries | Streaming | Playback Control | Callbacks |
+|------------|--------------------|--------------------|------|-----------------|-----------|------------------|-----------|
+| Polly      | Linux/MacOS/Windows| Online            | Yes  | Yes            | Yes       | Yes              | Full      |
+| Google     | Linux/MacOS/Windows| Online            | Yes  | Yes            | Yes       | Yes              | Full      |
+| Microsoft  | Linux/MacOS/Windows| Online            | Yes  | Yes            | Yes       | Yes              | Full      |
+| Watson     | Linux/MacOS/Windows| Online            | Yes  | Yes            | Yes       | Yes              | Full      |
+| ElevenLabs | Linux/MacOS/Windows| Online            | No*  | Yes            | Yes       | Yes              | Full      |
+| Play.HT    | Linux/MacOS/Windows| Online            | No*  | No**           | Yes       | Yes              | Basic     |
+| Wit.Ai     | Linux/MacOS/Windows| Online            | No*  | No**           | Yes       | Yes              | Basic     |
+| eSpeak     | Linux/MacOS        | Offline           | Yes  | No**           | Yes       | Yes              | Basic     |
+| AVSynth    | MacOS              | Offline           | No   | No**           | Yes       | Yes              | Basic     |
+| SAPI       | Windows            | Offline           | Yes  | Yes            | Yes       | Yes              | Full      |
+| UWP        | Windows            | Offline           | Yes  | Yes            | Yes       | Yes              | Full      |
+| Sherpa-ONNX| Linux/MacOS/Windows| Offline           | No   | No**           | Yes       | Yes              | Basic     |
 
 **Notes**:
+- **SSML**: Entries marked with No* indicate that while the engine doesn't support SSML natively, the wrapper will automatically strip SSML tags and process the plain text.
+- **Word Boundaries**: Entries marked with No** use an estimation-based timing system that may not be accurate for precise synchronization needs.
+- **Callbacks**: 
+  - "Full" supports accurate word-level timing callbacks, onStart, and onEnd events
+  - "Basic" supports onStart and onEnd events, with estimated word timings
+- **Playback Control**: All engines support pause, resume, and stop functionality through the wrapper's unified interface
+- All engines support the following core features:
+  - Voice selection (`set_voice`)
+  - Property control (rate, volume, pitch)
+  - File output (WAV, with automatic conversion to MP3/other formats)
+  - Streaming playback
+  - Audio device selection
 
-* For SSML where it says  'no' you can send the engine SSML we will just strip it
-* For onWord Events. For Engines where it is a no we have a very bad fallback mechanism which will emit word timings based on estimation. You cant rely on this for accurate use cases. 
+### Core Methods Available
 
+| Method                    | Description                                  | Availability |
+|--------------------------|----------------------------------------------|--------------|
+| `speak()`                | Direct speech playback                       | All engines  |
+| `speak_streamed()`       | Streamed speech playback                    | All engines  |
+| `synth_to_file()`        | Save speech to file                         | All engines  |
+| `pause()`, `resume()`    | Playback control                            | All engines  |
+| `stop()`                 | Stop playback                               | All engines  |
+| `set_property()`         | Control rate/volume/pitch                   | All engines  |
+| `get_voices()`           | List available voices                       | All engines  |
+| `set_voice()`           | Select voice                                | All engines  |
+| `connect()`             | Register event callbacks                    | All engines  |
+| `check_credentials()`    | Verify API credentials                      | Online engines|
+| `set_output_device()`    | Select audio output device                  | All engines  |
 
-## Install
+---
+
+## Installation
+
+### Package Name Note
+
+This package is published on PyPI as `py3-tts-wrapper` but installs as `tts-wrapper`. This is because it's a fork of the original `tts-wrapper` project with Python 3 support and additional features.
 
 ### System Dependencies
 
 This project requires the following system dependencies on Linux:
 
 ```sh
-sudo apt-get insall portaudio19-dev
+sudo apt-get install portaudio19-dev
 ```
 
 or MacOS, using [Homebrew](https://brew.sh)
@@ -102,7 +118,7 @@ For PicoTTS on Debian systems:
 sudo apt-get install libttspico-utils
 ```
 
-The `espeak` TTS functionality requires the `eSpeak` C library to be installed on your system.
+The `espeak` TTS functionality requires the `espeak-ng` C library to be installed on your system:
 
 - **Ubuntu/Debian**: `sudo apt install espeak-ng`
 - **macOS**: `brew install espeak-ng`
@@ -110,31 +126,26 @@ The `espeak` TTS functionality requires the `eSpeak` C library to be installed o
 
 ### Using pip
 
+Install from PyPI with selected engines:
 ```sh
-pip install py3-tts-wrapper[google,microsoft,sapi,sherpaonnx,googletrans]
-```
-or via git
-
-```sh
-pip install git+https://github.com/willwade/tts-wrapper#egg=tts-wrapper[google,microsoft,sapi,mms,sherpaonnx]
+pip install "py3-tts-wrapper[google,microsoft,sapi,sherpaonnx,googletrans]"
 ```
 
-or (the newer way we should all use)
-
+Install from GitHub:
 ```sh
-pip install tts-wrapper[google,microsoft,sapi,sherpaonnx,googletrans]@git+https://github.com/willwade/tts-wrapper
+pip install "py3-tts-wrapper[google,microsoft,sapi,sherpaonnx,googletrans]@git+https://github.com/willwade/tts-wrapper"
 ```
 
-
-NB: On MacOS(/zsh) you may need to do use quotes
-
+Note: On macOS/zsh, you may need to use quotes:
 ```sh
-pip install py3-tts-wrapper"[google, watson, polly, elevenlabs, microsoft, mms, sherpaonnx]"
+pip install "py3-tts-wrapper[google,watson,polly,elevenlabs,microsoft,sherpaonnx]"
 ```
 
 
 
-## Basic Usage
+## Usage Guide
+
+### Basic Usage
 
 ```python
 from tts_wrapper import PollyClient
@@ -161,10 +172,11 @@ tts.speak('Hello world')
 For a full demo see the examples folder. You'll need to fill out the credentials.json (or credentials-private.json). Use them from cd'ing into the examples folder. 
 Tips on gaining keys are below.
 
-## Authorization
+### Authorization
+
 Each service uses different methods for authentication:
 
-### Polly
+#### Polly
 
 ```python
 from tts_wrapper import PollyTTS, PollyClient
@@ -173,7 +185,7 @@ client = PollyClient(credentials=('aws_region','aws_key_id', 'aws_secret_access_
 tts = PollyTTS(client)
 ```
 
-### Google
+#### Google
 
 ```python
 from tts_wrapper import GoogleTTS, GoogleClient
@@ -193,7 +205,7 @@ client = GoogleClient(credentials=os.getenv('GOOGLE_SA_PATH'))
 client = GoogleClient(credentials=credentials_dict)]
 ```
 
-### Microsoft
+#### Microsoft
 
 ```python
 from tts_wrapper import MicrosoftTTS, MicrosoftClient
@@ -202,7 +214,7 @@ client = MicrosoftClient(credentials=('subscription_key','subscription_region'))
 tts = MicrosoftTTS(client)
 ```
 
-### Watson
+#### Watson
 
 ```python
 from tts_wrapper import WatsonTTS, WatsonClient
@@ -220,7 +232,7 @@ client = WatsonClient(credentials=('api_key', 'region', 'instance_id'),disableSS
 tts = WatsonTTS(client)
 ```
 
-### ElevenLabs
+#### ElevenLabs
 
 ```python
 from tts_wrapper import ElevenLabsTTS, ElevenLabsClient
@@ -230,7 +242,7 @@ tts = ElevenLabsTTS(client)
 
 - **Note**: ElevenLabs does not support SSML.
 
-### Wit.Ai
+#### Wit.Ai
 
 ```python
 from tts_wrapper import WitAiTTS, WitAiClient
@@ -238,7 +250,7 @@ client = WitAiClient(credentials=('token'))
 tts = WitAiTTS(client)
 ```
 
-### Play.HT
+#### Play.HT
 
 ```python
 from tts_wrapper import PlayHTClient, PlayHTTTS
@@ -248,7 +260,7 @@ tts = PlayHTTTS(client)
 
 - **Note**: Play.HT does not support SSML, but we automatically strip SSML tags if present.
 
-### UWP
+#### UWP
 
 ```python
 from tts_wrapper import UWPTTS, UWPClient
@@ -256,7 +268,7 @@ client = UWPClient()
 tts = UWPTTS(client)
 ```
 
-### eSpeak
+#### eSpeak
 
 ```python
 from tts_wrapper import eSpeakClient, eSpeakTTS
@@ -268,7 +280,7 @@ tts = eSpeakTTS(client)
 
 Note: It relies on know extra libraries except you need to instal espeak-ng
 
-### SAPI/eSpeak/NSSS
+#### SAPI/eSpeak/NSSS
 
 ```python
 from tts_wrapper import SystemTTSClient, SystemTTS
@@ -282,7 +294,7 @@ tts = SystemTTSClient(client)
 **Just note: We cant do word timings in this.**
 
 
-### GoogleTrans
+#### GoogleTrans
 
 Uses the gTTS library. 
 
@@ -294,7 +306,7 @@ client = GoogleTransClient(voice_id)
 tts = GoogleTransTTS(client)
 ```
 
-### Sherpa-ONNX
+#### Sherpa-ONNX
 
 You can provide blank model path and tokens path - and we will use a default location.. 
 AS NOTED - WE HAVE DESIGNED THIS RIGHT NOW FOR MMS MODELS! We will add others like piper etc to this - Infact I'll drop regular piper support for sherpa-onnx. Its less of a headache..
@@ -320,9 +332,9 @@ and then use speak, speak_streamed etc..
 
 You then can perform the following methods.
 
-## Advanced Usage
+### Advanced Usage
 
-### SSML
+#### SSML
 
 Even if you don't use SSML features that much its wise to use the same syntax - so pass SSML not text to all engines
 
@@ -330,7 +342,7 @@ Even if you don't use SSML features that much its wise to use the same syntax - 
 ssml_text = tts.ssml.add('Hello world!')
 ```
 
-### Plain Text
+#### Plain Text
 
 If you want to keep things simple each engine will convert plain text to SSML if its not.
 
@@ -338,7 +350,7 @@ If you want to keep things simple each engine will convert plain text to SSML if
 tts.speak('Hello World!')
 ```
 
-### Speak 
+#### Speak 
 
 This will use the default audio output of your device to play the audio immediately
 
@@ -346,7 +358,7 @@ This will use the default audio output of your device to play the audio immediat
 tts.speak(ssml_text)
 ```
 
-### Check Credentials
+#### Check Credentials
 
 This will check if the credentials are valid. Its only on the client object. Eg
 
@@ -364,9 +376,9 @@ This will check if the credentials are valid. Its only on the client object. Eg
 
 NB: Each engine has a different way of checking credentials. If they dont have a supported the parent class will check get_voices. If you want to save calls just do a get_voices call.
 
-### Streaming and Playback Control
+#### Streaming and Playback Control
 
-### `pause_audio()`, `resume_audio()`, `stop_audio()`
+#### `pause_audio()`, `resume_audio()`, `stop_audio()`
 These methods manage audio playback by pausing, resuming, or stopping it.
 NB: Only to be used for speak_streamed
 
@@ -406,7 +418,7 @@ sudo apt-get install portaudio19-dev
 ```
 
 
-### File Output
+#### File Output
 
 ```python
 tts.synth_to_file(ssml_text, 'output.mp3', format='mp3')
@@ -425,7 +437,7 @@ tts.speak_streamed(ssml_text,filepath,'wav')
 ```
 
 
-### Fetch Available Voices
+#### Fetch Available Voices
 
 ```python
 voices = tts.get_voices()
@@ -434,7 +446,7 @@ print(voices)
 
 NB: All voices will have a id, dict of language_codes, name and gender. Just note not all voice engines provide gender
 
-### Voice Selection
+#### Voice Selection
 
 ```python
 tts.set_voice(voice_id,lang_code=en-US)
@@ -448,14 +460,14 @@ tts.set_voice('en-US-JessaNeural','en-US')
 
 Use the id - not a name
 
-### SSML
+#### SSML
 
 ```python
 ssml_text = tts.ssml.add('Hello, <break time="500ms"/> world!')
 tts.speak(ssml_text)
 ```
 
-### Volume, Rate and Pitch Control
+#### Volume, Rate and Pitch Control
 
 Set volume:
 ```python
@@ -502,7 +514,7 @@ Pitch Control:
 
 Use the ```tts.ssml.clear_ssml()``` method to clear all entries from the ssml list
 
-### `set_property()`
+#### `set_property()`
 This method allows setting properties like `rate`, `volume`, and `pitch`.
 
 ```python
@@ -511,7 +523,7 @@ tts.set_property("volume", "80")
 tts.set_property("pitch", "high")
 ```
 
-### `get_property()`
+#### `get_property()`
 This method retrieves the value of properties such as `volume`, `rate`, or `pitch`.
 
 ```python
@@ -520,7 +532,7 @@ print(f"Current volume: {current_volume}")
 ```
 
 
-### Using callbacks on word-level boundaries
+#### Using callbacks on word-level boundaries
 
 Note only **Polly, Microsoft, Google, ElevenLabs, UWP, SAPI and Watson** can do this **correctly**. We can't do this in anything else but we do do a estimated tonings for all other engines (ie elevenlabs, witAi and Piper)
 
@@ -560,7 +572,7 @@ Word: test, Duration: 0.424s
 Speech ended
 ```
 
-### `connect()`
+#### `connect()`
 This method allows registering callback functions for events like `onStart` or `onEnd`.
 
 ```python
@@ -802,66 +814,63 @@ from .engine import WitTTS
 from .ssml import EngineSSML
 ```
 
+#### NB: Credentials Files
 
-## Tips
+You can store your credentials in either:
+- `credentials.json` - For development
+- `credentials-private.json` - For private credentials (should be git-ignored)
 
-### Getting keys
+Example structure (do NOT commit actual credentials):
+```json
+{
+    "Polly": {
+        "region": "your-region",
+        "aws_key_id": "your-key-id",
+        "aws_access_key": "your-access-key"
+    },
+    "Microsoft": {
+        "token": "your-subscription-key",
+        "region": "your-region"
+    }
+}
+```
 
-#### Watson
+### Service-Specific Setup
 
-This is not straightforward
+#### AWS Polly
+- [Create an AWS account](https://aws.amazon.com/free)
+- [Set up IAM credentials](https://docs.aws.amazon.com/polly/latest/dg/setting-up.html)
+- [Polly API Documentation](https://docs.aws.amazon.com/polly/latest/dg/API_Operations.html)
 
-#### Polly
+#### Microsoft Azure
+- [Create an Azure account](https://azure.microsoft.com/free)
+- [Create a Speech Service resource](https://docs.microsoft.com/azure/cognitive-services/speech-service/get-started)
+- [Azure Speech Service Documentation](https://docs.microsoft.com/azure/cognitive-services/speech-service/rest-text-to-speech)
 
+#### Google Cloud
+- [Create a Google Cloud account](https://cloud.google.com/free)
+- [Set up a service account](https://cloud.google.com/text-to-speech/docs/quickstart-client-libraries)
+- [Google TTS Documentation](https://cloud.google.com/text-to-speech/docs)
 
-#### Microsoft 
-
-* You first need an Azure subscription - [Create one for free](https://azure.microsoft.com/free/cognitive-services).
-* [Create a Speech resource](https://portal.azure.com/#create/Microsoft.CognitiveServicesSpeechServices) in the Azure portal.
-* Your Speech resource key and region. After your Speech resource is deployed, select Go to resource to view and manage keys. For more information about Azure AI services resources, see [Get the keys for your resource](https://learn.microsoft.com/en-us/azure/ai-services/multi-service-resource?pivots=azportal#get-the-keys-for-your-resource)
-
-
-#### Google
-
-Create a Service Account:
-
-1. Go to the Google Cloud Console: Visit the [Google Cloud Console](https://console.cloud.google.com/).
-2. Create a New Project: If you don't already have a project, create a new one in the developer console.
-3. Enable APIs: Enable the APIs that your service account will be using. For example, if you're using Google Drive API, enable that API for your project.
-4. Create a Service Account:
-
-* In the Google Cloud Console, navigate to "IAM & Admin" > "Service accounts."
-* Click on "Create Service Account."
-* Enter a name for the service account and an optional description.
-* Choose the role for the service account. This determines the permissions it will have.
-* Click "Continue" to proceed.
-
-5. Create and Download Credentials:
-
-* On the next screen, you can grant the service account a role in your project. You can also skip this step and grant roles later.
-* Click "Create Key" to create and download the JSON key file. This file contains the credentials for your service account.
-* Keep this JSON file secure and do not expose it publicly.
-
-
-#### Wit.Ai
-
-1. https://wit.ai/apps
-2. Look for `Bearer` token. Its in the Curl example
+#### IBM Watson
+- [Create an IBM Cloud account](https://cloud.ibm.com/registration)
+- [Create a Text to Speech service instance](https://cloud.ibm.com/catalog/services/text-to-speech)
+- [Watson TTS Documentation](https://cloud.ibm.com/apidocs/text-to-speech)
 
 #### ElevenLabs
-
-1. Login at https://elevenlabs.io/app/speech-synthesis
-2. Go to your profile and click on "Profile + API Key"
-3. Click on Popup and copy "API Key"
+- [Create an ElevenLabs account](https://elevenlabs.io/)
+- [Get your API key](https://docs.elevenlabs.io/authentication)
+- [ElevenLabs Documentation](https://docs.elevenlabs.io/)
 
 #### Play.HT
+- [Create a Play.HT account](https://play.ht/)
+- [Get your API credentials](https://docs.play.ht/reference/api-getting-started)
+- [Play.HT Documentation](https://docs.play.ht/)
 
-1. Sign up at https://play.ht/
-2. Go to your dashboard and click on "API Access"
-3. You'll need two pieces of information:
-   * API Key: Found under "API Key" section
-   * User ID: Found under "User ID" section
-4. Keep both the API Key and User ID secure and do not expose them publicly
+#### Wit.AI
+- [Create a Wit.ai account](https://wit.ai/)
+- [Create a new app and get token](https://wit.ai/docs/quickstart)
+- [Wit.ai Documentation](https://wit.ai/docs)
 
 ## License
 

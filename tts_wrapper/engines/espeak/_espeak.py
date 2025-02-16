@@ -267,27 +267,42 @@ class EspeakLib:
                 # Handle word events
                 if current_event.type == self.EVENT_WORD:
                     try:
+                        # Extract word text from input
                         word_text = self.input_text[
-                            current_event.text_position - 1 : current_event.text_position - 1 + current_event.length
-                        ]
-                        logging.debug(f"Extracted word text: {word_text}")
+                            current_event.text_position : current_event.text_position + current_event.length
+                        ].strip()
+                        
+                        # Skip empty or whitespace-only words
+                        if not word_text or word_text.isspace():
+                            i += 1
+                            continue
+                            
+                        # Calculate timing in seconds
+                        start_time = current_event.audio_position / 1000.0  # Convert ms to seconds
+                        
+                        # Calculate end time based on next word or audio length
+                        next_event = ctypes.cast(events, POINTER(EspeakEvent))[i + 1]
+                        if next_event and next_event.type == self.EVENT_WORD:
+                            end_time = next_event.audio_position / 1000.0
+                        else:
+                            # If this is the last word, use the current audio length
+                            end_time = len(self._local_audio_buffer) / (2 * 22050)  # 16-bit samples at 22050Hz
+                            
+                        # Skip if timing is invalid
+                        if start_time < 0 or end_time <= start_time:
+                            i += 1
+                            continue
+                            
+                        word = {
+                            "start_time": start_time,
+                            "text_position": current_event.text_position,
+                            "length": current_event.length,
+                            "word": word_text,
+                        }
+                        logging.debug(f"Word event: {word}")
+                        self.word_timings.append(word)
                     except Exception as e:
-                        word_text = "<unknown>"
-                        logging.warning(f"Failed to extract word text: {e}")
-
-                    word = {
-                        "start_time": current_event.audio_position / 1000.0,
-                        "text_position": current_event.text_position,
-                        "length": current_event.length,
-                        "word": word_text,
-                    }
-                    logging.debug(f"Word event: {word}")
-                    self.word_timings.append(word)
-
-                # Handle phoneme events
-                elif current_event.type == self.EVENT_PHONEME:
-                    phoneme_name = current_event.id.string.decode("utf-8").rstrip("\x00")
-                    logging.debug(f"Phoneme event: {phoneme_name}")
+                        logging.warning(f"Failed to process word event: {e}")
 
                 i += 1
 

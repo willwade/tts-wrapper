@@ -26,6 +26,11 @@ class AbstractSSMLNode(ABC):
         """Returns tree nodes in a string representation."""
         ...
 
+    @abstractmethod
+    def get_text(self) -> str:
+        """Extract plain text from SSML by concatenating all text children."""
+        ...
+
 
 class SSMLNode(AbstractSSMLNode):
     """Concrete class used as a SSML Node that inherits from AbstractSSMLNode.
@@ -71,3 +76,13 @@ class SSMLNode(AbstractSSMLNode):
 
     def clear_ssml(self) -> None:
         self._children = []
+
+    def get_text(self) -> str:
+        """Extract plain text from SSML node by concatenating all text children."""
+        text = []
+        for child in self._children:
+            if isinstance(child, str):
+                text.append(child)
+            elif isinstance(child, SSMLNode):
+                text.append(child.get_text())
+        return " ".join(text)

@@ -1,4 +1,5 @@
 import sys
+from contextlib import suppress
 
 from .elevenlabs import *
 from .google import *
@@ -6,7 +7,6 @@ from .googletrans import *
 from .microsoft import *
 from .pico import *
 from .polly import *
-from .systemtts import *
 from .sherpaonnx import *
 from .watson import *
 from .witai import *
@@ -15,12 +15,13 @@ from .playht import *
 
 # Windows-only imports
 if sys.platform == "win32":
-    try:
+    with suppress(ImportError):
         from .sapi import *
         from .uwp import *
-    except ImportError:
-        # Avoid hard failure if these modules aren't installed or not supported
-        pass
+
+if sys.platform == "darwin":
+    with suppress(ImportError):
+        from .avsynth import *
 
 #deprecated
 # from .mms import *
