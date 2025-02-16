@@ -3,6 +3,7 @@ import os
 import time
 from pathlib import Path
 from unittest.mock import Mock
+import sys
 
 import pytest
 
@@ -25,7 +26,13 @@ from tts_wrapper import (
     WitAiTTS,
     eSpeakClient,
     eSpeakTTS,
+    PlayHTClient,
+    PlayHTTTS,
 )
+
+# Import AVSynth conditionally for macOS
+if sys.platform == "darwin":
+    from tts_wrapper import AVSynthClient, AVSynthTTS
 
 # Dictionary to hold the TTS clients and their respective setup functions
 TTS_CLIENTS = {
@@ -74,9 +81,25 @@ TTS_CLIENTS = {
     },
     "espeak": {
         "client": lambda: eSpeakClient(),
-        "class": eSpeakTTS
+        "class": eSpeakTTS,
+    },
+    "playht": {
+        "client": lambda: PlayHTClient(
+            credentials=(
+                os.getenv("PLAYHT_API_KEY"),
+                os.getenv("PLAYHT_USER_ID"),
+            )
+        ),
+        "class": PlayHTTTS,
     },
 }
+
+# Add AVSynth only on macOS
+if sys.platform == "darwin":
+    TTS_CLIENTS["avsynth"] = {
+        "client": lambda: AVSynthClient(),
+        "class": AVSynthTTS,
+    }
 
 def create_tts_client(service):
     config = TTS_CLIENTS[service]
@@ -164,7 +187,11 @@ def test_playback_with_callbacks(service):
 
     # Example text and SSML text
     text = "Hello, this is a word timing test"
-    ssml_text = tts.ssml.add(text)
+    try:
+        ssml_text = tts.ssml.add(text)
+    except (AttributeError, NotImplementedError):
+        # Fall back to plain text for engines that don't support SSML
+        ssml_text = text
 
     # Connect mock callbacks to the TTS instance
     tts.connect("onStart", on_start)
@@ -173,6 +200,15 @@ def test_playback_with_callbacks(service):
     # Run playback with callbacks
     try:
         tts.start_playback_with_callbacks(ssml_text, callback=my_callback)
+        # Wait for playback to start and complete
+        time.sleep(1)  # Wait for playback to start
+        # Wait additional time for playback to complete
+        max_wait = 5  # Maximum wait time in seconds
+        start_time = time.time()
+        while time.time() - start_time < max_wait:
+            if on_end.call_count > 0:
+                break
+            time.sleep(0.1)
     except Exception as e:
         pytest.fail(f"Playback raised an exception: {e}")
 

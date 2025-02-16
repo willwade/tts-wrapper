@@ -96,6 +96,19 @@ class SherpaOnnxTTS(AbstractTTS):
         if audio_bytes[:4] == b"RIFF":
             audio_bytes = self._strip_wav_header(audio_bytes)
 
+        # Generate word timings
+        words = text.split()
+        audio_duration = len(audio_bytes) / (2 * self.audio_rate)  # Duration in seconds
+        word_duration = audio_duration / len(words)
+        
+        # Create evenly spaced word timings
+        word_timings = []
+        for i, word in enumerate(words):
+            start_time = i * word_duration
+            end_time = (i + 1) * word_duration
+            word_timings.append((start_time, end_time, word))
+        self.set_timings(word_timings)
+
         return audio_bytes
 
     def play_audio(self) -> None:
@@ -122,64 +135,29 @@ class SherpaOnnxTTS(AbstractTTS):
         save_to_file_path: Optional[str] = None,
         audio_format: Optional[str] = "wav",
     ) -> None:
-        logging.info("[SherpaOnnxTTS.speak_streamed] Starting speech synthesis...")
-
-        # Reset flags
-        self.audio_started = False
-        self.audio_stopped = False
-        self.playback_finished.clear()
-
-        # Start audio playback in a separate thread
-        playback_thread = threading.Thread(target=self.play_audio)
-        playback_thread.start()
-
-        # Buffer to store all audio chunks for later saving
-        all_audio_chunks = []
-
-        # Simulate audio generation in chunks from the text
-        for _chunk_idx, audio_chunk in enumerate(
-            self.synth_to_bytestream(str(text), format=audio_format),
-        ):
-            # Add audio samples to the buffer for streaming
-            samples = (
-                np.frombuffer(audio_chunk, dtype=np.int16).astype(np.float32) / 32767.0
-            )
-            self.audio_buffer.put(samples)
-            logging.info("Finished with 1 audio chunk, put into queue")
-
-            # Collect audio chunks for saving later
-            all_audio_chunks.append(samples)
-
-            if not self.audio_started:
-                logging.info("Starting audio playback...")
-                self.audio_started = True
-
-        # Signal that audio generation is complete
-        self.audio_stopped = True
-
-        # Wait for playback to finish
-        playback_thread.join()
-
-        logging.info("Playback finished.")
-
-        # Save the audio after playback finishes if save_to_file_path is provided
-        if save_to_file_path:
-            logging.info(
-                f"Saving audio to file: {save_to_file_path} in format: {audio_format}",
-            )
-            # Combine all chunks into one audio array
-            full_audio = np.concatenate(all_audio_chunks, axis=0)
-
-            # Convert audio and save to the specified file format
-            converted_audio = self._convert_audio(
-                full_audio, audio_format, self.audio_rate,
-            )
-            with open(save_to_file_path, "wb") as f:
-                f.write(converted_audio)
-
-            logging.info(
-                f"Audio successfully saved to {save_to_file_path} in {audio_format} format.",
-            )
+        """
+        Synthesize text to speech and stream it for playback.
+        
+        Args:
+            text: The text to synthesize
+            save_to_file_path: Optional path to save the audio file
+            audio_format: Optional format for the audio file (wav, mp3, etc.)
+        """
+        try:
+            # Generate audio data
+            audio_data = self.synth_to_bytes(text)
+            
+            # Save to file if requested
+            if save_to_file_path:
+                with open(save_to_file_path, "wb") as f:
+                    f.write(audio_data)
+            
+            # Start playback using base class's system
+            self.load_audio(audio_data)
+            self.play()
+            
+        except Exception as e:
+            logging.exception("Error in speak_streamed: %s", e)
 
     def synth_to_bytestream(
         self, text: Any, format: Optional[str] = "wav",

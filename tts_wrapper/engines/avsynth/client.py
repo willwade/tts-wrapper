@@ -224,67 +224,18 @@ class AVSynthClient:
         try:
             format_data = json.loads(format_info)
             logging.debug("Audio format: %s", format_data)
+            word_timings = format_data.get("word_timings", [])
         except json.JSONDecodeError:
             logging.error("Failed to parse format info: %s", format_info)
             format_data = {}
+            word_timings = []
 
-        word_timings = []
-        buffer = bytearray()
-        
         def stream_generator():
-            nonlocal buffer
             while True:
                 # Read a chunk of data
                 chunk = stdout.read(4096)
                 if not chunk:
                     break
-
-                # Convert to string to check for markers
-                chunk_str = chunk.decode('utf-8', errors='ignore')
-                
-                # Check for word timing or end markers
-                if "---WORD_TIMING---" in chunk_str:
-                    # Split the chunk at the timing marker
-                    parts = chunk_str.split("---WORD_TIMING---")
-                    
-                    # Process the audio data before the marker
-                    if parts[0]:
-                        audio_data = parts[0].encode('utf-8')
-                        if buffer:
-                            audio_data = bytes(buffer) + audio_data
-                            buffer.clear()
-                        yield audio_data
-                    
-                    # Process the timing data
-                    timing_str = (
-                        parts[1].split("---AUDIO_CONTINUE---")[0].strip()
-                    )
-                    try:
-                        timing_data = json.loads(timing_str)
-                        word_timings.append(timing_data)
-                    except json.JSONDecodeError:
-                        logging.error("Failed to parse word timing: %s", timing_str)
-                    
-                    # Process any remaining audio data
-                    remaining = parts[1].split("---AUDIO_CONTINUE---")[1]
-                    if remaining:
-                        yield remaining.encode('utf-8')
-                    
-                elif "---AUDIO_END---" in chunk_str:
-                    # Process any data before the end marker
-                    final_data = chunk_str.split("---AUDIO_END---")[0].encode('utf-8')
-                    if buffer:
-                        final_data = bytes(buffer) + final_data
-                        buffer.clear()
-                    if final_data:
-                        yield final_data
-                    break
-                
-                else:
-                    # Regular audio data
-                    if buffer:
-                        chunk = bytes(buffer) + chunk
-                        buffer.clear()
-                    yield chunk
+                yield chunk
 
         return stream_generator(), word_timings

@@ -39,6 +39,66 @@ struct ListVoices: ParsableCommand {
     }
 }
 
+// Define SpeechDelegate at file scope
+class SpeechDelegate: NSObject, AVSpeechSynthesizerDelegate {
+    var onWordBoundary: ([String: Any]) -> Void
+    var onComplete: () -> Void
+    var onError: () -> Void
+    var spokenText: String
+    
+    init(
+        spokenText: String,
+        onWordBoundary: @escaping ([String: Any]) -> Void,
+        onComplete: @escaping () -> Void,
+        onError: @escaping () -> Void
+    ) {
+        self.spokenText = spokenText
+        self.onWordBoundary = onWordBoundary
+        self.onComplete = onComplete
+        self.onError = onError
+        super.init()
+    }
+    
+    func speechSynthesizer(
+        _ synthesizer: AVSpeechSynthesizer,
+        willSpeakRangeOfSpeechString characterRange: NSRange,
+        utterance: AVSpeechUtterance
+    ) {
+        // For SSML, use the actual spoken text length
+        let textLength = Double(spokenText.count)
+        let start = Double(characterRange.location) / textLength
+        let end = Double(characterRange.location + characterRange.length) / textLength
+        
+        // Get the word being spoken, safely
+        let word: String
+        if characterRange.location + characterRange.length <= spokenText.count {
+            let startIndex = spokenText.index(spokenText.startIndex, offsetBy: characterRange.location)
+            let endIndex = spokenText.index(startIndex, offsetBy: characterRange.length)
+            word = String(spokenText[startIndex..<endIndex])
+        } else {
+            word = ""  // Default to empty if range is invalid
+        }
+        
+        log("Speaking word: \(word)")
+        let timing: [String: Any] = [
+            "word": word,
+            "start": start,
+            "end": end
+        ]
+        onWordBoundary(timing)
+    }
+    
+    func speechSynthesizer(_ synthesizer: AVSpeechSynthesizer, didFinish utterance: AVSpeechUtterance) {
+        log("Synthesis finished")
+        onComplete()
+    }
+    
+    func speechSynthesizer(_ synthesizer: AVSpeechSynthesizer, didEncounterError error: Error, utterance: AVSpeechUtterance) {
+        log("Synthesis error: \(error)")
+        onError()
+    }
+}
+
 // Command to synthesize speech
 struct Synthesize: ParsableCommand {
     static var configuration = CommandConfiguration(
@@ -101,77 +161,8 @@ struct Synthesize: ParsableCommand {
         var isComplete = false
         var bufferCount = 0
         
-        // Set up delegate for word boundary events
-        class SpeechDelegate: NSObject, AVSpeechSynthesizerDelegate {
-            var onWordBoundary: ([String: Any]) -> Void
-            var onComplete: () -> Void
-            var onError: () -> Void
-            var spokenText: String
-            
-            init(
-                spokenText: String,
-                onWordBoundary: @escaping ([String: Any]) -> Void,
-                onComplete: @escaping () -> Void,
-                onError: @escaping () -> Void
-            ) {
-                self.spokenText = spokenText
-                self.onWordBoundary = onWordBoundary
-                self.onComplete = onComplete
-                self.onError = onError
-                super.init()
-            }
-            
-            func speechSynthesizer(
-                _ synthesizer: AVSpeechSynthesizer,
-                willSpeakRangeOfSpeechString characterRange: NSRange,
-                utterance: AVSpeechUtterance
-            ) {
-                // For SSML, use the actual spoken text length
-                let textLength = Double(spokenText.count)
-                let start = Double(characterRange.location) / textLength
-                let end = Double(characterRange.location + characterRange.length) / textLength
-                
-                // Get the word being spoken, safely
-                let word: String
-                if characterRange.location + characterRange.length <= spokenText.count {
-                    let startIndex = spokenText.index(spokenText.startIndex, offsetBy: characterRange.location)
-                    let endIndex = spokenText.index(startIndex, offsetBy: characterRange.length)
-                    word = String(spokenText[startIndex..<endIndex])
-                } else {
-                    word = ""  // Default to empty if range is invalid
-                }
-                
-                log("Speaking word: \(word)")
-                let timing: [String: Any] = [
-                    "word": word,
-                    "start": start,
-                    "end": end
-                ]
-                onWordBoundary(timing)
-            }
-            
-            func speechSynthesizer(_ synthesizer: AVSpeechSynthesizer, didFinish utterance: AVSpeechUtterance) {
-                log("Synthesis finished")
-                onComplete()
-            }
-            
-            func speechSynthesizer(_ synthesizer: AVSpeechSynthesizer, didEncounterError error: Error, utterance: AVSpeechUtterance) {
-                log("Synthesis error: \(error)")
-                onError()
-            }
-        }
-        
-        // For SSML, extract the plain text content for word boundary calculations
-        let plainText: String
-        if isSSML {
-            // Simple extraction of text content (you might want to make this more sophisticated)
-            plainText = text.replacingOccurrences(of: "<[^>]+>", with: "", options: .regularExpression)
-        } else {
-            plainText = text
-        }
-        
         let delegate = SpeechDelegate(
-            spokenText: plainText,
+            spokenText: text,
             onWordBoundary: { timing in
                 wordTimings.append(timing)
             },
@@ -285,6 +276,7 @@ struct Stream: ParsableCommand {
         
         let synthesizer = AVSpeechSynthesizer()
         let utterance: AVSpeechUtterance
+        let plainText: String
         
         // Use SSML if available and text contains SSML markup
         if #available(macOS 13.0, *), isSSML {
@@ -297,9 +289,11 @@ struct Stream: ParsableCommand {
                 )
             }
             utterance = ssmlUtterance
+            plainText = text
         } else {
             log("Using plain text synthesis")
             utterance = AVSpeechUtterance(string: text)
+            plainText = text
             
             // Configure utterance (only for non-SSML)
             if let voiceId = voice {
@@ -312,191 +306,73 @@ struct Stream: ParsableCommand {
         }
         
         var wordTimings: [[String: Any]] = []
-        let synthesisComplete = DispatchSemaphore(value: 0)
-        let audioComplete = DispatchSemaphore(value: 0)
         var hasError = false
+        var isComplete = false
         
-        // Set up audio engine
-        let audioEngine = AVAudioEngine()
-        let mainMixer = audioEngine.mainMixerNode
-        let format = mainMixer.outputFormat(forBus: 0)
-        
-        // First, send audio format information
-        let formatInfo: [String: Any] = [
-            "sample_rate": format.sampleRate,
-            "channels": format.channelCount,
-            "bits_per_sample": 16,  // We'll convert to 16-bit PCM
-            "is_float": false
-        ]
-        
-        if let formatData = try? JSONSerialization.data(withJSONObject: formatInfo),
-           let formatString = String(data: formatData, encoding: .utf8) {
-            print(formatString)
-            print("\n---AUDIO_START---\n")  // Clear delimiter
-            fflush(stdout)
-        }
-        
-        // Install tap before starting synthesis
-        log("Installing audio tap")
-        mainMixer.installTap(onBus: 0, bufferSize: 4096, format: format) { buffer, _ in
-            let frameCount = Int(buffer.frameLength)
-            var pcmData = Data()
-            
-            if let channelData = buffer.floatChannelData?[0] {
-                // Convert float samples to 16-bit PCM
-                for i in 0..<frameCount {
-                    let sample = channelData[i]
-                    let intSample = Int16(max(-1.0, min(1.0, sample)) * 32767.0)
-                    pcmData.append(UInt8(intSample & 0xFF))
-                    pcmData.append(UInt8((intSample >> 8) & 0xFF))
-                }
-                FileHandle.standardOutput.write(pcmData)
-                fflush(stdout)
+        let delegate = SpeechDelegate(
+            spokenText: plainText,
+            onWordBoundary: { timing in
+                wordTimings.append(timing)
+            },
+            onComplete: {
+                log("Synthesis complete")
+                isComplete = true
+            },
+            onError: {
+                log("Synthesis error")
+                hasError = true
             }
-        }
+        )
+        synthesizer.delegate = delegate
         
-        do {
-            log("Starting audio engine")
-            try audioEngine.start()
-            
-            // Set up delegate for synthesis events
-            class SpeechDelegate: NSObject, AVSpeechSynthesizerDelegate {
-                var onWordBoundary: ([String: Any]) -> Void
-                var onComplete: () -> Void
-                var onError: () -> Void
-                var spokenText: String
-                
-                init(
-                    spokenText: String,
-                    onWordBoundary: @escaping ([String: Any]) -> Void,
-                    onComplete: @escaping () -> Void,
-                    onError: @escaping () -> Void
-                ) {
-                    self.spokenText = spokenText
-                    self.onWordBoundary = onWordBoundary
-                    self.onComplete = onComplete
-                    self.onError = onError
-                    super.init()
-                }
-                
-                func speechSynthesizer(
-                    _ synthesizer: AVSpeechSynthesizer,
-                    willSpeakRangeOfSpeechString characterRange: NSRange,
-                    utterance: AVSpeechUtterance
-                ) {
-                    // For SSML, use the actual spoken text length
-                    let textLength = Double(spokenText.count)
-                    let start = Double(characterRange.location) / textLength
-                    let end = Double(characterRange.location + characterRange.length) / textLength
-                    
-                    // Get the word being spoken, safely
-                    let word: String
-                    if characterRange.location + characterRange.length <= spokenText.count {
-                        let startIndex = spokenText.index(spokenText.startIndex, offsetBy: characterRange.location)
-                        let endIndex = spokenText.index(startIndex, offsetBy: characterRange.length)
-                        word = String(spokenText[startIndex..<endIndex])
-                    } else {
-                        word = ""  // Default to empty if range is invalid
-                    }
-                    
-                    log("Speaking word: \(word)")
-                    let timing: [String: Any] = [
-                        "word": word,
-                        "start": start,
-                        "end": end
-                    ]
-                    onWordBoundary(timing)
-                }
-                
-                func speechSynthesizer(_ synthesizer: AVSpeechSynthesizer, didFinish utterance: AVSpeechUtterance) {
-                    log("Synthesis finished")
-                    onComplete()
-                }
-                
-                func speechSynthesizer(_ synthesizer: AVSpeechSynthesizer, didEncounterError error: Error, utterance: AVSpeechUtterance) {
-                    log("Synthesis error: \(error)")
-                    onError()
-                }
-            }
-            
-            // For SSML, extract the plain text content for word boundary calculations
-            let plainText: String
-            if isSSML {
-                // Simple extraction of text content (you might want to make this more sophisticated)
-                plainText = text.replacingOccurrences(of: "<[^>]+>", with: "", options: .regularExpression)
-            } else {
-                plainText = text
-            }
-            
-            let delegate = SpeechDelegate(
-                spokenText: plainText,
-                onWordBoundary: { timing in
-                    wordTimings.append(timing)
-                    // Send word timing immediately
-                    if let timingData = try? JSONSerialization.data(withJSONObject: timing),
-                       let timingString = String(data: timingData, encoding: .utf8) {
-                        print("\n---WORD_TIMING---\n\(timingString)\n---AUDIO_CONTINUE---\n")
-                        fflush(stdout)
-                    }
-                },
-                onComplete: {
-                    log("Synthesis complete")
-                    synthesisComplete.signal()
-                },
-                onError: {
-                    log("Synthesis error occurred")
-                    hasError = true
-                    synthesisComplete.signal()
-                }
-            )
-            
-            synthesizer.delegate = delegate
-            
-            // Start synthesis
-            log("Starting synthesis")
-            synthesizer.write(utterance) { buffer in
-                if let audioBuffer = buffer as? AVAudioPCMBuffer {
-                    // Schedule buffer for playback
-                    let playerNode = AVAudioPlayerNode()
-                    audioEngine.attach(playerNode)
-                    audioEngine.connect(playerNode, to: mainMixer, format: format)
-                    playerNode.scheduleBuffer(audioBuffer, completionHandler: nil)
-                    playerNode.play()
-                    
-                    // Log progress
-                    log("Audio buffer processed: \(audioBuffer.frameLength) frames")
-                }
-            }
-            
-            // Wait for synthesis to complete
-            let timeout = DispatchTime.now() + .seconds(30)
-            if synthesisComplete.wait(timeout: timeout) == .timedOut {
+        // First synthesize to get word timings
+        synthesizer.write(utterance) { _ in }
+        
+        // Wait for completion
+        let startTime = Date()
+        while !isComplete && !hasError {
+            if Date().timeIntervalSince(startTime) > 30 {
                 log("Synthesis timed out")
                 throw NSError(domain: "SpeechBridge", code: -1, userInfo: [NSLocalizedDescriptionKey: "Synthesis timed out"])
             }
-            
-            if hasError {
-                log("Synthesis failed")
-                throw NSError(domain: "SpeechBridge", code: -2, userInfo: [NSLocalizedDescriptionKey: "Synthesis failed"])
-            }
-            
-            // Allow time for final audio to play
-            Thread.sleep(forTimeInterval: 0.5)
-            
-            log("Synthesis completed successfully")
-            print("\n---AUDIO_END---\n")
-            fflush(stdout)
-            
-        } catch {
-            log("Error during synthesis: \(error)")
-            audioEngine.stop()
-            audioEngine.mainMixerNode.removeTap(onBus: 0)
-            throw error
+            RunLoop.current.run(mode: .default, before: Date(timeIntervalSinceNow: 0.1))
         }
         
-        // Clean up
-        audioEngine.stop()
-        audioEngine.mainMixerNode.removeTap(onBus: 0)
+        // Send format info with word timings
+        let formatInfo: [String: Any] = [
+            "sample_rate": 16000,
+            "channels": 1,
+            "sample_format": "int16",
+            "word_timings": wordTimings
+        ]
+        
+        if let jsonData = try? JSONSerialization.data(withJSONObject: formatInfo),
+           let jsonString = String(data: jsonData, encoding: .utf8) {
+            print(jsonString)
+        }
+        
+        print("---AUDIO_START---")
+        
+        // Now stream the audio
+        synthesizer.write(utterance) { buffer in
+            if let audioBuffer = buffer as? AVAudioPCMBuffer {
+                // Convert float samples to 16-bit PCM
+                let frameCount = Int(audioBuffer.frameLength)
+                var pcmData = Data(capacity: frameCount * 2)
+                
+                if let channelData = audioBuffer.floatChannelData?[0] {
+                    for i in 0..<frameCount {
+                        let sample = channelData[i]
+                        let intSample = Int16(max(-1.0, min(1.0, sample)) * 32767.0)
+                        pcmData.append(UInt8(intSample & 0xFF))
+                        pcmData.append(UInt8((intSample >> 8) & 0xFF))
+                    }
+                }
+                
+                // Write PCM data directly to stdout
+                FileHandle.standardOutput.write(pcmData)
+            }
+        }
     }
 }
 

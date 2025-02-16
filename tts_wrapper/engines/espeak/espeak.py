@@ -1,22 +1,27 @@
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, List, Union
 
 from tts_wrapper.tts import AbstractTTS
+from tts_wrapper.ssml import AbstractSSMLNode
 
 from .ssml import eSpeakSSML
 
 if TYPE_CHECKING:
     from collections.abc import Generator
-
     from . import eSpeakClient
 
 
 class eSpeakTTS(AbstractTTS):
     """High-level TTS interface for eSpeak."""
 
-    def __init__(self, client: eSpeakClient, lang: str | None = None, voice: str | None = None) -> None:
+    def __init__(
+        self,
+        client: eSpeakClient,
+        lang: str | None = None,
+        voice: str | None = None
+    ) -> None:
         """Initialize the eSpeak TTS interface."""
         super().__init__()
         self._client = client
@@ -24,34 +29,46 @@ class eSpeakTTS(AbstractTTS):
         self._ssml = eSpeakSSML()
         self.audio_rate = 22050
         self.generated_audio = bytearray()
-        self.word_timings = []
+        self.word_timings: List[tuple[float, float, str]] = []
         self.on_end = None
 
-    def synth_to_bytes(self, text: Any) -> bytes:
-        """Convert text to audio bytes."""
-        logging.debug("Synthesizing text to audio bytes.")
-        self.generated_audio = bytearray()
-        self.word_timings = []
+    def synth_to_bytes(
+            self,
+            text: Union[str, AbstractSSMLNode]
+        ) -> bytes:
+        """Convert text to audio bytes.
 
-        # Wrap text in SSML if not already formatted
-        text = self.ssml.add(str(text)) if not self._is_ssml(str(text)) else str(text)
+        Args:
+            text: Text to synthesize, can be SSML formatted.
+
+        Returns:
+            Audio bytes for playback.
+        """
+        text_str = str(text)
 
         # Call the client for synthesis
-        audio_data, word_timings = self._client.synth(text, self._voice)
-        if self.on_end:
-            self.on_end()
-        self.word_timings = self._process_word_timings(word_timings, text)
-        self.set_timings(self.word_timings)
+        audio_data, word_timings = self._client.synth(text_str, self._voice)
+        if not audio_data:
+            msg = "Failed to synthesize audio"
+            raise ValueError(msg)
 
+        # Process word timings and set them
+        processed_timings = self._process_word_timings(word_timings, text_str)
+        self.set_timings(processed_timings)
+        
         return audio_data
-
 
     def synth_to_bytestream(
             self, text: Any, format: str | None = "wav"
-        ) -> Generator[bytes, None, None]:
+        ) -> tuple[Generator[bytes, None, None], list[dict]]:
         """
         Synthesizes text to an in-memory bytestream in the specified audio format.
         Yields audio data chunks as they are generated.
+        
+        Returns:
+            A tuple containing:
+            - A generator yielding bytes objects containing audio data
+            - A list of word timing dictionaries
         """
         logging.debug("Synthesizing text to audio bytestream.")
         self.generated_audio = bytearray()
@@ -62,38 +79,42 @@ class eSpeakTTS(AbstractTTS):
 
         # Use eSpeakClient to perform synthesis
         stream_queue, word_timings = self._client.synth_streaming(text, self._voice)
-        if self.on_end:
-            self.on_end()
         self.word_timings = self._process_word_timings(word_timings, text)
         self.set_timings(self.word_timings)
 
-        while True:
-            chunk = stream_queue.get()
-            if chunk is None:
-                break
-            yield chunk
+        def audio_generator():
+            while True:
+                chunk = stream_queue.get()
+                if chunk is None:
+                    break
+                yield chunk
 
-    def _process_word_timings(self, word_timings: list[dict], input_text: str) -> list[tuple[float, float, str]]:
-        """
-        Processes raw word timings and formats them as (start_time, end_time, word) tuples.
+        return audio_generator(), [
+            {"start": start, "end": end, "word": word}
+            for start, end, word in self.word_timings
+        ]
+
+    def _process_word_timings(
+        self,
+        word_timings: list[dict],
+        input_text: str
+    ) -> list[tuple[float, float, str]]:
+        """Process raw word timings and format them as tuples.
 
         Parameters
         ----------
-        - word_timings: List of dictionaries containing raw word timing information.
-        - input_text: The original text that was synthesized.
+        word_timings: List of dictionaries with raw word timing information.
+        input_text: The original text that was synthesized.
 
         Returns
         -------
-        - List of tuples in the format (start_time, end_time, word).
-
+        List of tuples in the format (start_time, end_time, word).
         """
         processed_timings = []
         audio_duration = self.get_audio_duration()
 
         for i, word_info in enumerate(word_timings):
             start_time = word_info["start_time"]
-            word_info["text_position"]
-            word_info["length"]
             word_text = word_info["word"]
 
             # Determine the end time
@@ -106,9 +127,10 @@ class eSpeakTTS(AbstractTTS):
             processed_timings.append((start_time, end_time, word_text))
 
             # Debugging for validation
+            duration = end_time - start_time
             logging.debug(
-                f"Word: '{word_text}', Start Time: {start_time}, End Time: {end_time}, "
-                f"Duration: {end_time - start_time:.3f}s"
+                f"Word: '{word_text}', Start: {start_time}, "
+                f"End: {end_time}, Duration: {duration:.3f}s"
             )
 
         return processed_timings

@@ -110,12 +110,21 @@ class GoogleTTS(AbstractTTS):
         processed_timings = []
         audio_duration = self.get_audio_duration()
 
-        for i, tp in enumerate(timepoints):
+        # Filter out non-word timepoints and duplicates
+        word_timepoints = []
+        seen_words = set()
+        for tp in timepoints:
+            word = tp["markName"]
+            if word not in seen_words:
+                word_timepoints.append(tp)
+                seen_words.add(word)
+
+        for i, tp in enumerate(word_timepoints):
             start_time = float(tp["timeSeconds"])
             word = tp["markName"]
 
-            if i < len(timepoints) - 1:
-                end_time = float(timepoints[i + 1]["timeSeconds"])
+            if i < len(word_timepoints) - 1:
+                end_time = float(word_timepoints[i + 1]["timeSeconds"])
             else:
                 end_time = min(
                     start_time + 0.5, audio_duration,
@@ -257,29 +266,29 @@ class GoogleTTS(AbstractTTS):
         :param save_to_file_path: Path to save the audio file (optional).
         :param audio_format: Audio format to save (e.g., 'wav', 'mp3', 'flac').
         """
-        # Synthesize audio to bytes
-        audio_generator = self.synth_to_bytestream(text, format=audio_format)
-        audio_bytes = bytes(itertools.chain.from_iterable(audio_generator))
+        try:
+            # Synthesize audio to bytes
+            audio_generator = self.synth_to_bytestream(text, format=audio_format)
+            audio_bytes = bytes(itertools.chain.from_iterable(audio_generator))
 
-        if audio_format == "mp3":
-            # Decode MP3 to PCM
-            pcm_data = self._convert_mp3_to_pcm(audio_bytes)
-            channels = 1  # Assuming mono output
-        else:
-            # Directly use PCM data for other formats
-            pcm_data = audio_bytes
-            channels = 1
+            if audio_format == "mp3":
+                # Decode MP3 to PCM
+                pcm_data = self._convert_mp3_to_pcm(audio_bytes)
+            else:
+                # Directly use PCM data for other formats
+                pcm_data = audio_bytes
 
-        # Playback in a new thread for non-blocking audio
-        threading.Thread(
-            print("Playing audio"),
-            target=self._play_pcm_stream, args=(pcm_data, channels),
-        ).start()
+            # Optionally save to file
+            if save_to_file_path:
+                with open(save_to_file_path, "wb") as f:
+                    f.write(audio_bytes)
 
-        # Optionally save to file
-        if save_to_file_path:
-            with open(save_to_file_path, "wb") as f:
-                f.write(audio_bytes)
+            # Start playback using base class's system
+            self.load_audio(pcm_data)
+            self.play()
+
+        except Exception as e:
+            logging.exception("Error in speak_streamed: %s", e)
 
     def _play_pcm_stream(self, pcm_data: bytes, channels: int) -> None:
         """Streams PCM data using sounddevice."""

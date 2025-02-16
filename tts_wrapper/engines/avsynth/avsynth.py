@@ -47,11 +47,26 @@ class AVSynthTTS(AbstractTTS):
         # Call the client for synthesis and get native word timings
         audio_data, word_timings = self._client.synth(text, options)
         
-        # Set word timings directly from AVSpeechSynthesizer
-        self.set_timings([
-            (timing["start"], timing["end"], timing["word"])
-            for timing in word_timings
-        ])
+        # Calculate audio duration in seconds
+        audio_duration = len(audio_data) / (2 * self.audio_rate)  # 16-bit samples
+        
+        # Convert relative positions to absolute timestamps
+        absolute_timings = []
+        for timing in word_timings:
+            if not timing["word"] or timing["word"].isspace():
+                continue
+                
+            start_time = timing["start"] * audio_duration
+            end_time = timing["end"] * audio_duration
+            
+            # Skip if timing is invalid
+            if start_time < 0 or end_time <= start_time:
+                continue
+                
+            absolute_timings.append((start_time, end_time, timing["word"]))
+            
+        # Set word timings with absolute timestamps
+        self.set_timings(absolute_timings)
         
         return audio_data
 
