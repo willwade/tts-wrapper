@@ -12,6 +12,7 @@ REQUIRED_ENV_VARS = {
     "watson": ["WATSON_API_KEY", "WATSON_REGION", "WATSON_INSTANCE_ID"],
     "elevenlabs": ["ELEVENLABS_API_KEY"],
     "witai": ["WITAI_TOKEN"],
+    "playht": ["PLAYHT_API_KEY", "PLAYHT_USER_ID"],
 }
 
 def check_required_env_vars() -> None:

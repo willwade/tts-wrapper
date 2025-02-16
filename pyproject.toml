@@ -44,6 +44,8 @@ playht = []  # No additional dependencies needed as we use requests which is in 
 googletrans = ["gTTS>=2.5.2"]
 sapi = ["comtypes>=1.4.8; sys_platform == 'win32'"]
 controlaudio = ["pyaudio>=0.2.14"]
+espeak = []  # No additional dependencies as espeak-ng needs to be installed system-wide
+avsynth = []  # No additional dependencies as it uses built-in Swift bridge
 
 [project.urls]
 "Bug Tracker" = "https://github.com/willwade/tts-wrapper/issues"
