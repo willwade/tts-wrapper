@@ -309,7 +309,6 @@ tts = GoogleTransTTS(client)
 #### Sherpa-ONNX
 
 You can provide blank model path and tokens path - and we will use a default location.. 
-AS NOTED - WE HAVE DESIGNED THIS RIGHT NOW FOR MMS MODELS! We will add others like piper etc to this - Infact I'll drop regular piper support for sherpa-onnx. Its less of a headache..
 
 ```python
 from tts_wrapper import SherpaOnnxClient, SherpaOnnxTTS
@@ -583,35 +582,54 @@ tts.connect('onStart', on_start)
 ```
 
 
-## Supported File Formats
+## Audio Output Methods
 
-By default, all engines output audio in the WAV format, but can be configured to output MP3 or other formats where supported.
+The wrapper provides several methods for audio output, each suited for different use cases:
 
-```Python
-tts.synth('<speak>Hello, world!</speak>', 'hello.mp3', format='mp3)
-```
+### 1. Direct Playback
 
-The `synth_to_bytestream` method is designed to synthesize text into an in-memory bytestream in the specified audio format (`wav`, `mp3`, `flac`, etc.). It is particularly useful when you want to handle the audio data in-memory for tasks like saving it to a file, streaming the audio, or passing it to another system for processing.
-
-#### Method Signature:
-
+The simplest method - plays audio immediately:
 ```python
-def synth_to_bytestream(self, text: Any, format: Optional[str] = "wav") -> BytesIO:
-    """
-    Synthesizes text to an in-memory bytestream in the specified audio format.
-
-    :param text: The text to synthesize.
-    :param format: The audio format (e.g., 'wav', 'mp3', 'flac'). Default: 'wav'.
-    :return: A BytesIO object containing the audio data.
-    """
+tts.speak("Hello world")
 ```
 
-#### Parameters:
-- **text**: The text to be synthesized into audio.
-- **format**: The audio format in which the synthesized audio should be returned. Default is `wav`. Supported formats include `wav`, `mp3`, and `flac`.
+### 2. Streaming Playback
 
-#### Returns:
-- **BytesIO**: A `BytesIO` object containing the audio data in the requested format. This can be used directly to save to a file or for playback in real-time.
+Recommended for longer texts - streams audio as it's being synthesized:
+```python
+tts.speak_streamed("This is a long text that will be streamed as it's synthesized")
+```
+
+### 3. File Output
+
+Save synthesized speech to a file:
+```python
+tts.synth_to_file("Hello world", "output.wav")
+```
+
+### 4. Raw Audio Data
+
+For advanced use cases where you need the raw audio data:
+```python
+# Get raw PCM audio data as bytes
+audio_bytes = tts.synth_to_bytes("Hello world")
+```
+
+### Audio Format Notes
+
+- All engines output WAV format by default
+- For MP3 or other formats, use external conversion libraries like `pydub`:
+  ```python
+  from pydub import AudioSegment
+  import io
+  
+  # Get WAV data
+  audio_bytes = tts.synth_to_bytes("Hello world")
+  
+  # Convert to MP3
+  wav_audio = AudioSegment.from_wav(io.BytesIO(audio_bytes))
+  wav_audio.export("output.mp3", format="mp3")
+  ```
 
 ---
 
@@ -662,6 +680,73 @@ print("Live playback completed")
 - The bytestream is converted to raw PCM data using `np.frombuffer()`, which is then fed into the `sounddevice` library for live playback.
 - `sd.play()` plays the audio in real-time, and `sd.wait()` ensures that the program waits until playback finishes.
 
+### Manual Audio Control
+
+For advanced use cases where you need direct control over audio playback, you can use the raw audio data methods:
+
+```python
+from tts_wrapper import AVSynthClient, AVSynthTTS
+import numpy as np
+import sounddevice as sd
+
+# Initialize TTS
+client = AVSynthClient()
+tts = AVSynthTTS(client)
+
+# Method 1: Direct playback of entire audio
+def play_audio_stream(tts, text: str):
+    """Play entire audio at once."""
+    # Get raw audio data
+    audio_data = tts.synth_to_bytes(text)
+    
+    # Convert to numpy array for playback
+    samples = np.frombuffer(audio_data, dtype=np.int16)
+    
+    # Play the audio
+    sd.play(samples, samplerate=tts.audio_rate)
+    sd.wait()
+
+# Method 2: Chunked playback for more control
+def play_audio_chunked(tts, text: str, chunk_size: int = 4096):
+    """Process and play audio in chunks for more control."""
+    # Get raw audio data
+    audio_data = tts.synth_to_bytes(text)
+    
+    # Create a continuous stream
+    stream = sd.OutputStream(
+        samplerate=tts.audio_rate,
+        channels=1,  # Mono audio
+        dtype=np.int16
+    )
+    
+    with stream:
+        # Process in chunks
+        for i in range(0, len(audio_data), chunk_size):
+            chunk = audio_data[i:i + chunk_size]
+            if len(chunk) % 2 != 0:  # Ensure even size for 16-bit audio
+                chunk = chunk[:-1]
+            samples = np.frombuffer(chunk, dtype=np.int16)
+            stream.write(samples)
+```
+
+This manual control allows you to:
+- Process audio data in chunks
+- Implement custom audio processing
+- Control playback timing
+- Add effects or modifications to the audio
+- Implement custom buffering strategies
+
+The chunked playback method is particularly useful for:
+- Real-time audio processing
+- Custom pause/resume functionality
+- Volume adjustment during playback
+- Progress tracking
+- Memory-efficient handling of long audio
+
+**Note**: Manual audio control requires the `sounddevice` and `numpy` packages:
+```sh
+pip install sounddevice numpy
+```
 
 
 ## Developer's Guide
@@ -875,3 +960,4 @@ Example structure (do NOT commit actual credentials):
 ## License
 
 This project is licensed under the [MIT License](./LICENSE).
+
