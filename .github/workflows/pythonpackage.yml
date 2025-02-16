@@ -86,6 +86,8 @@ jobs:
       WITAI_TOKEN: ${{ secrets.WITAI_TOKEN }}
       GOOGLE_SA_PATH: ${{ secrets.GOOGLE_SA_PATH }}
       GOOGLE_SA_FILE_B64: ${{ secrets.GOOGLE_SA_FILE_B64 }}
+      PLAYHT_API_KEY: ${{ secrets.PLAYHT_API_KEY }}
+      PLAYHT_USER_ID: ${{ secrets.PLAYHT_USER_ID }}
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
