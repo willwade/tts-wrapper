@@ -7,7 +7,7 @@
 
 _TTS-Wrapper_ simplifies using text-to-speech APIs by providing a unified interface across multiple services, allowing easy integration and manipulation of TTS capabilities. 
 
- > ℹ️ Full documentation is available at [https://willwade.github.io/py3-tts-wrapper/](https://willwade.github.io/py3-tts-wrapper/)
+ > ℹ️ Full documentation is available at [https://willwade.github.io/tts-wrapper/](https://willwade.github.io/tts-wrapper/)
 
 ## Requirements
 
