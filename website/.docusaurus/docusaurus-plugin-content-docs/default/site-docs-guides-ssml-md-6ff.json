@@ -1,0 +1,27 @@
+{
+  "id": "guides/ssml",
+  "title": "SSML Support",
+  "description": "Speech Synthesis Markup Language (SSML) support in TTS Wrapper is engine-dependent. Each engine has its own SSML implementation that maps to what the underlying service supports.",
+  "source": "@site/docs/guides/ssml.md",
+  "sourceDirName": "guides",
+  "slug": "/guides/ssml",
+  "permalink": "/tts-wrapper/docs/guides/ssml",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/willwade/tts-wrapper/tree/main/website/docs/guides/ssml.md",
+  "tags": [],
+  "version": "current",
+  "sidebarPosition": 2,
+  "frontMatter": {
+    "sidebar_position": 2
+  },
+  "sidebar": "docs",
+  "previous": {
+    "title": "Basic Usage",
+    "permalink": "/tts-wrapper/docs/guides/basic-usage"
+  },
+  "next": {
+    "title": "Audio Control",
+    "permalink": "/tts-wrapper/docs/guides/audio-control"
+  }
+}

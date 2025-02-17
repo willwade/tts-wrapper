@@ -1,0 +1,27 @@
+{
+  "id": "developer/overview",
+  "title": "Developer Overview",
+  "description": "This section provides information for developers who want to contribute to TTS Wrapper or integrate it into their projects.",
+  "source": "@site/docs/developer/overview.md",
+  "sourceDirName": "developer",
+  "slug": "/developer/overview",
+  "permalink": "/tts-wrapper/docs/developer/overview",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/willwade/tts-wrapper/tree/main/website/docs/developer/overview.md",
+  "tags": [],
+  "version": "current",
+  "sidebarPosition": 1,
+  "frontMatter": {
+    "sidebar_position": 1
+  },
+  "sidebar": "docs",
+  "previous": {
+    "title": "Sherpa-ONNX TTS",
+    "permalink": "/tts-wrapper/docs/engines/sherpaonnx"
+  },
+  "next": {
+    "title": "Adding New Engines",
+    "permalink": "/tts-wrapper/docs/developer/adding-engines"
+  }
+}

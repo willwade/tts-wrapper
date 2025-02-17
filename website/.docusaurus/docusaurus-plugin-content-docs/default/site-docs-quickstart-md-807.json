@@ -11,14 +11,5 @@
   "editUrl": "https://github.com/willwade/tts-wrapper/tree/main/website/docs/quickstart.md",
   "tags": [],
   "version": "current",
-  "frontMatter": {},
-  "sidebar": "docs",
-  "previous": {
-    "title": "installation",
-    "permalink": "/tts-wrapper/docs/installation"
-  },
-  "next": {
-    "title": "Basic Usage",
-    "permalink": "/tts-wrapper/docs/guides/basic-usage"
-  }
+  "frontMatter": {}
 }

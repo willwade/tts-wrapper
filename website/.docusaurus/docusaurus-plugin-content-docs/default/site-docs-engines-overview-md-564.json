@@ -1,0 +1,27 @@
+{
+  "id": "engines/overview",
+  "title": "TTS Engines Overview",
+  "description": "TTS Wrapper supports multiple text-to-speech engines, each with its own features, capabilities, and authentication requirements. This section provides detailed documentation for each supported engine.",
+  "source": "@site/docs/engines/overview.md",
+  "sourceDirName": "engines",
+  "slug": "/engines/overview",
+  "permalink": "/tts-wrapper/docs/engines/overview",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/willwade/tts-wrapper/tree/main/website/docs/engines/overview.md",
+  "tags": [],
+  "version": "current",
+  "sidebarPosition": 1,
+  "frontMatter": {
+    "sidebar_position": 1
+  },
+  "sidebar": "docs",
+  "previous": {
+    "title": "Callbacks",
+    "permalink": "/tts-wrapper/docs/guides/callbacks"
+  },
+  "next": {
+    "title": "AWS Polly",
+    "permalink": "/tts-wrapper/docs/engines/aws-polly"
+  }
+}

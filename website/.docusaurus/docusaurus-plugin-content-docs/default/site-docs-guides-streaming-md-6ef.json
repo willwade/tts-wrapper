@@ -1,0 +1,27 @@
+{
+  "id": "guides/streaming",
+  "title": "Streaming",
+  "description": "TTS Wrapper provides powerful streaming capabilities that allow you to process and play audio in real-time, making it ideal for applications requiring immediate audio feedback or handling large amounts of text.",
+  "source": "@site/docs/guides/streaming.md",
+  "sourceDirName": "guides",
+  "slug": "/guides/streaming",
+  "permalink": "/tts-wrapper/docs/guides/streaming",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/willwade/tts-wrapper/tree/main/website/docs/guides/streaming.md",
+  "tags": [],
+  "version": "current",
+  "sidebarPosition": 4,
+  "frontMatter": {
+    "sidebar_position": 4
+  },
+  "sidebar": "docs",
+  "previous": {
+    "title": "Audio Control",
+    "permalink": "/tts-wrapper/docs/guides/audio-control"
+  },
+  "next": {
+    "title": "Callbacks",
+    "permalink": "/tts-wrapper/docs/guides/callbacks"
+  }
+}

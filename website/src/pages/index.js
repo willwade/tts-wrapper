@@ -3,7 +3,6 @@ import Link from '@docusaurus/Link';
 import useDocusaurusContext from '@docusaurus/useDocusaurusContext';
 import Layout from '@theme/Layout';
 import HomepageFeatures from '@site/src/components/HomepageFeatures';
-import EngineComparison from '@site/src/components/EngineComparison';
 import Heading from '@theme/Heading';
 
 import styles from './index.module.css';
@@ -25,6 +24,11 @@ function HomepageHeader() {
           </Link>
           <Link
             className="button button--secondary button--lg"
+            to="/docs/engines/overview">
+            Compare Engines →
+          </Link>
+          <Link
+            className="button button--secondary button--lg"
             to="https://github.com/willwade/tts-wrapper">
             View on GitHub
           </Link>
@@ -43,7 +47,6 @@ export default function Home() {
       <HomepageHeader />
       <main>
         <HomepageFeatures />
-        <EngineComparison />
       </main>
     </Layout>
   );

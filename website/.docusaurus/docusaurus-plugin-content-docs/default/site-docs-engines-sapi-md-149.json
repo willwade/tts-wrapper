@@ -1,0 +1,27 @@
+{
+  "id": "engines/sapi",
+  "title": "SAPI TTS",
+  "description": "SAPI (Microsoft Speech API) provides native text-to-speech capabilities on Windows systems. It offers access to installed system voices with basic SSML support.",
+  "source": "@site/docs/engines/sapi.md",
+  "sourceDirName": "engines",
+  "slug": "/engines/sapi",
+  "permalink": "/tts-wrapper/docs/engines/sapi",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/willwade/tts-wrapper/tree/main/website/docs/engines/sapi.md",
+  "tags": [],
+  "version": "current",
+  "sidebarPosition": 10,
+  "frontMatter": {
+    "sidebar_position": 10
+  },
+  "sidebar": "docs",
+  "previous": {
+    "title": "espeak",
+    "permalink": "/tts-wrapper/docs/engines/espeak"
+  },
+  "next": {
+    "title": "AVSynth TTS",
+    "permalink": "/tts-wrapper/docs/engines/avsynth"
+  }
+}

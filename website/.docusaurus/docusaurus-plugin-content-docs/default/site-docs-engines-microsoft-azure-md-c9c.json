@@ -1,0 +1,27 @@
+{
+  "id": "engines/microsoft-azure",
+  "title": "Microsoft Azure TTS",
+  "description": "Microsoft Azure Cognitive Services Text-to-Speech provides high-quality voice synthesis with support for neural voices, custom voice creation, and extensive SSML features.",
+  "source": "@site/docs/engines/microsoft-azure.md",
+  "sourceDirName": "engines",
+  "slug": "/engines/microsoft-azure",
+  "permalink": "/tts-wrapper/docs/engines/microsoft-azure",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/willwade/tts-wrapper/tree/main/website/docs/engines/microsoft-azure.md",
+  "tags": [],
+  "version": "current",
+  "sidebarPosition": 4,
+  "frontMatter": {
+    "sidebar_position": 4
+  },
+  "sidebar": "docs",
+  "previous": {
+    "title": "Google Cloud TTS",
+    "permalink": "/tts-wrapper/docs/engines/google-cloud"
+  },
+  "next": {
+    "title": "IBM Watson TTS",
+    "permalink": "/tts-wrapper/docs/engines/ibm-watson"
+  }
+}

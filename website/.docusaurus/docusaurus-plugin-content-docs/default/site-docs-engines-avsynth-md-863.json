@@ -1,0 +1,27 @@
+{
+  "id": "engines/avsynth",
+  "title": "AVSynth TTS",
+  "description": "AVSynth provides native text-to-speech capabilities on macOS using the AVSpeechSynthesizer framework. It offers high-quality system voices with real-time streaming and word timing support.",
+  "source": "@site/docs/engines/avsynth.md",
+  "sourceDirName": "engines",
+  "slug": "/engines/avsynth",
+  "permalink": "/tts-wrapper/docs/engines/avsynth",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/willwade/tts-wrapper/tree/main/website/docs/engines/avsynth.md",
+  "tags": [],
+  "version": "current",
+  "sidebarPosition": 11,
+  "frontMatter": {
+    "sidebar_position": 11
+  },
+  "sidebar": "docs",
+  "previous": {
+    "title": "SAPI TTS",
+    "permalink": "/tts-wrapper/docs/engines/sapi"
+  },
+  "next": {
+    "title": "GoogleTrans TTS",
+    "permalink": "/tts-wrapper/docs/engines/googletrans"
+  }
+}

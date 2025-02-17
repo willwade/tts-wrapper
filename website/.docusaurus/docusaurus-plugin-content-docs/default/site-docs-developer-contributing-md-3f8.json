@@ -1,0 +1,23 @@
+{
+  "id": "developer/contributing",
+  "title": "Contributing",
+  "description": "We welcome contributions to TTS Wrapper! This guide will help you get started.",
+  "source": "@site/docs/developer/contributing.md",
+  "sourceDirName": "developer",
+  "slug": "/developer/contributing",
+  "permalink": "/tts-wrapper/docs/developer/contributing",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/willwade/tts-wrapper/tree/main/website/docs/developer/contributing.md",
+  "tags": [],
+  "version": "current",
+  "sidebarPosition": 4,
+  "frontMatter": {
+    "sidebar_position": 4
+  },
+  "sidebar": "docs",
+  "previous": {
+    "title": "Release Process",
+    "permalink": "/tts-wrapper/docs/developer/releases"
+  }
+}

@@ -2,7 +2,7 @@ const {themes} = require('prism-react-renderer');
 
 /** @type {import('@docusaurus/types').Config} */
 const config = {
-  title: 'TTS Wrapper',
+  title: 'py3-tts-wrapper',
   tagline: 'A unified interface for Text-to-Speech services',
   url: 'https://willwade.github.io',
   baseUrl: '/tts-wrapper/',
@@ -33,7 +33,7 @@ const config = {
     /** @type {import('@docusaurus/preset-classic').ThemeConfig} */
     ({
       navbar: {
-        title: 'TTS Wrapper',
+        title: 'py3-tts-wrapper',
         logo: {
           alt: 'TTS Wrapper Logo',
           src: 'img/logo.svg',
@@ -82,7 +82,7 @@ const config = {
             ],
           },
         ],
-        copyright: `Copyright © ${new Date().getFullYear()} TTS Wrapper. Built with Docusaurus.`,
+        copyright: `Copyright © ${new Date().getFullYear()} py3-tts-wrapper. Built with Docusaurus.`,
       },
       prism: {
         theme: themes.github,

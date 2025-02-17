@@ -1,0 +1,24 @@
+{
+  "id": "engines/espeak",
+  "title": "espeak",
+  "description": "",
+  "source": "@site/docs/engines/espeak.md",
+  "sourceDirName": "engines",
+  "slug": "/engines/espeak",
+  "permalink": "/tts-wrapper/docs/engines/espeak",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/willwade/tts-wrapper/tree/main/website/docs/engines/espeak.md",
+  "tags": [],
+  "version": "current",
+  "frontMatter": {},
+  "sidebar": "docs",
+  "previous": {
+    "title": "Wit.ai TTS",
+    "permalink": "/tts-wrapper/docs/engines/witai"
+  },
+  "next": {
+    "title": "SAPI TTS",
+    "permalink": "/tts-wrapper/docs/engines/sapi"
+  }
+}

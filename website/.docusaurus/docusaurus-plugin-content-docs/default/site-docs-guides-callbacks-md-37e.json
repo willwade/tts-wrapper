@@ -1,0 +1,27 @@
+{
+  "id": "guides/callbacks",
+  "title": "Callbacks",
+  "description": "TTS Wrapper provides a simple callback system to handle speech events. There are three main callbacks available:",
+  "source": "@site/docs/guides/callbacks.md",
+  "sourceDirName": "guides",
+  "slug": "/guides/callbacks",
+  "permalink": "/tts-wrapper/docs/guides/callbacks",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/willwade/tts-wrapper/tree/main/website/docs/guides/callbacks.md",
+  "tags": [],
+  "version": "current",
+  "sidebarPosition": 5,
+  "frontMatter": {
+    "sidebar_position": 5
+  },
+  "sidebar": "docs",
+  "previous": {
+    "title": "Streaming",
+    "permalink": "/tts-wrapper/docs/guides/streaming"
+  },
+  "next": {
+    "title": "TTS Engines Overview",
+    "permalink": "/tts-wrapper/docs/engines/overview"
+  }
+}

@@ -42,26 +42,110 @@
       "plugin": "plugin---tts-wrapper-docusaurus-debugb-38-95d"
     }
   },
-  "/tts-wrapper/docs-a11": {
+  "/tts-wrapper/docs-bd4": {
     "__comp": "__comp---theme-docs-root-5-e-9-0b6",
     "__context": {
       "plugin": "plugin---tts-wrapper-docsaba-5b8"
     }
   },
-  "/tts-wrapper/docs-aef": {
+  "/tts-wrapper/docs-a60": {
     "__comp": "__comp---theme-doc-version-roota-7-b-5de",
     "__props": "__props---tts-wrapper-docs-02-f-47a"
   },
-  "/tts-wrapper/docs-adf": {
+  "/tts-wrapper/docs-8ad": {
     "__comp": "__comp---theme-doc-roota-94-67a"
   },
-  "/tts-wrapper/docs/api/overview-23c": {
+  "/tts-wrapper/docs/api/overview-f9b": {
     "__comp": "__comp---theme-doc-item-178-a40",
     "content": "content---tts-wrapper-docs-api-overview-65-d-c41"
+  },
+  "/tts-wrapper/docs/developer/adding-engines-277": {
+    "__comp": "__comp---theme-doc-item-178-a40",
+    "content": "content---tts-wrapper-docs-developer-adding-enginesdba-889"
+  },
+  "/tts-wrapper/docs/developer/contributing-151": {
+    "__comp": "__comp---theme-doc-item-178-a40",
+    "content": "content---tts-wrapper-docs-developer-contributing-3-f-8-f04"
+  },
+  "/tts-wrapper/docs/developer/overview-3dd": {
+    "__comp": "__comp---theme-doc-item-178-a40",
+    "content": "content---tts-wrapper-docs-developer-overview-0-e-8-49f"
+  },
+  "/tts-wrapper/docs/developer/releases-2eb": {
+    "__comp": "__comp---theme-doc-item-178-a40",
+    "content": "content---tts-wrapper-docs-developer-releasesc-56-74e"
+  },
+  "/tts-wrapper/docs/engines/avsynth-147": {
+    "__comp": "__comp---theme-doc-item-178-a40",
+    "content": "content---tts-wrapper-docs-engines-avsynth-863-684"
+  },
+  "/tts-wrapper/docs/engines/aws-polly-0f1": {
+    "__comp": "__comp---theme-doc-item-178-a40",
+    "content": "content---tts-wrapper-docs-engines-aws-pollyfc-0-e16"
+  },
+  "/tts-wrapper/docs/engines/elevenlabs-79c": {
+    "__comp": "__comp---theme-doc-item-178-a40",
+    "content": "content---tts-wrapper-docs-engines-elevenlabs-866-288"
+  },
+  "/tts-wrapper/docs/engines/espeak-8fa": {
+    "__comp": "__comp---theme-doc-item-178-a40",
+    "content": "content---tts-wrapper-docs-engines-espeakde-8-06a"
+  },
+  "/tts-wrapper/docs/engines/google-cloud-507": {
+    "__comp": "__comp---theme-doc-item-178-a40",
+    "content": "content---tts-wrapper-docs-engines-google-cloudc-04-4b8"
+  },
+  "/tts-wrapper/docs/engines/googletrans-20d": {
+    "__comp": "__comp---theme-doc-item-178-a40",
+    "content": "content---tts-wrapper-docs-engines-googletrans-0-df-3f4"
+  },
+  "/tts-wrapper/docs/engines/ibm-watson-19a": {
+    "__comp": "__comp---theme-doc-item-178-a40",
+    "content": "content---tts-wrapper-docs-engines-ibm-watsondde-230"
+  },
+  "/tts-wrapper/docs/engines/microsoft-azure-9c7": {
+    "__comp": "__comp---theme-doc-item-178-a40",
+    "content": "content---tts-wrapper-docs-engines-microsoft-azurec-9-c-975"
+  },
+  "/tts-wrapper/docs/engines/overview-e81": {
+    "__comp": "__comp---theme-doc-item-178-a40",
+    "content": "content---tts-wrapper-docs-engines-overview-564-e55"
+  },
+  "/tts-wrapper/docs/engines/playht-e75": {
+    "__comp": "__comp---theme-doc-item-178-a40",
+    "content": "content---tts-wrapper-docs-engines-playhtae-4-47a"
+  },
+  "/tts-wrapper/docs/engines/sapi-f82": {
+    "__comp": "__comp---theme-doc-item-178-a40",
+    "content": "content---tts-wrapper-docs-engines-sapi-149-63a"
+  },
+  "/tts-wrapper/docs/engines/sherpaonnx-d4c": {
+    "__comp": "__comp---theme-doc-item-178-a40",
+    "content": "content---tts-wrapper-docs-engines-sherpaonnxe-7-a-fb7"
+  },
+  "/tts-wrapper/docs/engines/witai-049": {
+    "__comp": "__comp---theme-doc-item-178-a40",
+    "content": "content---tts-wrapper-docs-engines-witai-688-ff8"
+  },
+  "/tts-wrapper/docs/guides/audio-control-01d": {
+    "__comp": "__comp---theme-doc-item-178-a40",
+    "content": "content---tts-wrapper-docs-guides-audio-control-7-e-5-6ef"
   },
   "/tts-wrapper/docs/guides/basic-usage-a92": {
     "__comp": "__comp---theme-doc-item-178-a40",
     "content": "content---tts-wrapper-docs-guides-basic-usage-102-a96"
+  },
+  "/tts-wrapper/docs/guides/callbacks-05e": {
+    "__comp": "__comp---theme-doc-item-178-a40",
+    "content": "content---tts-wrapper-docs-guides-callbacks-37-e-107"
+  },
+  "/tts-wrapper/docs/guides/ssml-717": {
+    "__comp": "__comp---theme-doc-item-178-a40",
+    "content": "content---tts-wrapper-docs-guides-ssml-6-ff-e54"
+  },
+  "/tts-wrapper/docs/guides/streaming-324": {
+    "__comp": "__comp---theme-doc-item-178-a40",
+    "content": "content---tts-wrapper-docs-guides-streaming-6-ef-32d"
   },
   "/tts-wrapper/docs/installation-a07": {
     "__comp": "__comp---theme-doc-item-178-a40",
@@ -70,10 +154,6 @@
   "/tts-wrapper/docs/intro-63e": {
     "__comp": "__comp---theme-doc-item-178-a40",
     "content": "content---tts-wrapper-docs-intro-0-e-3-76e"
-  },
-  "/tts-wrapper/docs/quickstart-da6": {
-    "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---tts-wrapper-docs-quickstart-807-1ce"
   },
   "/tts-wrapper/-61d": {
     "__comp": "__comp---site-src-pages-index-jsc-4-f-f99",

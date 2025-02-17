@@ -1,0 +1,27 @@
+{
+  "id": "engines/elevenlabs",
+  "title": "ElevenLabs TTS",
+  "description": "ElevenLabs provides high-quality neural text-to-speech with support for voice cloning and customization. It offers some of the most natural-sounding voices available.",
+  "source": "@site/docs/engines/elevenlabs.md",
+  "sourceDirName": "engines",
+  "slug": "/engines/elevenlabs",
+  "permalink": "/tts-wrapper/docs/engines/elevenlabs",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/willwade/tts-wrapper/tree/main/website/docs/engines/elevenlabs.md",
+  "tags": [],
+  "version": "current",
+  "sidebarPosition": 6,
+  "frontMatter": {
+    "sidebar_position": 6
+  },
+  "sidebar": "docs",
+  "previous": {
+    "title": "IBM Watson TTS",
+    "permalink": "/tts-wrapper/docs/engines/ibm-watson"
+  },
+  "next": {
+    "title": "Play.HT TTS",
+    "permalink": "/tts-wrapper/docs/engines/playht"
+  }
+}

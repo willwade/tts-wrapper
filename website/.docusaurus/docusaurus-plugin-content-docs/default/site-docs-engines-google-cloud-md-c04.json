@@ -1,0 +1,27 @@
+{
+  "id": "engines/google-cloud",
+  "title": "Google Cloud TTS",
+  "description": "Google Cloud Text-to-Speech provides high-quality voice synthesis with support for multiple languages, voices, and neural models.",
+  "source": "@site/docs/engines/google-cloud.md",
+  "sourceDirName": "engines",
+  "slug": "/engines/google-cloud",
+  "permalink": "/tts-wrapper/docs/engines/google-cloud",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/willwade/tts-wrapper/tree/main/website/docs/engines/google-cloud.md",
+  "tags": [],
+  "version": "current",
+  "sidebarPosition": 3,
+  "frontMatter": {
+    "sidebar_position": 3
+  },
+  "sidebar": "docs",
+  "previous": {
+    "title": "AWS Polly",
+    "permalink": "/tts-wrapper/docs/engines/aws-polly"
+  },
+  "next": {
+    "title": "Microsoft Azure TTS",
+    "permalink": "/tts-wrapper/docs/engines/microsoft-azure"
+  }
+}

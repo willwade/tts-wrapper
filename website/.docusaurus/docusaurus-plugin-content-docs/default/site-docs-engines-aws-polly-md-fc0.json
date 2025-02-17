@@ -1,0 +1,27 @@
+{
+  "id": "engines/aws-polly",
+  "title": "AWS Polly",
+  "description": "Amazon Polly is a cloud-based text-to-speech service that offers high-quality voice synthesis with support for multiple languages and voices.",
+  "source": "@site/docs/engines/aws-polly.md",
+  "sourceDirName": "engines",
+  "slug": "/engines/aws-polly",
+  "permalink": "/tts-wrapper/docs/engines/aws-polly",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/willwade/tts-wrapper/tree/main/website/docs/engines/aws-polly.md",
+  "tags": [],
+  "version": "current",
+  "sidebarPosition": 2,
+  "frontMatter": {
+    "sidebar_position": 2
+  },
+  "sidebar": "docs",
+  "previous": {
+    "title": "TTS Engines Overview",
+    "permalink": "/tts-wrapper/docs/engines/overview"
+  },
+  "next": {
+    "title": "Google Cloud TTS",
+    "permalink": "/tts-wrapper/docs/engines/google-cloud"
+  }
+}

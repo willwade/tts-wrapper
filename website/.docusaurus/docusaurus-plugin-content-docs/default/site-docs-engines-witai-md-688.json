@@ -1,0 +1,27 @@
+{
+  "id": "engines/witai",
+  "title": "Wit.ai TTS",
+  "description": "Wit.ai provides text-to-speech capabilities as part of Facebook's AI services. It offers basic speech synthesis with support for multiple languages.",
+  "source": "@site/docs/engines/witai.md",
+  "sourceDirName": "engines",
+  "slug": "/engines/witai",
+  "permalink": "/tts-wrapper/docs/engines/witai",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/willwade/tts-wrapper/tree/main/website/docs/engines/witai.md",
+  "tags": [],
+  "version": "current",
+  "sidebarPosition": 8,
+  "frontMatter": {
+    "sidebar_position": 8
+  },
+  "sidebar": "docs",
+  "previous": {
+    "title": "Play.HT TTS",
+    "permalink": "/tts-wrapper/docs/engines/playht"
+  },
+  "next": {
+    "title": "espeak",
+    "permalink": "/tts-wrapper/docs/engines/espeak"
+  }
+}

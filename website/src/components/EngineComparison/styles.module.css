@@ -1,1 +1,39 @@
- 
+.comparison {
+  display: flex;
+  align-items: center;
+  padding: 2rem 0;
+  width: 100%;
+}
+
+.tableWrapper {
+  width: 100%;
+  overflow-x: auto;
+  margin: 2rem 0;
+}
+
+.featureTable {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 0 auto;
+  text-align: center;
+}
+
+.featureTable th,
+.featureTable td {
+  padding: 0.75rem;
+  border: 1px solid var(--ifm-color-emphasis-300);
+}
+
+.featureTable th {
+  background-color: var(--ifm-color-emphasis-100);
+  font-weight: var(--ifm-font-weight-bold);
+}
+
+.featureTable tr:nth-child(even) {
+  background-color: var(--ifm-color-emphasis-50);
+}
+
+.featureTable td:first-child {
+  text-align: left;
+  font-weight: var(--ifm-font-weight-semibold);
+} 

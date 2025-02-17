@@ -1,0 +1,27 @@
+{
+  "id": "developer/releases",
+  "title": "Release Process",
+  "description": "This guide explains how to create and manage releases for TTS Wrapper.",
+  "source": "@site/docs/developer/releases.md",
+  "sourceDirName": "developer",
+  "slug": "/developer/releases",
+  "permalink": "/tts-wrapper/docs/developer/releases",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/willwade/tts-wrapper/tree/main/website/docs/developer/releases.md",
+  "tags": [],
+  "version": "current",
+  "sidebarPosition": 3,
+  "frontMatter": {
+    "sidebar_position": 3
+  },
+  "sidebar": "docs",
+  "previous": {
+    "title": "Adding New Engines",
+    "permalink": "/tts-wrapper/docs/developer/adding-engines"
+  },
+  "next": {
+    "title": "Contributing",
+    "permalink": "/tts-wrapper/docs/developer/contributing"
+  }
+}

@@ -1,0 +1,27 @@
+{
+  "id": "engines/playht",
+  "title": "Play.HT TTS",
+  "description": "Play.HT provides high-quality neural text-to-speech with support for voice cloning, custom voice creation, and multiple voice engines including PlayHT 2.0 and Play3.0-mini.",
+  "source": "@site/docs/engines/playht.md",
+  "sourceDirName": "engines",
+  "slug": "/engines/playht",
+  "permalink": "/tts-wrapper/docs/engines/playht",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/willwade/tts-wrapper/tree/main/website/docs/engines/playht.md",
+  "tags": [],
+  "version": "current",
+  "sidebarPosition": 7,
+  "frontMatter": {
+    "sidebar_position": 7
+  },
+  "sidebar": "docs",
+  "previous": {
+    "title": "ElevenLabs TTS",
+    "permalink": "/tts-wrapper/docs/engines/elevenlabs"
+  },
+  "next": {
+    "title": "Wit.ai TTS",
+    "permalink": "/tts-wrapper/docs/engines/witai"
+  }
+}

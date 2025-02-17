@@ -1,0 +1,27 @@
+{
+  "id": "engines/googletrans",
+  "title": "GoogleTrans TTS",
+  "description": "GoogleTrans provides free text-to-speech capabilities through Google Translate's speech synthesis. It's useful for basic TTS needs without requiring API keys or authentication.",
+  "source": "@site/docs/engines/googletrans.md",
+  "sourceDirName": "engines",
+  "slug": "/engines/googletrans",
+  "permalink": "/tts-wrapper/docs/engines/googletrans",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/willwade/tts-wrapper/tree/main/website/docs/engines/googletrans.md",
+  "tags": [],
+  "version": "current",
+  "sidebarPosition": 12,
+  "frontMatter": {
+    "sidebar_position": 12
+  },
+  "sidebar": "docs",
+  "previous": {
+    "title": "AVSynth TTS",
+    "permalink": "/tts-wrapper/docs/engines/avsynth"
+  },
+  "next": {
+    "title": "Sherpa-ONNX TTS",
+    "permalink": "/tts-wrapper/docs/engines/sherpaonnx"
+  }
+}

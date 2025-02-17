@@ -1,0 +1,27 @@
+{
+  "id": "guides/audio-control",
+  "title": "Audio Control",
+  "description": "TTS Wrapper provides comprehensive audio playback control features, allowing you to manage speech synthesis playback in real-time.",
+  "source": "@site/docs/guides/audio-control.md",
+  "sourceDirName": "guides",
+  "slug": "/guides/audio-control",
+  "permalink": "/tts-wrapper/docs/guides/audio-control",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/willwade/tts-wrapper/tree/main/website/docs/guides/audio-control.md",
+  "tags": [],
+  "version": "current",
+  "sidebarPosition": 3,
+  "frontMatter": {
+    "sidebar_position": 3
+  },
+  "sidebar": "docs",
+  "previous": {
+    "title": "SSML Support",
+    "permalink": "/tts-wrapper/docs/guides/ssml"
+  },
+  "next": {
+    "title": "Streaming",
+    "permalink": "/tts-wrapper/docs/guides/streaming"
+  }
+}

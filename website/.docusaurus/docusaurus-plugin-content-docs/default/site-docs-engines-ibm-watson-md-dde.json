@@ -1,0 +1,27 @@
+{
+  "id": "engines/ibm-watson",
+  "title": "IBM Watson TTS",
+  "description": "IBM Watson Text-to-Speech provides high-quality voice synthesis with support for neural voices, SSML, and real-time streaming capabilities.",
+  "source": "@site/docs/engines/ibm-watson.md",
+  "sourceDirName": "engines",
+  "slug": "/engines/ibm-watson",
+  "permalink": "/tts-wrapper/docs/engines/ibm-watson",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/willwade/tts-wrapper/tree/main/website/docs/engines/ibm-watson.md",
+  "tags": [],
+  "version": "current",
+  "sidebarPosition": 4,
+  "frontMatter": {
+    "sidebar_position": 4
+  },
+  "sidebar": "docs",
+  "previous": {
+    "title": "Microsoft Azure TTS",
+    "permalink": "/tts-wrapper/docs/engines/microsoft-azure"
+  },
+  "next": {
+    "title": "ElevenLabs TTS",
+    "permalink": "/tts-wrapper/docs/engines/elevenlabs"
+  }
+}
