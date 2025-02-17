@@ -154,11 +154,11 @@ tts.speak("This is a quick test of text-to-speech")
 
 ## Additional Resources
 
-- [Google Cloud TTS](../google-cloud) (for production use)
+- [Google Cloud TTS](google-cloud) (for production use)
 - [Language Codes Reference](https://cloud.google.com/translate/docs/languages)
 
 ## Next Steps
 
 - Explore [streaming capabilities](../guides/streaming)
 - Check out [callback functionality](../guides/callbacks)
-- Consider upgrading to [Google Cloud TTS](../google-cloud) for production use 
+- Consider upgrading to [Google Cloud TTS](google-cloud) for production use 

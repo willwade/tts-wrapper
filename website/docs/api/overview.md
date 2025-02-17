@@ -165,7 +165,7 @@ except TTSError as e:
 
 ## Next Steps
 
-- [TTS Base Class Reference](tts-base)
-- [Client Base Class Reference](client-base)
-- [SSML Reference](ssml)
-- [Audio Control Reference](audio) 
+- [Developer Overview](../developer/overview)
+- [Adding New Engines](../developer/adding-engines)
+- [Release Process](../developer/releases)
+- [Contributing Guide](../developer/contributing) 

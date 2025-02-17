@@ -4,7 +4,7 @@
  * Modify the docusaurus.config.js file at your site's root instead.
  */
 export default {
-  "title": "TTS Wrapper",
+  "title": "py3-tts-wrapper",
   "tagline": "A unified interface for Text-to-Speech services",
   "url": "https://willwade.github.io",
   "baseUrl": "/tts-wrapper/",
@@ -30,7 +30,7 @@ export default {
   ],
   "themeConfig": {
     "navbar": {
-      "title": "TTS Wrapper",
+      "title": "py3-tts-wrapper",
       "logo": {
         "alt": "TTS Wrapper Logo",
         "src": "img/logo.svg"
@@ -80,7 +80,7 @@ export default {
           ]
         }
       ],
-      "copyright": "Copyright © 2025 TTS Wrapper. Built with Docusaurus."
+      "copyright": "Copyright © 2025 py3-tts-wrapper. Built with Docusaurus."
     },
     "prism": {
       "theme": {
