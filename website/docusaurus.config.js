@@ -4,7 +4,7 @@ const {themes} = require('prism-react-renderer');
 const config = {
   title: 'py3-tts-wrapper',
   tagline: 'A unified interface for Text-to-Speech services',
-  url: 'http://code.willwa.de',
+  url: 'https://willwade.github.io',
   baseUrl: '/tts-wrapper/',
   onBrokenLinks: 'throw',
   onBrokenMarkdownLinks: 'warn',
