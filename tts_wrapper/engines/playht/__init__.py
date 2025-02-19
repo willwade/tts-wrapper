@@ -2,4 +2,4 @@
 
 from .client import PlayHTClient
 from .playht import PlayHTTTS
-from .ssml import playhtSSML
+from .ssml import PlayHTSSML
