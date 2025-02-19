@@ -2,5 +2,4 @@
 
 from .client import PlayHTClient
 from .playht import PlayHTTTS
-
-__all__ = ["PlayHTClient", "PlayHTTTS"] 
+from .ssml import playhtSSML
