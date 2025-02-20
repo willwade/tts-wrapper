@@ -15,6 +15,7 @@ REQUIRED_ENV_VARS = {
     "playht": ["PLAYHT_API_KEY", "PLAYHT_USER_ID"],
 }
 
+
 def check_required_env_vars() -> None:
     """Check that all required environment variables are set."""
     missing_vars = []
@@ -94,7 +95,6 @@ def decode_google_creds() -> None:
     google_b64_creds = os.getenv("GOOGLE_SA_FILE_B64")
     google_sa_path = os.getenv("GOOGLE_SA_PATH", "google_creds.json")
 
-
     if google_b64_creds:
         try:
             # Ensure the directory exists
@@ -106,7 +106,9 @@ def decode_google_creds() -> None:
             with creds_path.open("w") as f:
                 f.write(decoded_creds)
             if creds_path.exists() and creds_path.stat().st_size > 0:
-                print(f"Google Service Account JSON created successfully at: {google_sa_path}")
+                print(
+                    f"Google Service Account JSON created successfully at: {google_sa_path}"
+                )
             else:
                 raise ValueError("Failed to create the Google Service Account file.")
         except (OSError, ValueError) as e:
@@ -129,6 +131,7 @@ def set_env_vars_from_json(json_file: str) -> None:
             for key, value in creds.items():
                 env_var = f"{service.upper()}_{key.upper()}"
                 os.environ[env_var] = value  # Set for the current session
+
 
 if __name__ == "__main__":
     # Attempt to load credentials, falling back to JSON files if needed
