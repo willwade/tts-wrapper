@@ -38,7 +38,17 @@ class SherpaOnnxClient:
             tokens_path: str | None = None,
             model_id: str | None = None,
         ) -> None:
-            """Initiate class."""
+            """Initialize the SherpaOnnx client.
+            
+            Parameters
+            ----------
+            model_path : str, optional
+                Base directory for storing models
+            tokens_path : str, optional
+                Path to tokens file
+            model_id : str, optional
+                ID of the model to use
+            """
             if importlib.util.find_spec("sherpa_onnx") is None:
                 logging.exception("Please install sherpa-onnx library to use the SherpaOnnxClient")
 
@@ -48,51 +58,42 @@ class SherpaOnnxClient:
             if importlib.util.find_spec("threading") is None:
                 logging.exception("Please install threading library to use the SherpaOnnxClient")
 
-            self.default_model_path = model_path
-            self.default_tokens_path = (
-                tokens_path
-                if tokens_path
-                else Path(model_path) / "tokens.txt" if model_path else None
-            )
-
-            self._model_dir = model_path if model_path else Path("~/mms_models").expanduser()
+            # Set up base directory for models
+            self._base_dir = Path(model_path if model_path else "~/mms_models").expanduser()
+            self._base_dir.mkdir(parents=True, exist_ok=True)
+            
+            # Set model ID and initialize paths
             self._model_id = model_id
+            self._model_dir = self._base_dir
             if model_id:
-                self._model_dir = Path(self._model_dir) / model_id
-            if not Path(self._model_dir).exists():
-                try:
-                    Path(self._model_dir).mkdir(parents=True)
-                except OSError as e:
-                    msg = f"Failed to create model directory {self._model_dir}: {e!s}"
-                    raise RuntimeError(msg) from e
+                self._model_dir = self._base_dir / model_id
+                self._model_dir.mkdir(parents=True, exist_ok=True)
+
+            # Set default paths
+            self.default_model_path = str(self._model_dir / "model.onnx") if model_id else model_path
+            self.default_tokens_path = tokens_path or str(self._model_dir / "tokens.txt")
+            self.default_lexicon_path = ""
+            self.default_dict_dir_path = ""
 
             self.tts = None
-            print (f"tts: {self.tts}")
             self.json_models = self._load_models_and_voices()
-            #print ("Available voices\n")
-            #print(self.voices_cache)
-
-
             self.set_voice()
-            self.audio_queue = queue.Queue()  # Ensure `queue` is imported
-
-            self.sample_rate = 16000
             
-    def _download_file(self, url:str, destination:str) -> None:
+            self.audio_queue = queue.Queue()
+            self.sample_rate = 16000
+
+    def _download_file(self, url: str, destination: Path) -> None:
+        """Download a file from a URL to a destination path."""
         try:
             import requests
         except ImportError:
             msg = "Please install requests library to download files"
             raise ImportError(msg)
-        logging.info("Downloading model files from %s to %s", url, destination)
-        response = requests.get(url, stream=True, timeout=10)
-        response.raise_for_status()
-        logging.debug("Response status: %s", response.status_code)
-        with Path(destination).open("wb") as f:
-            for chunk in response.iter_content(chunk_size=8192):
-                f.write(chunk)
 
-    
+        response = requests.get(url, stream=True)
+        response.raise_for_status()
+        destination.write_bytes(response.content)
+
     def _check_files_exist(self, model_path: str, tokens_path: str, model_id: str) -> bool:
         if not model_id :
             logging.info("Model Id not defined, using default model\n")
@@ -111,97 +112,95 @@ class SherpaOnnxClient:
 
         return model_exists and tokens_exists
 
-    def _find_file (self, destination_dir: str, extension: str) -> str:
-        for root, _dirs, files in os.walk(destination_dir):
+    def _find_file(self, destination_dir: Path, extension: str) -> Path:
+        """Find a file with given extension in directory."""
+        for root, _dirs, files in os.walk(str(destination_dir)):
             for file in files:
                 if file.endswith(extension):
-                    file_path = Path(root) / file
-                    # Get file size
-                    file_size = file_path.stat().st_size
-                    if file_size > 1024*1024 and "onnx" in file:
-                        return str(file_path)
-                    if "tokens.txt" in file:
-                        return str(file_path)
-                    if file_size > 1024*1024 and "lexicon.txt" in file:
-                        return str(file_path)
+                    return Path(root) / file
+        return Path("")
+
+    def get_dict_dir(self, destination_dir: Path) -> str:
+        """Get dict_dir from extracted model."""
+        # Walk through directory tree
+        for root, _dirs, files in os.walk(str(destination_dir)):
+            if any(f.endswith(".txt") for f in files):
+                return str(Path(root))
         return ""
 
+    def _download_model_and_tokens(
+        self, destination_dir: Path, model_id: str | None
+    ) -> tuple[Path, Path, str, str]:
+        """Download model and token files to voice-specific directory.
 
-    def _download_model_and_tokens(self, destination_dir: Path, model_id: str | None) -> tuple[Path, Path, str, str]:
+        Args:
+            destination_dir: Base directory for model files
+            model_id: Voice model ID
+
+        Returns:
+            Tuple of (model_path, tokens_path, lexicon_path, dict_dir)
+        """
         lexicon_path = ""
         dict_dir = ""
-        model_url = self.json_models[model_id]["url"]
-        print (f"MODEL URL: {model_url}")
-        if not model_id.startswith("mms_"):
+
+        # Handle None model_id
+        safe_model_id = model_id or "default"
+        model_url = self.json_models[safe_model_id]["url"]
+        
+        if not safe_model_id.startswith("mms_"):
             filename = Path(model_url).name
             logging.info("Downloading model from %s", model_url)
 
             download_path = destination_dir / filename
-
             self._download_file(model_url, download_path)
-            logging.info("Model downloaded to %s", destination_dir)
+            logging.info("Downloaded to %s", download_path)
 
-            logging.info("Extracting model and token to %s", destination_dir)
-
-            with bz2.open(download_path, "rb") as bz2_file, tarfile.open(fileobj=bz2_file, mode="r:") as tar_file:
-                tar_file.extractall(destination_dir)
+            logging.info("Extracting to %s", destination_dir)
+            with bz2.open(download_path, "rb") as bz2_file:
+                with tarfile.open(fileobj=bz2_file, mode="r:") as tar_file:
+                    tar_file.extractall(destination_dir)
 
             extracted_dir = filename.split(".tar.bz2")[0]
-            destination_dir = destination_dir / extracted_dir
+            extracted_path = destination_dir / extracted_dir
 
-            logging.info("Find onnx file in extracted directory: %s", destination_dir)
-            model_file = self._find_file(destination_dir, "onnx")
+            logging.info("Finding onnx file in: %s", extracted_path)
+            model_file = self._find_file(extracted_path, "onnx")
+            if not model_file:
+                msg = (
+                    f"Model for model id {safe_model_id} "
+                    "not found in the downloaded file"
+                )
+                raise ValueError(msg)
 
-            model_path = destination_dir / model_file
-            logging.info("model_path in download: %s", model_path)
+            model_path = destination_dir / "model.onnx"
             tokens_path = destination_dir / "tokens.txt"
-            lexicon_path = destination_dir / "lexicon.txt"
+            
+            # Move files to final location
+            model_file.rename(model_path)
+            (extracted_path / "tokens.txt").rename(tokens_path)
+            
+            # Set paths for additional resources
+            lexicon_path = str(destination_dir / "lexicon.txt")
             dict_dir = self.get_dict_dir(destination_dir)
 
-            if not model_path:
-                msg = f"Model for model id {model_id} not found in the downloaded file"
-                raise ValueError(msg)
         else:
-            # Default URL if model is not defined or iso code is not found
-            print (f"MODEL URL2: {model_url}")
-            if not model_url:
-                model_onnx_url = f"https://huggingface.co/willwade/mms-tts-multilingual-models-onnx/resolve/main/eng/model.onnx?download=true"
-                tokens_url = f"https://huggingface.co/willwade/mms-tts-multilingual-models-onnx/resolve/main/eng/tokens.txt"
-            else:
-                print ("voice model id found")
-                print (f"MODEL URL3: {model_url}")
-                model_onnx_url = f"{model_url}/model.onnx?download=true"
-                tokens_url = f"{model_url}/tokens.txt"
+            # Handle MMS models
+            base_url = self.json_models[safe_model_id]["url"]
+            model_onnx_url = f"{base_url}/model.onnx?download=true"
+            tokens_url = f"{base_url}/tokens.txt"
             
-            print (f"model url: {model_onnx_url}")
-            print(f"token url: {tokens_url}")
-            
-            model_path = Path(destination_dir) / "model.onnx"
-            tokens_path = Path(destination_dir) / "tokens.txt"
+            model_path = destination_dir / "model.onnx"
+            tokens_path = destination_dir / "tokens.txt"
 
-            print (f"model path: {model_path}")
-            print(f"tokens path: {tokens_path}")
-
-            logging.info("Downloading model from %s", model_url)
+            logging.info("Getting MMS model from %s", base_url)
             self._download_file(model_onnx_url, model_path)
-            logging.info("Model downloaded to %s", model_path)
+            logging.info("Downloaded to %s", model_path)
 
-            logging.info("Downloading tokens from %s", tokens_url)
+            logging.info("Getting tokens from %s", tokens_url)
             self._download_file(tokens_url, tokens_path)
-            logging.info("Tokens downloaded to %s", tokens_path)
+            logging.info("Downloaded to %s", tokens_path)
 
-        return model_path, tokens_path, str(lexicon_path), dict_dir
-
-    def get_dict_dir(self, destination_dir: str) -> str:
-        """Get dict_dir from extracted model."""
-        # Walk through directory tree
-        for root, _dirs, files in os.walk(destination_dir):
-            # Check if any file in current directory has .dict extension
-            if any("dict" in file.lower() for file in files):
-                return root
-
-        # Return None if no matching directory is found
-        return ""
+        return model_path, tokens_path, lexicon_path, dict_dir
 
     def check_and_download_model(self, model_id: str) -> tuple[str, str, str, str]:
         """Check if model and tokens exist, and download if not.
@@ -211,40 +210,42 @@ class SherpaOnnxClient:
         model_id : str
             The model ID to download.
 
+        Returns
+        -------
+        tuple[str, str, str, str]
+            Paths to model, tokens, lexicon, and dict directory
         """
         lexicon_path = ""
         dict_dir = ""
 
-        if model_id.startswith("mms_"):
-            model_dir = Path(self._model_dir)
-            model_dir.mkdir(parents=True, exist_ok=True)
-            model_path = model_dir / "model.onnx"
-            tokens_path = model_dir / "tokens.txt"
-        else:
-            model_dir = Path(self._model_dir)
-            model_dir.mkdir(parents=True, exist_ok=True)
-            model_path = model_dir
-            tokens_path = model_dir
+        # Create voice-specific directory within base directory
+        voice_dir = self._base_dir / model_id
+        voice_dir.mkdir(parents=True, exist_ok=True)
 
+        # Set expected paths for this specific voice
+        model_path = voice_dir / "model.onnx"
+        tokens_path = voice_dir / "tokens.txt"
 
-        if not self._check_files_exist(model_path, tokens_path, model_id):
-            logging.info(
-                "Downloading model and tokens languages for %s because we can't find it", model_id,
-            )
+        # Convert paths to strings for _check_files_exist
+        model_path_str = str(model_path)
+        tokens_path_str = str(tokens_path)
+
+        if not self._check_files_exist(model_path_str, tokens_path_str, model_id):
+            logging.info("Downloading model and tokens for %s", model_id)
             model_path, tokens_path, lexicon_path, dict_dir = self._download_model_and_tokens(
-                model_dir, model_id,
+                voice_dir, model_id
             )
-            logging.info("Model and tokens downloaded to %s", model_dir)
-
+            logging.info("Model and tokens downloaded to %s", voice_dir)
         else:
-            lexicon_path = self._find_file(model_dir, "lexicon.txt")
-            lexicon_path_obj = Path(model_dir) / lexicon_path
-            lexicon_path = str(lexicon_path_obj)
-
-            dict_dir = self.get_dict_dir(model_dir)
-            model_path = self._find_file(model_dir, "onnx")
-            tokens_path = self._find_file(model_dir, "tokens.txt")
-            logging.info("Model and tokens already exist for %s", model_id)
+            if model_id.startswith("mms_"):
+                # For MMS models, we already have the correct paths
+                lexicon_path = ""
+                dict_dir = ""
+            else:
+                # For non-MMS models, find additional files
+                lexicon_file = self._find_file(voice_dir, "lexicon.txt")
+                lexicon_path = str(lexicon_file) if lexicon_file else ""
+                dict_dir = self.get_dict_dir(voice_dir)
 
         return str(model_path), str(tokens_path), lexicon_path, dict_dir
 
