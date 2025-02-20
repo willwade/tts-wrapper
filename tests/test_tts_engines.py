@@ -227,3 +227,34 @@ def test_playback_with_callbacks(service):
         assert isinstance(args[1], float), "Expected start_time to be a float"
         assert isinstance(args[2], float), "Expected end_time to be a float"
         assert args[2] > args[1], "End time should be greater than start time"
+
+@pytest.mark.synthetic
+def test_sherpaonnx_no_default_download():
+    """Test that SherpaOnnxClient respects no_default_download flag."""
+    # Initialize client with no_default_download=True
+    client = SherpaOnnxClient(
+        model_path=None, 
+        tokens_path=None, 
+        no_default_download=True
+    )
+    
+    # Verify that tts is None (no model downloaded)
+    assert client.tts is None
+    
+    # Verify that model_id is None
+    assert client._model_id is None
+    
+    # Now explicitly set a voice
+    client._model_id = "mms_eng"
+    client.set_voice()
+    
+    # Verify that model is now downloaded and initialized
+    assert client.tts is not None
+    assert client._model_id == "mms_eng"
+    
+    # Test that we can use the voice after explicit setup
+    try:
+        client.synth("Test after explicit voice setup")
+    except Exception as e:
+        msg = "Failed to synthesize speech after explicit voice setup"
+        pytest.fail(f"{msg}: {e}")
