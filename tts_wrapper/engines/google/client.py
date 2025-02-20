@@ -1,8 +1,12 @@
 import struct
 from typing import Any, Optional, Union
 
-from google.cloud import texttospeech_v1beta1 as texttospeech
-from google.oauth2 import service_account
+try:
+    from google.cloud import texttospeech_v1beta1 as texttospeech
+    from google.oauth2 import service_account
+except ImportError:
+    texttospeech = None  # type: ignore
+    service_account = None  # type: ignore
 
 from tts_wrapper.exceptions import ModuleNotInstalled
 
@@ -71,7 +75,8 @@ class GoogleClient:
 
         s_input = self.texttospeech.SynthesisInput(ssml=ssml)
         voice_params = self.texttospeech.VoiceSelectionParams(
-            language_code=lang or self._lang, name=voice or self._voice,
+            language_code=lang or self._lang,
+            name=voice or self._voice,
         )
         audio_config = self.texttospeech.AudioConfig(
             audio_encoding=self.texttospeech.AudioEncoding.LINEAR16,
@@ -129,7 +134,6 @@ class GoogleClient:
 
         num_samples = subchunk2_size // (channels * (bits_per_sample // 8))
         return num_samples / sample_rate
-
 
     def get_voices(self) -> list[dict[str, Any]]:
         """Fetches available voices from Google Cloud Text-to-Speech service."""
