@@ -35,7 +35,8 @@ class MicrosoftClient:
         self._subscription_region = credentials[1] or "eastus"
 
         self.speech_config = speechsdk.SpeechConfig(
-            subscription=self._subscription_key, region=self._subscription_region,
+            subscription=self._subscription_key,
+            region=self._subscription_region,
         )
 
     def check_credentials(self) -> bool:
@@ -50,7 +51,7 @@ class MicrosoftClient:
         except Exception:
             return False
 
-    def get_available_voices(self) -> list[dict[str, Any]]:
+    def get_voices(self) -> list[dict[str, Any]]:
         """Fetches available voices from Microsoft Azure TTS service using REST API with optimized connection handling."""
         import requests
 

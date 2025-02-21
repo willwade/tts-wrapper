@@ -19,6 +19,7 @@ try:
 except ImportError:
     speechsdk = None  # type: ignore
 
+
 class MicrosoftTTS(AbstractTTS):
     """High-level TTS interface for Microsoft Azure."""
 
@@ -34,18 +35,19 @@ class MicrosoftTTS(AbstractTTS):
         self._lang = lang or "en-US"
         # Set default neural voice if none specified
         self._voice = voice or "en-US-JennyMultilingualNeural"
-        
+
         from .ssml import MicrosoftSSML
+
         self._ssml = MicrosoftSSML(self._lang, self._voice)
-        
+
         # Set audio rate to match Microsoft's output (16kHz)
         self.audio_rate = 16000
         self.channels = 1
         self.sample_width = 2  # 16-bit audio
-        
+
         # Configure synthesizer for streaming
         self._setup_synthesizer()
-    
+
     def _setup_synthesizer(self) -> None:
         """Set up the speech synthesizer with proper configuration."""
         # Configure word boundary tracking
@@ -53,20 +55,20 @@ class MicrosoftTTS(AbstractTTS):
             speechsdk.PropertyId.SpeechServiceResponse_RequestWordLevelTimestamps,
             "true",
         )
-        
+
         # Configure audio output format
         self._client.speech_config.set_speech_synthesis_output_format(
             speechsdk.SpeechSynthesisOutputFormat.Raw16Khz16BitMonoPcm
         )
-        
+
         # Set voice and language
         self._client.speech_config.speech_synthesis_voice_name = self._voice
         self._client.speech_config.speech_synthesis_language = self._lang
-        
+
         # Create synthesizer
         self.synthesizer = speechsdk.SpeechSynthesizer(
             speech_config=self._client.speech_config,
-            audio_config=None  # No audio output config for raw PCM
+            audio_config=None,  # No audio output config for raw PCM
         )
 
     def get_audio_duration(self) -> float:
@@ -82,7 +84,7 @@ class MicrosoftTTS(AbstractTTS):
 
     def get_voices(self) -> list[dict[str, Any]]:
         """Get available voices."""
-        return self._client.get_available_voices()
+        return self._client.get_voices()
 
     def set_voice(self, voice_id: str, lang_id: Optional[str] = None) -> None:
         """Set voice and update Azure configuration."""
@@ -91,7 +93,7 @@ class MicrosoftTTS(AbstractTTS):
         self._lang = lang_id or self._lang
         self._client.speech_config.speech_synthesis_voice_name = self._voice
         self._client.speech_config.speech_synthesis_language = self._lang
-        
+
         # Recreate synthesizer with new voice
         self._setup_synthesizer()
 
@@ -100,7 +102,13 @@ class MicrosoftTTS(AbstractTTS):
         rate = self.get_property("rate")
         if rate != "":
             # Handle predefined values
-            if isinstance(rate, str) and rate.lower() in ["x-slow", "slow", "medium", "fast", "x-fast"]:
+            if isinstance(rate, str) and rate.lower() in [
+                "x-slow",
+                "slow",
+                "medium",
+                "fast",
+                "x-fast",
+            ]:
                 properties.append(f'rate="{rate.lower()}"')
                 logging.debug("Using predefined rate: %s", rate.lower())
             else:
@@ -149,18 +157,20 @@ class MicrosoftTTS(AbstractTTS):
         """Convert text to speech."""
         text = str(text)
         word_timings = []
-        
+
         def handle_word_boundary(evt):
             if evt.text and not evt.text.isspace():
-                word_timings.append((
-                    evt.audio_offset / 10000000,  # Convert to seconds
-                    evt.duration / 10000000,      # Convert to seconds
-                    evt.text
-                ))
-        
+                word_timings.append(
+                    (
+                        evt.audio_offset / 10000000,  # Convert to seconds
+                        evt.duration / 10000000,  # Convert to seconds
+                        evt.text,
+                    )
+                )
+
         # Connect word boundary callback
         self.synthesizer.synthesis_word_boundary.connect(handle_word_boundary)
-        
+
         try:
             # Check if text already contains SSML
             if not self._is_ssml(text):
@@ -169,42 +179,42 @@ class MicrosoftTTS(AbstractTTS):
                     self.get_property(prop) != ""
                     for prop in ["rate", "volume", "pitch"]
                 )
-                
+
                 inner_text = text
                 if has_properties:
                     # Wrap text in prosody tag with properties
                     inner_text = self.construct_prosody_tag(text)
-                
+
                 # Always wrap in speak and voice tags
                 text = (
                     '<speak xmlns="http://www.w3.org/2001/10/synthesis" '
                     'version="1.0" xml:lang="en-US">'
                     f'<voice name="{self._voice}">'
-                    f'{inner_text}'
-                    '</voice>'
-                    '</speak>'
+                    f"{inner_text}"
+                    "</voice>"
+                    "</speak>"
                 )
                 logging.debug("Final SSML: %s", text)
-            
+
             # Always use speak_ssml_async
             result = self.synthesizer.speak_ssml_async(text).get()
-            
+
             if result.reason == speechsdk.ResultReason.SynthesizingAudioCompleted:
                 audio_data = result.audio_data
                 # Set word timings for callbacks
                 self.set_timings(word_timings)
                 return audio_data
-            
+
             if result.reason == speechsdk.ResultReason.Canceled:
                 cancellation_details = result.cancellation_details
                 msg = f"Speech synthesis canceled: {cancellation_details.reason}"
                 if cancellation_details.reason == speechsdk.CancellationReason.Error:
                     msg = f"Error details: {cancellation_details.error_details}"
                 raise RuntimeError(msg)
-            
+
             msg = "Synthesis failed without detailed error message"
             raise RuntimeError(msg)
-            
+
         finally:
             # Disconnect event handlers
             self.synthesizer.synthesis_word_boundary.disconnect_all()
