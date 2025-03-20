@@ -29,14 +29,17 @@ class AVSynthTTS(AbstractTTS):
         text = text.strip()
         return text.startswith("<speak>") and text.endswith("</speak>")
 
-    def synth_to_bytes(self, text: Any) -> bytes:
+    def synth_to_bytes(self, text: Any, voice_id: Optional[str] = None) -> bytes:
         """Convert text to speech."""
         text = str(text)
         options = {}
 
+        # Use voice_id if provided, otherwise use the default voice
+        voice_to_use = voice_id or self._voice
+        
         # Add voice if set and text is not SSML
-        if self._voice and not self._is_ssml(text):
-            options["voice"] = self._voice
+        if voice_to_use and not self._is_ssml(text):
+            options["voice"] = voice_to_use
 
         # Add any set properties (only for non-SSML text)
         if not self._is_ssml(text):
@@ -71,7 +74,7 @@ class AVSynthTTS(AbstractTTS):
 
         return audio_data
 
-    def synth_to_bytestream(self, text: Any) -> Generator[bytes, None, None]:
+    def synth_to_bytestream(self, text: Any, voice_id: Optional[str] = None) -> Generator[bytes, None, None]:
         """
         Synthesize text to a stream of audio bytes.
 
@@ -80,6 +83,7 @@ class AVSynthTTS(AbstractTTS):
 
         Args:
             text: The text to synthesize
+            voice_id: Optional voice ID to use for synthesis. If None, uses the default voice.
 
         Yields:
             Audio data chunks as they are generated
@@ -87,9 +91,12 @@ class AVSynthTTS(AbstractTTS):
         text = str(text)
         options = {}
 
+        # Use voice_id if provided, otherwise use the default voice
+        voice_to_use = voice_id or self._voice
+
         # Add voice if set and text is not SSML
-        if self._voice and not self._is_ssml(text):
-            options["voice"] = self._voice
+        if voice_to_use and not self._is_ssml(text):
+            options["voice"] = voice_to_use
 
         # Add any set properties (only for non-SSML text)
         if not self._is_ssml(text):

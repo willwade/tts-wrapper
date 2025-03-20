@@ -19,13 +19,16 @@ class ElevenLabsTTS(AbstractTTS):
         self.audio_rate = 22050  # Kept at 22050
         self.set_voice(voice or "yoZ06aMxZJJ28mfd3POQ", lang or "en-US")
 
-    def synth_to_bytes(self, text: Any) -> bytes:
-        if not self._voice:
+    def synth_to_bytes(self, text: Any, voice_id: Optional[str] = None) -> bytes:
+        # Use voice_id if provided, otherwise use the default voice
+        voice_to_use = voice_id or self._voice
+
+        if not voice_to_use:
             msg = "Voice ID must be set before synthesizing speech."
             raise ValueError(msg)
 
         # Get the audio and word timings from the ElevenLabs API
-        self.generated_audio, word_timings = self._client.synth(str(text), self._voice)
+        self.generated_audio, word_timings = self._client.synth(str(text), voice_to_use)
         self.set_timings(word_timings)
 
         prosody_text = str(text)

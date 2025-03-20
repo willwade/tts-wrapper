@@ -7,13 +7,36 @@ import requests
 class PlayHTClient:
     """Client for Play.HT TTS API."""
 
-    def __init__(self, credentials: tuple[str, str]) -> None:
+    def __init__(self, credentials=None, api_key=None, user_id=None) -> None:
         """
         Initialize the Play.HT client.
 
         @param credentials: Tuple of (api_key, user_id)
+        @param api_key: API key for Play.HT
+        @param user_id: User ID for Play.HT
         """
-        self.api_key, self.user_id = credentials
+        if credentials:
+            if isinstance(credentials, tuple) and len(credentials) == 2:
+                self.api_key, self.user_id = credentials
+            else:
+                self.api_key = credentials
+                self.user_id = user_id
+        else:
+            self.api_key = api_key
+            self.user_id = user_id
+        
+        if not self.api_key:
+            msg = "API key is required"
+            raise ValueError(msg)
+        
+        if not self.user_id:
+            # Try to get user_id from environment variable
+            import os
+            self.user_id = os.getenv("PLAYHT_USER_ID")
+            if not self.user_id:
+                msg = "User ID is required"
+                raise ValueError(msg)
+        
         self.base_url = "https://api.play.ht/api/v2"
         self.headers = {
             "accept": "application/json",

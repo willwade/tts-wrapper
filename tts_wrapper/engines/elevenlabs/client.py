@@ -3,8 +3,6 @@ import json
 
 import requests
 
-from tts_wrapper.exceptions import ModuleNotInstalled
-
 audio_format = ("pcm_22050",)
 
 

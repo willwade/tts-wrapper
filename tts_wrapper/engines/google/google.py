@@ -88,15 +88,19 @@ class GoogleTTS(AbstractTTS):
             16000  # Adjust based on your audio format; LINEAR16 is typically 16000 Hz
         )
 
-    def synth_to_bytes(self, text: str) -> bytes:
+    def synth_to_bytes(self, text: str, voice_id: Optional[str] = None) -> bytes:
         text = str(text)
         if not self._is_ssml(text):
             text = self.ssml.add(text)
             text = str(text)
         logging.info("Synthesizing text: %s", text)
+        
+        # Use voice_id if provided, otherwise use the default voice
+        voice_to_use = voice_id or self._voice
+        
         result = self._client.synth(
             str(text),
-            self._voice,
+            voice_to_use,
             self._lang,
             include_timepoints=True,
         )

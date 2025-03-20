@@ -7,7 +7,7 @@ Designed to be extended by specific TTS engine implementations.
 
 from __future__ import annotations
 
-# Standard Library Imports
+import io
 import logging
 import re
 import threading
@@ -16,13 +16,16 @@ from abc import ABC, abstractmethod
 from io import BytesIO
 from pathlib import Path
 from threading import Event
-from typing import Any, Callable, NoReturn, Union
+from typing import (
+    Any,
+    Callable,
+    Union,
+)
 
-# Third-Party Imports
-import numpy as np  # type: ignore[attr-defined]
-import sounddevice as sd  # type: ignore[attr-defined]
+import numpy as np
+import sounddevice as sd
+import soundfile as sf
 
-# Local Imports
 from .ssml import AbstractSSMLNode
 
 # Type Definitions and Constants
@@ -39,22 +42,22 @@ SIXTEEN_BIT_PCM_SIZE = 2
 
 class AbstractTTS(ABC):
     """
-    Abstract class (ABC) for text-to-speech functionalities,.
-
+    Abstract class (ABC) for text-to-speech functionalities,
     including synthesis and playback.
     """
 
     def __init__(self) -> None:
         """Initialize the TTS engine with default values."""
         self.voice_id = None
+        self.lang = "en-US"  # Default language
         self.stream = None
         self.audio_rate = 44100
         self.audio_bytes = None
         self.playing = Event()
         self.playing.clear()  # Not playing by default
         self.position = 0  # Position in the byte stream
-        self.timings = []
-        self.timers = []
+        self.timings: list[tuple[float, float, str]] = []
+        self.timers: list[threading.Timer] = []
         self.properties = {"volume": "", "rate": "", "pitch": ""}
         self.callbacks = {"onStart": None, "onEnd": None, "started-word": None}
         self.stream_lock = threading.Lock()
@@ -92,7 +95,7 @@ class AbstractTTS(ABC):
         except (ConnectionError, ValueError):
             return False
 
-    def set_voice(self, voice_id: str, lang: str = "en-US") -> None:
+    def set_voice(self, voice_id: str, lang: str | None = None) -> None:
         """
         Set the voice for the TTS engine.
 
@@ -101,12 +104,12 @@ class AbstractTTS(ABC):
         voice_id : str
             The ID of the voice to be used for synthesis.
 
-        lang : str
+        lang : str | None, optional
             The language code for the voice to be used for synthesis.
-
+            Defaults to None, which will use "en-US".
         """
         self.voice_id = voice_id
-        self.lang = lang
+        self.lang = lang or "en-US"
 
     def _convert_mp3_to_pcm(self, mp3_data: bytes) -> bytes:
         """
@@ -115,7 +118,7 @@ class AbstractTTS(ABC):
         :param mp3_data: MP3 audio data as bytes.
         :return: Raw PCM data as bytes (int16).
         """
-        from soundfile import read  # type: ignore[attr-defined]
+        from soundfile import read
 
         # Use soundfile to read MP3 data
         mp3_fp = BytesIO(mp3_data)
@@ -169,7 +172,7 @@ class AbstractTTS(ABC):
         # Create an in-memory file object
         output = BytesIO()
         if target_format in ("flac", "wav"):
-            from soundfile import write as sf_write  # type: ignore[attr-defined]
+            from soundfile import write as sf_write
 
             sf_write(
                 output,
@@ -181,7 +184,7 @@ class AbstractTTS(ABC):
             return output.read()
         if target_format == "mp3":
             # Infer number of channels from the shape of the PCM data
-            import mp3  # type: ignore[attr-defined]
+            import mp3
 
             nchannels = self._infer_channels_from_pcm(pcm_data)
             # Ensure sample size is 16-bit PCM
@@ -217,12 +220,21 @@ class AbstractTTS(ABC):
         raise ValueError(msg)
 
     @abstractmethod
-    def synth_to_bytes(self, text: str | SSML) -> bytes:
+    def synth_to_bytes(self, text: str | SSML, voice_id: str | None = None) -> bytes:
         """
         Transform written text to audio bytes on supported formats.
 
-        This method should return raw PCM data with
-          no headers for sounddevice playback.
+        Parameters
+        ----------
+        text : str | SSML
+            The text to synthesize, can be plain text or SSML.
+        voice_id : str | None, optional
+            The ID of the voice to use for synthesis. If None, uses the voice set by set_voice.
+
+        Returns
+        -------
+        bytes
+            Raw PCM data with no headers for sounddevice playback.
         """
 
     def load_audio(self, audio_bytes: bytes) -> None:
@@ -377,7 +389,7 @@ class AbstractTTS(ABC):
                 if not self.stream_pyaudio.is_stopped():
                     self.stream_pyaudio.stop_stream()
                 self.stream_pyaudio.close()
-            except OSError as e:  # Use specific exceptions if available
+            except OSError as e:
                 logging.info("Stream already closed or encountered an error: %s", e)
 
             self.stream_pyaudio = None
@@ -393,108 +405,157 @@ class AbstractTTS(ABC):
 
             if self.pyaudio:
                 self.pyaudio.terminate()
-        except OSError as e:  # Specify more likely exceptions if possible
+        except OSError as e:
             logging.warning("Error during cleanup: %s", e)
 
     def synth_to_file(
         self,
         text: str | SSML,
-        filename: str,
-        audio_format: str | None = "wav",
+        output_file: str | Path,
+        output_format: str = "wav",
+        voice_id: str | None = None,
     ) -> None:
         """
         Synthesizes text to audio and saves it to a file.
 
-        :param text: The text to synthesize.
-        :param filename: The file where the audio will be saved.
-        :param format: The format to save the file in (e.g., 'wav', 'mp3').
+        Parameters
+        ----------
+        text : str | SSML
+            The text to synthesize.
+        output_file : str | Path
+            The path to save the audio file to.
+        output_format : str
+            The format to save the audio file as. Default is "wav".
+        voice_id : str | None, optional
+            The ID of the voice to use for synthesis. If None, uses the voice set by set_voice.
         """
-        # Ensure format is not None
-        format_to_use = audio_format if audio_format is not None else "wav"
-        audio_bytes = self.synth_to_bytes(text)  # Always request raw PCM data
-        pcm_data = np.frombuffer(audio_bytes, dtype=np.int16)
-        converted_audio = self._convert_audio(pcm_data, format_to_use, self.audio_rate)
+        # Convert text to audio bytes
+        audio_bytes = self.synth_to_bytes(text, voice_id)
 
-        with Path(filename).open("wb") as file:
-            file.write(converted_audio)
+        # Convert to the desired format if needed
+        if output_format != "raw":
+            # Convert the raw PCM data to the target format
+            audio_bytes = self._convert_pcm_to_format(
+                np.frombuffer(audio_bytes, dtype=np.int16),
+                output_format,
+                self.audio_rate,
+                self.channels,
+            )
 
-    def synth(self, text: str, filename: str, audio_format: str | None = "wav") -> None:
-        """Alias for synth_to_file method."""
-        self.synth_to_file(text, filename, audio_format)
+        # Save to file
+        if isinstance(output_file, str):
+            output_file = Path(output_file)
 
-    def speak(self, text: str | SSML) -> None:
+        # Create parent directories if they don't exist
+        output_file.parent.mkdir(parents=True, exist_ok=True)
+
+        with open(output_file, "wb") as f:
+            f.write(audio_bytes)
+
+    def speak(self, text: str | SSML, voice_id: str | None = None) -> None:
         """
         Synthesize text and play it back using sounddevice.
 
-        :param text: The text to synthesize and play.
+        Parameters
+        ----------
+        text : str | SSML
+            The text to synthesize.
+        voice_id : str | None, optional
+            The ID of the voice to use for synthesis. If None, uses the voice set by set_voice.
         """
-        try:
-            audio_bytes = self.synth_to_bytes(text)
-            audio_data = np.frombuffer(audio_bytes, dtype=np.int16)
+        # Convert text to audio bytes
+        audio_bytes = self.synth_to_bytes(text, voice_id)
 
-            logging.debug(f"Audio buffer size: {len(audio_bytes)} bytes")
-            logging.debug(f"First 20 bytes of audio: {audio_bytes[:20]}")
+        # Load the audio into the player
+        self.load_audio(audio_bytes)
 
-            sd.play(audio_data, samplerate=self.audio_rate)
-            sd.wait()
-        except Exception:
-            logging.exception("Error playing audio")
+        # Play the audio
+        self.play()
 
-    def speak_streamed(self, text: str | SSML) -> None:
+    def synth(
+        self,
+        text: str | SSML,
+        output_file: str | Path,
+        output_format: str = "wav",
+        voice_id: str | None = None,
+    ) -> None:
+        """
+        Alias for synth_to_file for backward compatibility.
+
+        Parameters
+        ----------
+        text : str | SSML
+            The text to synthesize.
+        output_file : str | Path
+            The path to save the audio file to.
+        output_format : str
+            The format to save the audio file as. Default is "wav".
+        voice_id : str | None, optional
+            The ID of the voice to use for synthesis. If None, uses the voice set by set_voice.
+        """
+        self.synth_to_file(text, output_file, output_format, voice_id)
+
+    def speak_streamed(self, text: str | SSML, voice_id: str | None = None) -> None:
         """
         Synthesize text to speech and stream it for playback.
 
-        Args:
-            text: The text to synthesize, can be plain text or SSML
+        Parameters
+        ----------
+        text : str | SSML
+            The text to synthesize and stream.
+        voice_id : str | None, optional
+            The ID of the voice to use for synthesis. If None, uses the voice set by set_voice.
         """
         try:
-            # Try streaming synthesis first
-            if hasattr(self, "synth_to_bytestream"):
-                # Get the streaming generator and word timings
-                generator, word_timings = self.synth_to_bytestream(text)
+            # Check if the engine supports streaming
+            if hasattr(self, "stream_synthesis") and callable(
+                self.stream_synthesis
+            ):
+                # Get streaming generator
+                generator = self.stream_synthesis(text, voice_id)
 
-                # Set word timings for callbacks
-                self.set_timings(
-                    [
-                        (timing["start"], timing["end"], timing["word"])
-                        for timing in word_timings
-                    ]
-                )
+                # Set up audio stream for playback
+                self._setup_audio_stream()
 
-                # Collect all audio data
+                # Start streaming
+                for chunk in generator:
+                    if self.stop_flag.is_set():
+                        break
+                    self._stream_chunk(chunk)
+
+                # Collect all chunks for word timing calculation
                 audio_data = b"".join(generator)
             else:
                 # Fall back to non-streaming synthesis
-                audio_data = self.synth_to_bytes(text)
+                audio_data = self.synth_to_bytes(text, voice_id)
 
                 # For non-streaming engines, create simple word timings
                 # Extract plain text from SSML if needed
-                plain_text = str(text) if isinstance(text, str) else text.get_text()
+                if self._is_ssml(str(text)):
+                    # Very basic SSML stripping - just get the text content
+                    plain_text = re.sub(r"<[^>]+>", "", str(text))
+                else:
+                    plain_text = str(text)
 
-                # Estimate duration based on audio length
-                audio_array = np.frombuffer(audio_data, dtype=np.int16)
-                duration = len(audio_array) / self.audio_rate
                 words = plain_text.split()
-                word_duration = duration / len(words)
+                if words:
+                    # Calculate approximate duration
+                    duration = self.get_audio_duration()
+                    word_duration = duration / len(words)
 
-                # Create evenly spaced word timings
-                word_timings = []
-                for i, word in enumerate(words):
-                    start_time = i * word_duration
-                    end_time = (i + 1) * word_duration
-                    word_timings.append((start_time, end_time, word))
-                self.set_timings(word_timings)
+                    # Create simple evenly-spaced word timings
+                    word_timings = []
+                    for i, word in enumerate(words):
+                        start_time = i * word_duration
+                        end_time = (i + 1) * word_duration if i < len(words) - 1 else duration
+                        word_timings.append((start_time, end_time, word))
+                    self.set_timings(word_timings)
 
-            # Check for WAV header and strip if present
-            if audio_data.startswith(b"RIFF"):
-                audio_data = audio_data[44:]  # Skip WAV header
-
-            # Start playback
-            self.load_audio(audio_data)
-            self.play()  # onStart will be triggered in _playback_loop
-
-        except Exception as e:
-            logging.exception("Error in speak_streamed: %s", e)
+                # Play the audio
+                self.load_audio(audio_data)
+                self.play()
+        except Exception:
+            logging.exception("Error in streaming synthesis")
 
     def setup_stream(
         self, samplerate: int = 44100, channels: int = 1, dtype: str | int = "int16"
@@ -568,28 +629,42 @@ class AbstractTTS(ABC):
                 self.stream.close()
                 self.stream = None
 
-    def set_timings(self, timings: list[WordTiming]) -> None:
-        """Set the word timings for the spoken text."""
-        self.timings = []
-        total_duration = self.get_audio_duration()
+    def set_timings(self, timings: list[tuple[float, str] | tuple[float, float, str]]) -> None:
+        """
+        Set the word timings for the synthesized speech.
 
+        Parameters
+        ----------
+        timings : list[tuple[float, str] | tuple[float, float, str]]
+            A list of tuples containing word timings.
+            Each tuple can be either (start_time, word) or (start_time, end_time, word).
+        """
+        self.timings = []
+        if not timings:
+            return
+
+        # Calculate total duration for estimating end times if needed
+        total_duration = 0
+        for timing in timings:
+            if len(timing) > 2:  # If we have (start, end, word)
+                # Unpack only what we need
+                end_time = timing[1]
+                total_duration = max(total_duration, end_time)
+
+        # If we don't have end times, estimate the total duration
+        if total_duration == 0 and timings:
+            # Estimate based on the last start time plus a small buffer
+            total_duration = timings[-1][0] + 0.5
+
+        # Process the timings
         for i, timing in enumerate(timings):
             if len(timing) == TIMING_TUPLE_LENGTH_TWO:
                 start_time, word = timing
-                if i < len(timings) - 1:
-                    end_time = (
-                        timings[i + 1][0]
-                        if len(timings[i + 1]) == TIMING_TUPLE_LENGTH_TWO
-                        else timings[i + 1][1]
-                    )
-                else:
-                    end_time = total_duration
+                # Use ternary operator for cleaner code
+                end_time = timings[i + 1][0] if i < len(timings) - 1 else total_duration
                 self.timings.append((start_time, end_time, word))
-            elif len(timing) == TIMING_TUPLE_LENGTH_THREE:
-                self.timings.append(timing)
             else:
-                msg = f"Invalid timing format: {timing}"
-                raise ValueError(msg)
+                self.timings.append(timing)
 
     def get_timings(self) -> list[tuple[float, float, str]]:
         """Retrieve the word timings for the spoken text."""
@@ -632,7 +707,7 @@ class AbstractTTS(ABC):
             self.callbacks[event_name](*args)
 
     def start_playback_with_callbacks(
-        self, text: str, callback: Callable | None = None
+        self, text: str, callback: Callable | None = None, voice_id: str | None = None
     ) -> None:
         """
         Start playback of the given text with callbacks triggered at each word.
@@ -645,12 +720,13 @@ class AbstractTTS(ABC):
             A callback function to invoke at each word
             with arguments (word, start, end).
             If None, `self.on_word_callback` is used.
-
+        voice_id : str | None, optional
+            The ID of the voice to use for synthesis. If None, uses the voice set by set_voice.
         """
         if callback is None:
             callback = self.on_word_callback
 
-        self.speak_streamed(text)
+        self.speak_streamed(text, voice_id)
         start_time = time.time()
 
         try:
@@ -725,8 +801,9 @@ class AbstractTTS(ABC):
         return bool(re.match(r"^\s*<speak>", text, re.IGNORECASE))
 
     def _convert_to_ssml(self, text: str) -> str:
+        """Convert plain text to simple SSML."""
+        ssml_parts = ['<speak version="1.0" xmlns="http://www.w3.org/2001/10/synthesis">']
         words = text.split()
-        ssml_parts = ["<speak>"]
         for i, word in enumerate(words):
             ssml_parts.append(f'<mark name="word{i}"/>{word}')
         ssml_parts.append("</speak>")
@@ -738,16 +815,11 @@ class AbstractTTS(ABC):
 
         :param device_id: The ID of the device to be set as the default output.
         """
-
-        def raise_invalid_device_error(device_id: int) -> NoReturn:
-            """Raise a ValueError with a message about the invalid device ID."""
-            msg = f"Invalid device ID: {device_id}"
-            raise ValueError(msg)
-
         try:
             # Validate the device_id
             if device_id not in [device["index"] for device in sd.query_devices()]:
-                raise_invalid_device_error(device_id)
+                msg = f"Invalid device ID: {device_id}"
+                raise ValueError(msg)
 
             sd.default.device = device_id
             logging.info("Output device set to %s", sd.query_devices(device_id)["name"])
@@ -755,3 +827,62 @@ class AbstractTTS(ABC):
             logging.exception("Invalid device ID")
         except Exception:
             logging.exception("Failed to set output device")
+
+    def _convert_pcm_to_format(
+        self, pcm_data: np.ndarray, output_format: str, samplerate: int, channels: int = 1
+    ) -> bytes:
+        """
+        Convert PCM data to the specified audio format.
+
+        Parameters
+        ----------
+        pcm_data : np.ndarray
+            The PCM audio data to convert.
+        output_format : str
+            The target audio format (e.g., 'wav', 'mp3', etc.)
+        samplerate : int
+            The sample rate of the audio data.
+        channels : int, optional
+            The number of audio channels. Default is 1.
+
+        Returns
+        -------
+        bytes
+            The converted audio data in the specified format.
+        """
+
+        # Create a BytesIO object to hold the output
+        output_buffer = io.BytesIO()
+
+        # Convert to the desired format
+        if output_format.lower() == "wav":
+            sf.write(output_buffer, pcm_data, samplerate, format="WAV")
+        elif output_format.lower() == "mp3":
+            try:
+                from pydub import AudioSegment
+
+                # Convert to WAV first
+                wav_buffer = io.BytesIO()
+                sf.write(wav_buffer, pcm_data, samplerate, format="WAV")
+                wav_buffer.seek(0)
+
+                # Then convert WAV to MP3
+                audio_segment = AudioSegment.from_wav(wav_buffer)
+                audio_segment.export(output_buffer, format="mp3")
+            except ImportError:
+                logging.error(
+                    "pydub is required for MP3 conversion. Please install it with pip"
+                )
+                raise
+        elif output_format.lower() == "ogg":
+            sf.write(output_buffer, pcm_data, samplerate, format="OGG")
+        elif output_format.lower() == "flac":
+            sf.write(output_buffer, pcm_data, samplerate, format="FLAC")
+        else:
+            # Default to WAV if format not recognized
+            logging.warning("Unsupported format: %s. Using WAV instead.", output_format)
+            sf.write(output_buffer, pcm_data, samplerate, format="WAV")
+
+        # Get the bytes from the buffer
+        output_buffer.seek(0)
+        return output_buffer.read()

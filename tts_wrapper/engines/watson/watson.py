@@ -45,14 +45,17 @@ class WatsonTTS(AbstractTTS):
 
         return processed_timings
 
-    def synth_to_bytes(self, text: Any) -> bytes:
+    def synth_to_bytes(self, text: Any, voice_id: Optional[str] = None) -> bytes:
         if not self._is_ssml(str(text)):
             text = self.ssml.add(str(text))
 
         try:
+            # Use voice_id if provided, otherwise use the default voice
+            voice_to_use = voice_id or self._voice
+            
             self.generated_audio = self._client.synth_with_timings(
                 str(text),
-                self._voice,
+                voice_to_use,
             )
             self.audio_format = "wav"
 

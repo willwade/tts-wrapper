@@ -31,19 +31,23 @@ class eSpeakTTS(AbstractTTS):
         self.word_timings: list[tuple[float, float, str]] = []
         self.on_end = None
 
-    def synth_to_bytes(self, text: str | AbstractSSMLNode) -> bytes:
+    def synth_to_bytes(self, text: str | AbstractSSMLNode, voice_id: str | None = None) -> bytes:
         """Convert text to audio bytes.
 
         Args:
             text: Text to synthesize, can be SSML formatted.
+            voice_id: Optional voice ID to use for synthesis. If None, uses the default voice.
 
         Returns:
             Audio bytes for playback.
         """
         text_str = str(text)
 
+        # Use voice_id if provided, otherwise use the default voice
+        voice_to_use = voice_id or self._voice
+
         # Call the client for synthesis
-        audio_data, word_timings = self._client.synth(text_str, self._voice)
+        audio_data, word_timings = self._client.synth(text_str, voice_to_use)
         if not audio_data:
             msg = "Failed to synthesize audio"
             raise ValueError(msg)
@@ -55,11 +59,16 @@ class eSpeakTTS(AbstractTTS):
         return audio_data
 
     def synth_to_bytestream(
-        self, text: Any, format: str | None = "wav"
+        self, text: Any, format: str | None = "wav", voice_id: str | None = None
     ) -> tuple[Generator[bytes, None, None], list[dict]]:
         """
         Synthesizes text to an in-memory bytestream in the specified audio format.
         Yields audio data chunks as they are generated.
+
+        Args:
+            text: Text to synthesize, can be SSML formatted.
+            format: Output audio format, default is "wav".
+            voice_id: Optional voice ID to use for synthesis. If None, uses the default voice.
 
         Returns:
             A tuple containing:
@@ -70,11 +79,14 @@ class eSpeakTTS(AbstractTTS):
         self.generated_audio = bytearray()
         self.word_timings = []
 
+        # Use voice_id if provided, otherwise use the default voice
+        voice_to_use = voice_id or self._voice
+
         if not self._is_ssml(str(text)):
             text = self.ssml.add(str(text))
 
         # Use eSpeakClient to perform synthesis
-        stream_queue, word_timings = self._client.synth_streaming(text, self._voice)
+        stream_queue, word_timings = self._client.synth_streaming(text, voice_to_use)
         self.word_timings = self._process_word_timings(word_timings, text)
         self.set_timings(self.word_timings)
 

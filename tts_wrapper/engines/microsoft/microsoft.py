@@ -1,11 +1,14 @@
 # The MS SpeechSDK can do a lot of our base class - and better. So lets overrride that
+from __future__ import annotations
+
 import logging
-from typing import TYPE_CHECKING, Any, Optional
+from typing import TYPE_CHECKING, Any
 
 from tts_wrapper.tts import AbstractTTS
 
 if TYPE_CHECKING:
     from . import MicrosoftClient
+    from .ssml import MicrosoftSSML
 
 try:
     import azure.cognitiveservices.speech as speechsdk
@@ -15,7 +18,7 @@ try:
         SpeechSynthesizer,
     )
 except ImportError:
-    speechsdk = None  # type: ignore
+    speechsdk = None  # type: ignore[assignment]
 
 
 class MicrosoftTTS(AbstractTTS):
@@ -23,9 +26,9 @@ class MicrosoftTTS(AbstractTTS):
 
     def __init__(
         self,
-        client: "MicrosoftClient",
-        lang: Optional[str] = None,
-        voice: Optional[str] = None,
+        client: MicrosoftClient,
+        lang: str | None = None,
+        voice: str | None = None,
     ) -> None:
         """Initialize the Microsoft TTS interface."""
         super().__init__()
@@ -76,7 +79,7 @@ class MicrosoftTTS(AbstractTTS):
         return 0.0
 
     @property
-    def ssml(self) -> "MicrosoftSSML":
+    def ssml(self) -> MicrosoftSSML:
         """Get SSML handler."""
         return self._ssml
 
@@ -84,7 +87,7 @@ class MicrosoftTTS(AbstractTTS):
         """Get available voices."""
         return self._client.get_voices()
 
-    def set_voice(self, voice_id: str, lang_id: Optional[str] = None) -> None:
+    def set_voice(self, voice_id: str, lang_id: str | None = None) -> None:
         """Set voice and update Azure configuration."""
         super().set_voice(voice_id, lang_id or "en-US")
         self._voice = voice_id
@@ -151,10 +154,19 @@ class MicrosoftTTS(AbstractTTS):
         logging.debug("Generated prosody tag: %s", ssml)
         return ssml
 
-    def synth_to_bytes(self, text: Any) -> bytes:
+    def synth_to_bytes(self, text: Any, voice_id: str | None = None) -> bytes:
         """Convert text to speech."""
         text = str(text)
         word_timings = []
+
+        # Use voice_id if provided, otherwise use the default voice
+        if voice_id and voice_id != self._voice:
+            # Temporarily set the voice for this synthesis
+            original_voice = self._voice
+            self.set_voice(voice_id, self._lang)
+            restore_voice = True
+        else:
+            restore_voice = False
 
         def handle_word_boundary(evt):
             if evt.text and not evt.text.isspace():
@@ -216,6 +228,8 @@ class MicrosoftTTS(AbstractTTS):
         finally:
             # Disconnect event handlers
             self.synthesizer.synthesis_word_boundary.disconnect_all()
+            if restore_voice:
+                self.set_voice(original_voice, self._lang)
 
     def _is_ssml(self, text: str) -> bool:
         """Check if text contains SSML markup."""

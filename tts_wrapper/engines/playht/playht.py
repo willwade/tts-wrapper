@@ -35,7 +35,7 @@ class PlayHTTTS(AbstractTTS):
         self.sample_width = 2  # 16-bit audio
         self.chunk_size = 1024
 
-    def synth_to_bytes(self, text: Any) -> bytes:
+    def synth_to_bytes(self, text: Any, voice_id: Optional[str] = None) -> bytes:
         """Convert text to speech and return raw PCM data."""
         text = str(text)
         options = {}
@@ -44,9 +44,10 @@ class PlayHTTTS(AbstractTTS):
         if text.startswith("<speak>") and text.endswith("</speak>"):
             text = str(text)  # PlayHTSSML.__str__ strips SSML tags
 
-        # Add voice if set
-        if self._voice:
-            options["voice"] = self._voice
+        # Add voice if provided as parameter or set in the instance
+        voice_to_use = voice_id or self._voice
+        if voice_to_use:
+            options["voice"] = voice_to_use
 
         # Add any set properties
         for prop in ["speed", "quality", "voice_engine"]:
