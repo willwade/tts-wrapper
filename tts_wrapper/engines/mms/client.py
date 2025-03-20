@@ -10,12 +10,16 @@ from tts_wrapper.exceptions import (
 
 
 class MMSClient:
-    def __init__(self, params: Optional[Union[str, tuple[Optional[str], str]]] = None) -> None:
+    def __init__(
+        self, params: Optional[Union[str, tuple[Optional[str], str]]] = None
+    ) -> None:
         self._using_temp_dir = False
 
         if isinstance(params, tuple):
             model_dir, lang = params
-            self._model_dir = model_dir if model_dir else os.path.expanduser("~/mms_models")
+            self._model_dir = (
+                model_dir if model_dir else os.path.expanduser("~/mms_models")
+            )
         else:
             self._model_dir = os.path.expanduser("~/mms_models")
             lang = params if isinstance(params, str) else "eng"
@@ -38,6 +42,7 @@ class MMSClient:
         if self._tts is None or self._download is None:
             try:
                 from ttsmms import TTS, download
+
                 self._tts = TTS
                 self._download = download
             except ImportError:
@@ -132,7 +137,10 @@ class MMSClient:
                     iso_code, language = parts
                     iso_code = iso_code.strip()  # Remove leading/trailing spaces
                     language = language.strip()  # Remove leading/trailing spaces
-                    if iso_code.lower() == "iso code" and language.lower() == "language name":
+                    if (
+                        iso_code.lower() == "iso code"
+                        and language.lower() == "language name"
+                    ):
                         continue  # Skip the header
                     voice = {
                         "id": iso_code,
@@ -152,9 +160,13 @@ class MMSClient:
             msg = f"Error processing voices data: {e!s}"
             raise RuntimeError(msg)
 
-
     def __del__(self) -> None:
-        if hasattr(self, "_using_temp_dir") and self._using_temp_dir and self._model_dir:
+        if (
+            hasattr(self, "_using_temp_dir")
+            and self._using_temp_dir
+            and self._model_dir
+        ):
             # Clean up the temporary directory when the object is destroyed
             import shutil
+
             shutil.rmtree(self._model_dir, ignore_errors=True)

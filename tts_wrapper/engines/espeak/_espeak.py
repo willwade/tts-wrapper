@@ -20,8 +20,8 @@ class EventID(ctypes.Union):
     """Union for event ID in EspeakEvent."""
 
     _fields_ = [
-        ("number", ctypes.c_int),        # Used for WORD and SENTENCE events
-        ("name", ctypes.c_char_p),      # Used for MARK and PLAY events
+        ("number", ctypes.c_int),  # Used for WORD and SENTENCE events
+        ("name", ctypes.c_char_p),  # Used for MARK and PLAY events
         ("string", ctypes.c_char * 8),  # Used for phoneme names
     ]
 
@@ -30,14 +30,14 @@ class EspeakEvent(Structure):
     """Structure for eSpeak events."""
 
     _fields_ = [
-        ("type", ctypes.c_int),                # Event type (e.g., word, sentence, etc.)
+        ("type", ctypes.c_int),  # Event type (e.g., word, sentence, etc.)
         ("unique_identifier", ctypes.c_uint),  # Message identifier
-        ("text_position", ctypes.c_int),       # Start position in the text
-        ("length", ctypes.c_int),              # Length of the text segment
-        ("audio_position", ctypes.c_int),      # Time in milliseconds within the audio
-        ("sample", ctypes.c_int),              # Sample ID (internal use)
-        ("user_data", ctypes.c_void_p),        # Pointer supplied by the calling program
-        ("id", EventID),                       # Union for event ID
+        ("text_position", ctypes.c_int),  # Start position in the text
+        ("length", ctypes.c_int),  # Length of the text segment
+        ("audio_position", ctypes.c_int),  # Time in milliseconds within the audio
+        ("sample", ctypes.c_int),  # Sample ID (internal use)
+        ("user_data", ctypes.c_void_p),  # Pointer supplied by the calling program
+        ("id", EventID),  # Union for event ID
     ]
 
 
@@ -55,13 +55,13 @@ class EspeakLib:
     EVENT_SAMPLERATE = 8
 
     # Character encoding flags
-    CHARS_AUTO = 0     # Automatically detect character encoding
-    CHARS_UTF8 = 1     # UTF-8 encoding
-    CHARS_8BIT = 2     # ISO-8859 character set
-    CHARS_WCHAR = 3    # Wide characters
+    CHARS_AUTO = 0  # Automatically detect character encoding
+    CHARS_UTF8 = 1  # UTF-8 encoding
+    CHARS_8BIT = 2  # ISO-8859 character set
+    CHARS_WCHAR = 3  # Wide characters
 
     # SSML support
-    SSML_FLAG = 0x10   # Enable SSML processing
+    SSML_FLAG = 0x10  # Enable SSML processing
     ENDPAUSE = 0x1000  # Add a pause at the end of the text
 
     # Audio output modes
@@ -112,11 +112,20 @@ class EspeakLib:
 
         self.dll.espeak_Synth.restype = c_int
         self.dll.espeak_Synth.argtypes = [
-            c_char_p, ctypes.c_size_t, c_uint, c_void_p, c_uint, c_uint, c_void_p, c_void_p,
+            c_char_p,
+            ctypes.c_size_t,
+            c_uint,
+            c_void_p,
+            c_uint,
+            c_uint,
+            c_void_p,
+            c_void_p,
         ]
 
         self.dll.espeak_SetSynthCallback.restype = None
-        self.dll.espeak_SetSynthCallback.argtypes = [CFUNCTYPE(c_int, POINTER(c_short), c_int, POINTER(EspeakEvent))]
+        self.dll.espeak_SetSynthCallback.argtypes = [
+            CFUNCTYPE(c_int, POINTER(c_short), c_int, POINTER(EspeakEvent))
+        ]
 
         self.dll.espeak_Terminate.restype = c_int
 
@@ -126,7 +135,9 @@ class EspeakLib:
         if result == -1:
             msg = "Failed to initialize eSpeak library."
             raise RuntimeError(msg)
-        logging.debug(f"eSpeak initialized with mode {self.AUDIO_OUTPUT_RETRIEVAL}, result: {result}")
+        logging.debug(
+            f"eSpeak initialized with mode {self.AUDIO_OUTPUT_RETRIEVAL}, result: {result}"
+        )
 
     def set_voice(self, voice: str) -> None:
         """Set the voice by name."""
@@ -146,6 +157,7 @@ class EspeakLib:
 
     def get_available_voices(self) -> list[dict[str, Any]]:
         """Retrieve available voices from eSpeak."""
+
         # Define the VOICE structure
         class VOICE(Structure):
             _fields_ = [
@@ -177,13 +189,23 @@ class EspeakLib:
                 if lang:
                     language_codes.append(lang.strip())
 
-            voices.append({
-                "id": voice.identifier.decode("utf-8") if voice.identifier else voice.name.decode("utf-8"),
-                "name": voice.name.decode("utf-8") if voice.name else "unknown",
-                "language_codes": language_codes,
-                "gender": "Male" if voice.gender == 1 else "Female" if voice.gender == 2 else "Neutral",
-                "age": voice.age,
-            })
+            voices.append(
+                {
+                    "id": (
+                        voice.identifier.decode("utf-8")
+                        if voice.identifier
+                        else voice.name.decode("utf-8")
+                    ),
+                    "name": voice.name.decode("utf-8") if voice.name else "unknown",
+                    "language_codes": language_codes,
+                    "gender": (
+                        "Male"
+                        if voice.gender == 1
+                        else "Female" if voice.gender == 2 else "Neutral"
+                    ),
+                    "age": voice.age,
+                }
+            )
             i += 1
 
         return voices
@@ -198,10 +220,24 @@ class EspeakLib:
         if current_voice_ptr and current_voice_ptr.contents.name:
             current_voice = current_voice_ptr.contents
             return {
-                "id": current_voice.identifier.decode("utf-8") if current_voice.identifier else current_voice.name.decode("utf-8"),
+                "id": (
+                    current_voice.identifier.decode("utf-8")
+                    if current_voice.identifier
+                    else current_voice.name.decode("utf-8")
+                ),
                 "name": current_voice.name.decode("utf-8"),
-                "language_codes": [current_voice.languages.decode("utf-8") if current_voice.languages else ""],
-                "gender": "male" if current_voice.gender == 1 else "female" if current_voice.gender == 2 else "unknown",
+                "language_codes": [
+                    (
+                        current_voice.languages.decode("utf-8")
+                        if current_voice.languages
+                        else ""
+                    )
+                ],
+                "gender": (
+                    "male"
+                    if current_voice.gender == 1
+                    else "female" if current_voice.gender == 2 else "unknown"
+                ),
                 "age": current_voice.age,
             }
         # Fallback to a known default
@@ -232,7 +268,9 @@ class EspeakLib:
         """Reset buffers for audio and word timings."""
         self._local_audio_buffer = bytearray()
         self.word_timings = []
-        logging.debug("Buffers reset: _local_audio_buffer cleared, word_timings cleared.")
+        logging.debug(
+            "Buffers reset: _local_audio_buffer cleared, word_timings cleared."
+        )
 
     def _synth_callback(self, wav, numsamples, events) -> int:
         """Callback function for synthesis events (streaming support)."""
@@ -269,30 +307,35 @@ class EspeakLib:
                     try:
                         # Extract word text from input
                         word_text = self.input_text[
-                            current_event.text_position : current_event.text_position + current_event.length
+                            current_event.text_position : current_event.text_position
+                            + current_event.length
                         ].strip()
-                        
+
                         # Skip empty or whitespace-only words
                         if not word_text or word_text.isspace():
                             i += 1
                             continue
-                            
+
                         # Calculate timing in seconds
-                        start_time = current_event.audio_position / 1000.0  # Convert ms to seconds
-                        
+                        start_time = (
+                            current_event.audio_position / 1000.0
+                        )  # Convert ms to seconds
+
                         # Calculate end time based on next word or audio length
                         next_event = ctypes.cast(events, POINTER(EspeakEvent))[i + 1]
                         if next_event and next_event.type == self.EVENT_WORD:
                             end_time = next_event.audio_position / 1000.0
                         else:
                             # If this is the last word, use the current audio length
-                            end_time = len(self._local_audio_buffer) / (2 * 22050)  # 16-bit samples at 22050Hz
-                            
+                            end_time = len(self._local_audio_buffer) / (
+                                2 * 22050
+                            )  # 16-bit samples at 22050Hz
+
                         # Skip if timing is invalid
                         if start_time < 0 or end_time <= start_time:
                             i += 1
                             continue
-                            
+
                         word = {
                             "start_time": start_time,
                             "text_position": current_event.text_position,
@@ -310,7 +353,9 @@ class EspeakLib:
             logging.exception(f"Error in _synth_callback: {e}")
         return 0
 
-    def synth(self, text: str, ssml: bool = False) -> tuple[bytes, list[dict[str, Any]]]:
+    def synth(
+        self, text: str, ssml: bool = False
+    ) -> tuple[bytes, list[dict[str, Any]]]:
         """
         Synthesize the given text and return the full audio bytestream and word timings. Blocking.
 
@@ -330,15 +375,25 @@ class EspeakLib:
         # Perform synthesis
         flags = self.SSML_FLAG if ssml else self.CHARS_UTF8 | self.ENDPAUSE
         self.dll.espeak_Synth(
-            c_char_p(text.encode("utf-8")), len(text) * 2, 0, None, 0, flags, None, None,
+            c_char_p(text.encode("utf-8")),
+            len(text) * 2,
+            0,
+            None,
+            0,
+            flags,
+            None,
+            None,
         )
         self.dll.espeak_Synchronize()  # Wait for synthesis to complete
 
-        logging.debug(f"Returning audio bytestream: size={len(self._local_audio_buffer)} bytes")
+        logging.debug(
+            f"Returning audio bytestream: size={len(self._local_audio_buffer)} bytes"
+        )
         return bytes(self._local_audio_buffer), self.word_timings
 
-
-    def synth_streaming(self, text: str, ssml: bool = False) -> tuple[queue.Queue, list[dict[str, Any]]]:
+    def synth_streaming(
+        self, text: str, ssml: bool = False
+    ) -> tuple[queue.Queue, list[dict[str, Any]]]:
         """
         Synthesize the given text and stream audio chunks via a queue.
 
@@ -359,7 +414,14 @@ class EspeakLib:
         # Perform streaming synthesis
         flags = self.SSML_FLAG if ssml else self.CHARS_UTF8
         self.dll.espeak_Synth(
-            c_char_p(text.encode("utf-8")), len(text) * 2, 0, None, 0, flags, None, None,
+            c_char_p(text.encode("utf-8")),
+            len(text) * 2,
+            0,
+            None,
+            0,
+            flags,
+            None,
+            None,
         )
 
         # Signal synthesis completion
@@ -373,7 +435,9 @@ class EspeakLib:
         logging.debug("Input Text: %s", text)
         words = text.split()
         for idx, word in enumerate(words):
-            logging.debug(f"Word {idx}: '{word}', Start Position={text.find(word)}, Length={len(word)}")
+            logging.debug(
+                f"Word {idx}: '{word}', Start Position={text.find(word)}, Length={len(word)}"
+            )
 
         self.synth(text, ssml=ssml)
 

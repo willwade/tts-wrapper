@@ -1,15 +1,17 @@
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING, Any, List, Union
+from typing import TYPE_CHECKING, Any
 
 from tts_wrapper.tts import AbstractTTS
-from tts_wrapper.ssml import AbstractSSMLNode
 
 from .ssml import eSpeakSSML
 
 if TYPE_CHECKING:
     from collections.abc import Generator
+
+    from tts_wrapper.ssml import AbstractSSMLNode
+
     from . import eSpeakClient
 
 
@@ -17,10 +19,7 @@ class eSpeakTTS(AbstractTTS):
     """High-level TTS interface for eSpeak."""
 
     def __init__(
-        self,
-        client: eSpeakClient,
-        lang: str | None = None,
-        voice: str | None = None
+        self, client: eSpeakClient, lang: str | None = None, voice: str | None = None
     ) -> None:
         """Initialize the eSpeak TTS interface."""
         super().__init__()
@@ -29,13 +28,10 @@ class eSpeakTTS(AbstractTTS):
         self._ssml = eSpeakSSML()
         self.audio_rate = 22050
         self.generated_audio = bytearray()
-        self.word_timings: List[tuple[float, float, str]] = []
+        self.word_timings: list[tuple[float, float, str]] = []
         self.on_end = None
 
-    def synth_to_bytes(
-            self,
-            text: Union[str, AbstractSSMLNode]
-        ) -> bytes:
+    def synth_to_bytes(self, text: str | AbstractSSMLNode) -> bytes:
         """Convert text to audio bytes.
 
         Args:
@@ -55,16 +51,16 @@ class eSpeakTTS(AbstractTTS):
         # Process word timings and set them
         processed_timings = self._process_word_timings(word_timings, text_str)
         self.set_timings(processed_timings)
-        
+
         return audio_data
 
     def synth_to_bytestream(
-            self, text: Any, format: str | None = "wav"
-        ) -> tuple[Generator[bytes, None, None], list[dict]]:
+        self, text: Any, format: str | None = "wav"
+    ) -> tuple[Generator[bytes, None, None], list[dict]]:
         """
         Synthesizes text to an in-memory bytestream in the specified audio format.
         Yields audio data chunks as they are generated.
-        
+
         Returns:
             A tuple containing:
             - A generator yielding bytes objects containing audio data
@@ -95,9 +91,7 @@ class eSpeakTTS(AbstractTTS):
         ]
 
     def _process_word_timings(
-        self,
-        word_timings: list[dict],
-        input_text: str
+        self, word_timings: list[dict], input_text: str
     ) -> list[tuple[float, float, str]]:
         """Process raw word timings and format them as tuples.
 

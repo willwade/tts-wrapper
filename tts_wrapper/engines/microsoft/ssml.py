@@ -40,7 +40,10 @@ class MicrosoftSSML(BaseSSMLRoot):
         return self
 
     def say_as(
-        self, text: str, interpret_as: str, format: Optional[str] = None,
+        self,
+        text: str,
+        interpret_as: str,
+        format: Optional[str] = None,
     ) -> "MicrosoftSSML":
         attrs = {"interpret-as": interpret_as}
         if format:
@@ -53,7 +56,11 @@ class MicrosoftSSML(BaseSSMLRoot):
         return self
 
     def prosody(
-        self, text: str, rate: Optional[str] = None, pitch: Optional[str] = None, volume: Optional[str] = None,
+        self,
+        text: str,
+        rate: Optional[str] = None,
+        pitch: Optional[str] = None,
+        volume: Optional[str] = None,
     ) -> "MicrosoftSSML":
         attrs = {}
         if rate:

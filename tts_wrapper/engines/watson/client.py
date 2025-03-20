@@ -13,7 +13,9 @@ Credentials = tuple[str, str, str]  # api_key, region, instance_id
 
 class WatsonClient:
     def __init__(
-        self, credentials: Credentials, disableSSLVerification: bool = False,
+        self,
+        credentials: Credentials,
+        disableSSLVerification: bool = False,
     ) -> None:
         self.api_key, self.region, self.instance_id = credentials
         self.disableSSLVerification = disableSSLVerification
@@ -153,7 +155,6 @@ class WatsonClient:
 
         num_samples = subchunk2_size // (channels * (bits_per_sample // 8))
         return num_samples / sample_rate
-
 
     def get_voices(self) -> list[dict[str, Any]]:
         self._initialize_ibm_watson()

@@ -36,6 +36,7 @@ TIMING_TUPLE_LENGTH_THREE = 3
 STEREO_CHANNELS = 2
 SIXTEEN_BIT_PCM_SIZE = 2
 
+
 class AbstractTTS(ABC):
     """
     Abstract class (ABC) for text-to-speech functionalities,.
@@ -59,7 +60,7 @@ class AbstractTTS(ABC):
         self.stream_lock = threading.Lock()
 
         # addition for pause resume
-        #self.sample_rate is audio_rate
+        # self.sample_rate is audio_rate
         self.channels = 1
         self.sample_width = 2
         self.chunk_size = 1024
@@ -145,7 +146,10 @@ class AbstractTTS(ABC):
         raise ValueError(msg)
 
     def _convert_audio(
-        self, pcm_data: np.ndarray, target_format: str, sample_rate: int,
+        self,
+        pcm_data: np.ndarray,
+        target_format: str,
+        sample_rate: int,
     ) -> bytes:
         """
         Convert raw PCM data to a specified audio format.
@@ -166,8 +170,12 @@ class AbstractTTS(ABC):
         output = BytesIO()
         if target_format in ("flac", "wav"):
             from soundfile import write as sf_write  # type: ignore[attr-defined]
+
             sf_write(
-                output, pcm_data, samplerate=sample_rate, format=target_format.upper(),
+                output,
+                pcm_data,
+                samplerate=sample_rate,
+                format=target_format.upper(),
             )
             output.seek(0)
             return output.read()
@@ -230,10 +238,11 @@ class AbstractTTS(ABC):
         if not audio_bytes:
             msg = "Audio bytes cannot be empty"
             raise ValueError(msg)
-            
+
         import pyaudio
+
         self.pyaudio = pyaudio.PyAudio()
-        
+
         # Convert to numpy array for internal processing
         self._audio_array = np.frombuffer(audio_bytes, dtype=np.int16)
         self.audio_bytes = audio_bytes
@@ -262,8 +271,12 @@ class AbstractTTS(ABC):
         """Run main playback loop in a separate thread."""
         try:
             self._create_stream()
-            self._trigger_callback("onStart")  # Trigger onStart when playback actually starts
-            self._on_end_triggered = False  # Reset the guard flag at the start of playback
+            self._trigger_callback(
+                "onStart"
+            )  # Trigger onStart when playback actually starts
+            self._on_end_triggered = (
+                False  # Reset the guard flag at the start of playback
+            )
 
             while self.isplaying and self.position < len(self.audio_bytes):
                 if not self.paused:
@@ -309,13 +322,14 @@ class AbstractTTS(ABC):
             self.isplaying = True
             self.paused = False
             self.position = 0
-            self._on_end_triggered = False  # Reset the guard flag at the start of playback
+            self._on_end_triggered = (
+                False  # Reset the guard flag at the start of playback
+            )
             self.playback_thread = threading.Thread(target=self._playback_loop)
             self.playback_thread.start()
             time.sleep(float(duration or 0))
         elif self.paused:
             self.paused = False
-
 
     def pause(self, duration: float | None = None) -> None:
         """
@@ -383,7 +397,10 @@ class AbstractTTS(ABC):
             logging.warning("Error during cleanup: %s", e)
 
     def synth_to_file(
-        self, text: str | SSML, filename: str, audio_format: str | None = "wav",
+        self,
+        text: str | SSML,
+        filename: str,
+        audio_format: str | None = "wav",
     ) -> None:
         """
         Synthesizes text to audio and saves it to a file.
@@ -426,38 +443,40 @@ class AbstractTTS(ABC):
     def speak_streamed(self, text: str | SSML) -> None:
         """
         Synthesize text to speech and stream it for playback.
-        
+
         Args:
             text: The text to synthesize, can be plain text or SSML
         """
         try:
             # Try streaming synthesis first
-            if hasattr(self, 'synth_to_bytestream'):
+            if hasattr(self, "synth_to_bytestream"):
                 # Get the streaming generator and word timings
                 generator, word_timings = self.synth_to_bytestream(text)
-                
+
                 # Set word timings for callbacks
-                self.set_timings([
-                    (timing["start"], timing["end"], timing["word"])
-                    for timing in word_timings
-                ])
-                
+                self.set_timings(
+                    [
+                        (timing["start"], timing["end"], timing["word"])
+                        for timing in word_timings
+                    ]
+                )
+
                 # Collect all audio data
                 audio_data = b"".join(generator)
             else:
                 # Fall back to non-streaming synthesis
                 audio_data = self.synth_to_bytes(text)
-                
+
                 # For non-streaming engines, create simple word timings
                 # Extract plain text from SSML if needed
                 plain_text = str(text) if isinstance(text, str) else text.get_text()
-                
+
                 # Estimate duration based on audio length
                 audio_array = np.frombuffer(audio_data, dtype=np.int16)
                 duration = len(audio_array) / self.audio_rate
                 words = plain_text.split()
                 word_duration = duration / len(words)
-                
+
                 # Create evenly spaced word timings
                 word_timings = []
                 for i, word in enumerate(words):
@@ -465,20 +484,21 @@ class AbstractTTS(ABC):
                     end_time = (i + 1) * word_duration
                     word_timings.append((start_time, end_time, word))
                 self.set_timings(word_timings)
-            
+
             # Check for WAV header and strip if present
-            if audio_data.startswith(b'RIFF'):
+            if audio_data.startswith(b"RIFF"):
                 audio_data = audio_data[44:]  # Skip WAV header
-            
+
             # Start playback
             self.load_audio(audio_data)
             self.play()  # onStart will be triggered in _playback_loop
-            
+
         except Exception as e:
             logging.exception("Error in speak_streamed: %s", e)
 
-    def setup_stream(self, samplerate: int = 44100,
-                     channels: int = 1, dtype: str | int = "int16") -> None:
+    def setup_stream(
+        self, samplerate: int = 44100, channels: int = 1, dtype: str | int = "int16"
+    ) -> None:
         """
         Set up the audio stream for playback.
 
@@ -507,22 +527,25 @@ class AbstractTTS(ABC):
             raise
 
     def callback(
-            self, outdata: np.ndarray, frames: int, time: sd.CallbackTime,  # noqa: ARG002
-            status: sd.CallbackFlags) -> None:
+        self,
+        outdata: np.ndarray,
+        frames: int,
+        time: sd.CallbackTime,
+        status: sd.CallbackFlags,
+    ) -> None:
         """Handle streamed audio playback as a callback."""
         if status:
             logging.warning("Sounddevice status: %s", status)
         if self.playing:
             # Each frame is 2 bytes for int16, so frames * 2 gives the number of bytes
             end_position = self.position + frames * 2
-            data = self.audio_bytes[self.position: end_position]
+            data = self.audio_bytes[self.position : end_position]
             if len(data) < frames * 2:
                 # Not enough data to fill outdata, zero-pad it
                 outdata.fill(0)
-                outdata[: len(data) // 2] = (
-                            np.frombuffer(data, dtype="int16")
-                            .reshape(-1, 1)
-                        )
+                outdata[: len(data) // 2] = np.frombuffer(data, dtype="int16").reshape(
+                    -1, 1
+                )
             else:
                 outdata[:] = np.frombuffer(data, dtype="int16").reshape(outdata.shape)
             self.position = end_position
@@ -592,7 +615,10 @@ class AbstractTTS(ABC):
         :param end_time: The end time of the word in seconds.
         """
         logging.info(
-            "Word spoken: %s, Start: %.3fs, End: %.3fs", word, start_time, end_time,
+            "Word spoken: %s, Start: %.3fs, End: %.3fs",
+            word,
+            start_time,
+            end_time,
         )
 
     def connect(self, event_name: str, callback: Callable) -> None:
@@ -606,7 +632,8 @@ class AbstractTTS(ABC):
             self.callbacks[event_name](*args)
 
     def start_playback_with_callbacks(
-            self, text: str, callback: Callable | None = None) -> None:
+        self, text: str, callback: Callable | None = None
+    ) -> None:
         """
         Start playback of the given text with callbacks triggered at each word.
 
@@ -728,4 +755,3 @@ class AbstractTTS(ABC):
             logging.exception("Invalid device ID")
         except Exception:
             logging.exception("Failed to set output device")
-

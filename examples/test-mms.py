@@ -20,7 +20,7 @@ try:
     tts.speak(ssml_text)
     time.sleep(0.5)
 
-    #clear ssml so the previous text is not repeated
+    # clear ssml so the previous text is not repeated
 
     tts.set_property("volume", "100")
     text_read = "The current volume is at a hundred"

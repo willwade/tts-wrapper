@@ -17,7 +17,10 @@ class PicoClient:
     @classmethod
     def _check_bin_exists(cls, bin_name: str) -> bool:
         proc = subprocess.run(
-            f"command -v {bin_name}", shell=True, stdout=subprocess.DEVNULL, check=False,
+            f"command -v {bin_name}",
+            shell=True,
+            stdout=subprocess.DEVNULL,
+            check=False,
         )
         return proc.returncode == 0
 
@@ -29,7 +32,9 @@ class PicoClient:
 
     def _synth_pico2wave(self, text: str, voice: str) -> bytes:
         with tempfile.NamedTemporaryFile("w+b", suffix=".wav") as temp:
-            subprocess.run([self._bin_name, "-l", voice, "-w", temp.name, text], check=False)
+            subprocess.run(
+                [self._bin_name, "-l", voice, "-w", temp.name, text], check=False
+            )
             temp.seek(0)
             return temp.read()
 
@@ -37,7 +42,8 @@ class PicoClient:
         proc = subprocess.run(
             [self._bin_name, "-l", voice],
             input=text.encode("utf-8"),
-            capture_output=True, check=False,
+            capture_output=True,
+            check=False,
         )
         raw = proc.stdout
         return process_wav(raw)

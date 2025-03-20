@@ -16,7 +16,7 @@ class PollyClient:
     def __init__(
         self,
         credentials: Optional[Credentials] = None,
-        verify_ssl: bool = True,
+        verify_ssl: bool = False,
     ) -> None:
         try:
             import boto3
@@ -49,13 +49,17 @@ class PollyClient:
         return process_wav(raw)
 
     def synth_with_timings(
-        self, ssml: str, voice: str,
+        self,
+        ssml: str,
+        voice: str,
     ) -> tuple[bytes, list[tuple[float, str]]]:
         audio_data, word_timings = self._synth_with_marks(ssml, voice)
         return audio_data, word_timings
 
     def _synth_with_marks(
-        self, ssml: str, voice: str,
+        self,
+        ssml: str,
+        voice: str,
     ) -> tuple[bytes, list[tuple[float, str]]]:
         # Get speech marks
         marks_response = self._client.synthesize_speech(

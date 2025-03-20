@@ -1,13 +1,11 @@
 # The MS SpeechSDK can do a lot of our base class - and better. So lets overrride that
-from typing import Any, Optional
 import logging
-import threading
-from queue import Queue
+from typing import TYPE_CHECKING, Any, Optional
 
 from tts_wrapper.tts import AbstractTTS
 
-from . import MicrosoftClient
-from .client import FORMATS
+if TYPE_CHECKING:
+    from . import MicrosoftClient
 
 try:
     import azure.cognitiveservices.speech as speechsdk

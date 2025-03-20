@@ -2,16 +2,16 @@ import sys
 from contextlib import suppress
 
 from .elevenlabs import *
+from .espeak import *
 from .google import *
 from .googletrans import *
 from .microsoft import *
 from .pico import *
+from .playht import *
 from .polly import *
 from .sherpaonnx import *
 from .watson import *
 from .witai import *
-from .espeak import *
-from .playht import *
 
 # Windows-only imports
 if sys.platform == "win32":
@@ -23,6 +23,6 @@ if sys.platform == "darwin":
     with suppress(ImportError):
         from .avsynth import *
 
-#deprecated
+# deprecated
 # from .mms import *
 # from .piper import *

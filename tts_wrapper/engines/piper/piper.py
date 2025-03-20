@@ -8,7 +8,12 @@ from . import PiperClient, PiperSSML
 
 class PiperTTS(AbstractTTS):
 
-    def __init__(self, client: PiperClient, lang: Optional[str] = None, voice: Optional[str] = None) -> None:
+    def __init__(
+        self,
+        client: PiperClient,
+        lang: Optional[str] = None,
+        voice: Optional[str] = None,
+    ) -> None:
         super().__init__()
         self._client = client
         self._voices = self.get_voices()
@@ -37,5 +42,5 @@ class PiperTTS(AbstractTTS):
         self._voice = voice_id
         self._lang = lang_id
 
-    def construct_prosody_tag(self, text:str ) -> str:
+    def construct_prosody_tag(self, text: str) -> str:
         pass

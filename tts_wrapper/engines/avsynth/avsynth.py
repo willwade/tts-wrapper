@@ -1,7 +1,8 @@
-from typing import Optional, Any, Generator
+from collections.abc import Generator
+from typing import Any, Optional
 
-from tts_wrapper.tts import AbstractTTS
 from tts_wrapper.engines.avsynth.ssml import AVSynthSSML
+from tts_wrapper.tts import AbstractTTS
 
 
 class AVSynthTTS(AbstractTTS):
@@ -16,7 +17,7 @@ class AVSynthTTS(AbstractTTS):
         self._properties: dict[str, str] = {
             "rate": "medium",
             "volume": "100",
-            "pitch": "medium"
+            "pitch": "medium",
         }
         self.audio_rate = 22050  # Lower audio rate for more natural speech
         self.channels = 1
@@ -46,42 +47,40 @@ class AVSynthTTS(AbstractTTS):
 
         # Call the client for synthesis and get native word timings
         audio_data, word_timings = self._client.synth(text, options)
-        
+
         # Calculate audio duration in seconds
         audio_duration = len(audio_data) / (2 * self.audio_rate)  # 16-bit samples
-        
+
         # Convert relative positions to absolute timestamps
         absolute_timings = []
         for timing in word_timings:
             if not timing["word"] or timing["word"].isspace():
                 continue
-                
+
             start_time = timing["start"] * audio_duration
             end_time = timing["end"] * audio_duration
-            
+
             # Skip if timing is invalid
             if start_time < 0 or end_time <= start_time:
                 continue
-                
+
             absolute_timings.append((start_time, end_time, timing["word"]))
-            
+
         # Set word timings with absolute timestamps
         self.set_timings(absolute_timings)
-        
+
         return audio_data
 
-    def synth_to_bytestream(
-        self, text: Any
-    ) -> Generator[bytes, None, None]:
+    def synth_to_bytestream(self, text: Any) -> Generator[bytes, None, None]:
         """
         Synthesize text to a stream of audio bytes.
-        
+
         This method uses the native streaming capabilities of AVSpeechSynthesizer
         for more efficient real-time audio generation.
-        
+
         Args:
             text: The text to synthesize
-            
+
         Yields:
             Audio data chunks as they are generated
         """
@@ -101,13 +100,15 @@ class AVSynthTTS(AbstractTTS):
 
         # Get the streaming generator and native word timings
         generator, word_timings = self._client.synth_streaming(text, options)
-        
+
         # Set word timings directly from AVSpeechSynthesizer
-        self.set_timings([
-            (timing["start"], timing["end"], timing["word"])
-            for timing in word_timings
-        ])
-        
+        self.set_timings(
+            [
+                (timing["start"], timing["end"], timing["word"])
+                for timing in word_timings
+            ]
+        )
+
         # Yield audio chunks from the generator
         for chunk in generator:
             # Ensure chunk size is a multiple of 2 for int16 samples

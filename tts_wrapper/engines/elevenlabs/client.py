@@ -3,26 +3,24 @@ import json
 
 import requests
 
+from tts_wrapper.exceptions import ModuleNotInstalled
+
 audio_format = ("pcm_22050",)
 
 
 class ElevenLabsClient:
     def __init__(self, credentials) -> None:
-        try:
-            import requests
-
-        except ImportError:
-            msg = "requests"
-            raise ModuleNotInstalled(msg)
-
         if not credentials:
             msg = "An API key for ElevenLabs must be provided"
             raise ValueError(msg)
-        self.api_key = credentials
+        # Extract the API key from credentials tuple
+        self.api_key = credentials[0] if isinstance(credentials, tuple) else credentials
         self.base_url = "https://api.elevenlabs.io"
 
     def synth(
-        self, text: str, voice_id: str,
+        self,
+        text: str,
+        voice_id: str,
     ) -> tuple[bytes, list[tuple[float, float, str]]]:
         url = f"{self.base_url}/v1/text-to-speech/{voice_id}/stream/with-timestamps"
         headers = {
@@ -41,7 +39,11 @@ class ElevenLabsClient:
         }
 
         response = requests.post(
-            url, headers=headers, json=data, params=params, stream=True,
+            url,
+            headers=headers,
+            json=data,
+            params=params,
+            stream=True,
         )
 
         if response.status_code != 200:
@@ -50,15 +52,18 @@ class ElevenLabsClient:
                 json_response = response.json()
                 if "detail" in json_response:
                     status = json_response["detail"].get(
-                        "status", "No status available",
+                        "status",
+                        "No status available",
                     )
                     message = json_response["detail"].get(
-                        "message", "No message provided",
+                        "message",
+                        "No message provided",
                     )
                     error_message += f" Status: {status}. Message: {message}"
                 else:
                     error_details = json_response.get("error", {}).get(
-                        "message", "No error details available.",
+                        "message",
+                        "No error details available.",
                     )
                     error_message += f" Details: {error_details}"
             except ValueError:
@@ -87,7 +92,9 @@ class ElevenLabsClient:
 
         # Process character timings into word timings
         word_timings = self._process_word_timings(
-            characters, character_start_times, character_end_times,
+            characters,
+            character_start_times,
+            character_end_times,
         )
         return audio_bytes, word_timings
 
@@ -194,7 +201,8 @@ class ElevenLabsClient:
                 voice["id"] = voice["voice_id"]
                 accent = voice["labels"].get("accent", "american")
                 accent_to_language_code.get(
-                    accent, "en-US",
+                    accent,
+                    "en-US",
                 )  # Default to 'en-US'
                 if voice["high_quality_base_model_ids"] == "eleven_multilingual_v1":
                     voice["language_codes"] = list(supported_languages_v1.keys())

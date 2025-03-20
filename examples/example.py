@@ -76,6 +76,7 @@ def create_tts_client(service):
         raise ValueError(msg)
     return tts
 
+
 def test_tts_engine(tts, service_name) -> None:
 
     text_read = "Hello, world! This is a text of plain text sending"
@@ -87,7 +88,9 @@ def test_tts_engine(tts, service_name) -> None:
         text_with_prosody = tts.construct_prosody_tag(text_read)
 
         tts.ssml.clear_ssml()
-        ssml_text = tts.ssml.add(text_with_prosody)  # Assuming there's a method to add SSML correctly
+        ssml_text = tts.ssml.add(
+            text_with_prosody
+        )  # Assuming there's a method to add SSML correctly
 
         try:
             tts.speak_streamed(ssml_text)
@@ -95,8 +98,8 @@ def test_tts_engine(tts, service_name) -> None:
             time.sleep(3)
             tts.ssml.clear_ssml()
 
-            tts.set_property("volume","90")
-            tts.set_property("pitch","x-high")
+            tts.set_property("volume", "90")
+            tts.set_property("pitch", "x-high")
 
             text_read_2 = "This is louder than before"
 
@@ -104,14 +107,13 @@ def test_tts_engine(tts, service_name) -> None:
             time.sleep(0.5)
             ssml_text = tts.ssml.add(text_with_prosody)
 
-            #print ("Testing setting volume to 90")
+            # print ("Testing setting volume to 90")
             tts.speak_streamed(ssml_text)
 
             time.sleep(1)
 
         except Exception:
             pass
-
 
     except Exception:
         pass
@@ -122,7 +124,7 @@ def test_tts_engine(tts, service_name) -> None:
     output_file = Path(f"output_{service_name}.wav")
     tts.synth(ssml_text, str(output_file))
     # or you could do
-    #tts.speak(ssml_text)
+    # tts.speak(ssml_text)
 
     # Change voice and test again if possible
     voices = tts.get_voices()
@@ -141,21 +143,27 @@ def test_tts_engine(tts, service_name) -> None:
         ssml_text_part2 = tts.ssml.add("Continuing with a new voice!")
         tts.speak_streamed(ssml_text_part2)
 
+
 def main() -> None:
     service = sys.argv[1] if len(sys.argv) > 1 else "all"
     # Load credentials
     load_credentials("credentials-private.json")
-    services = ["elevenlabs", "google", "microsoft", "polly", "watson", "witai"] if service == "all" else [service]
+    services = (
+        ["elevenlabs", "google", "microsoft", "polly", "watson", "witai"]
+        if service == "all"
+        else [service]
+    )
     for svc in services:
         tts = create_tts_client(svc)
-        #microsoft test with absolute value
-        #tts.set_property("volume", "20")
+        # microsoft test with absolute value
+        # tts.set_property("volume", "20")
 
-        #google test with predefined words or decibels
+        # google test with predefined words or decibels
         tts.set_property("volume", "5")
         tts.set_property("rate", "x-slow")
         tts.set_property("pitch", "x-low")
         test_tts_engine(tts, svc)
+
 
 if __name__ == "__main__":
     signal.signal(signal.SIGINT, signal_handler)

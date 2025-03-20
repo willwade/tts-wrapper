@@ -15,7 +15,7 @@ tts = GoogleTTS(client)
 tts.set_output_device(4)
 
 # # # pausng
-#try:
+# try:
 #    ssml_text = tts.ssml.add(f"This is me speaking with Speak function and google first time")
 #    print(ssml_text)
 #    tts.speak_streamed(ssml_text)
@@ -31,19 +31,19 @@ tts.set_output_device(4)
 #     time.sleep(1)
 #     tts.stop_audio()
 #     print("Stopping.")
-#except Exception as e:
+# except Exception as e:
 #    print(f"Error at pausing: {e}")
 #
 # time.sleep(3)
 # # Demonstrate saving audio to a file
-#try:
+# try:
 #    ssml_text = tts.ssml.add(f"This is me speaking with Speak function and google with mp3")
 #    output_file = Path(f"output_google.mp3")
 #    tts.speak_streamed(ssml_text, str(output_file), audio_format='mp3')
 #     # or you could do
-     #tts.speak(ssml_text)
+# tts.speak(ssml_text)
 #    print(f"Audio content saved to {output_file}")
-#except Exception as e:
+# except Exception as e:
 #    print(f"Error at saving: {e}")
 #
 #
@@ -74,13 +74,16 @@ tts.set_output_device(4)
 #     ssml_text_part2 = tts.ssml.add('Continuing with a new voice!')
 #     tts.speak_streamed(ssml_text_part2)
 
+
 # ## calbacks
 #
 def my_callback(word: str, start_time: float, end_time: float) -> None:
     end_time - start_time
 
+
 def on_start() -> None:
     pass
+
 
 def on_end() -> None:
     pass

@@ -1,10 +1,10 @@
+import contextlib
+import logging
 import os
 import sys
 import unittest
-import logging
 from pathlib import Path
-from typing import Dict, Any, Optional
-from .load_credentials import load_credentials
+from typing import Any, Optional
 
 import pytest
 
@@ -28,6 +28,8 @@ from tts_wrapper import (
     eSpeakClient,
     eSpeakTTS,
 )
+
+from .load_credentials import load_credentials
 
 # Split clients into online and offline
 ONLINE_CLIENTS = {
@@ -80,7 +82,8 @@ OFFLINE_CLIENTS = {
 # Add SAPI client only on Windows
 if sys.platform == "win32":
     try:
-        from tts_wrapper import SAPIClient, SAPITTS
+        from tts_wrapper import SAPITTS, SAPIClient
+
         OFFLINE_CLIENTS["sapi"] = {
             "client_lambda": lambda: SAPIClient(),
             "class": SAPITTS,
@@ -88,11 +91,12 @@ if sys.platform == "win32":
     except ImportError:
         logging.warning("SAPI support not available")
 
+
 class ClientManager:
     """Manage the creation and configuration of TTS clients."""
 
     def __init__(self) -> None:
-        self.credentials: Dict[str, Any] = {}
+        self.credentials: dict[str, Any] = {}
 
     def get_credential(self, key: str) -> Optional[str]:
         """Retrieve a credential value by key from environment variables."""
@@ -118,7 +122,9 @@ class ClientManager:
         msg = "Config must contain either 'client' or 'client_lambda'"
         raise ValueError(msg)
 
-    def create_tts_instances(self, client_configs: dict, check_credentials: bool = True) -> dict:
+    def create_tts_instances(
+        self, client_configs: dict, check_credentials: bool = True
+    ) -> dict:
         """Create TTS instances for all configured clients."""
         tts_instances = {}
         for name, config in client_configs.items():
@@ -130,7 +136,7 @@ class ClientManager:
                 if not check_credentials or tts_instance.check_credentials():
                     tts_instances[name] = tts_instance
             except Exception as e:
-                logging.warning(f"Failed to create TTS instance for {name}: {str(e)}")
+                logging.warning(f"Failed to create TTS instance for {name}: {e!s}")
                 continue
 
         return tts_instances
@@ -157,23 +163,23 @@ class BaseTestFileCreation(unittest.TestCase):
         tts_instance = self.tts_instances.get(engine_name)
         if not tts_instance:
             self.skipTest(f"{engine_name} is not available")
-        
+
         try:
             # Check if the instance is properly initialized
-            if hasattr(tts_instance, '_client') and tts_instance._client is None:
+            if hasattr(tts_instance, "_client") and tts_instance._client is None:
                 self.skipTest(f"{engine_name} client is not properly initialized")
-            
+
             # Try to create the audio file
             tts_instance.synth_to_file(ssml_text, self.file_names[engine_name], "wav")
-            
+
             # Verify the file was created and is not empty
             file_path = Path(self.file_names[engine_name])
-            self.assertTrue(file_path.exists(), f"File for {engine_name} was not created.")
-            self.assertGreater(file_path.stat().st_size, 0, f"File for {engine_name} is empty.")
-            
+            assert file_path.exists(), f"File for {engine_name} was not created."
+            assert file_path.stat().st_size > 0, f"File for {engine_name} is empty."
+
         except Exception as e:
-            logging.error(f"Error testing {engine_name}: {str(e)}")
-            self.skipTest(f"Error testing {engine_name}: {str(e)}")
+            logging.error(f"Error testing {engine_name}: {e!s}")
+            self.skipTest(f"Error testing {engine_name}: {e!s}")
 
 
 class TestOfflineEngines(BaseTestFileCreation):
@@ -182,7 +188,9 @@ class TestOfflineEngines(BaseTestFileCreation):
     @classmethod
     def setUpClass(cls) -> None:
         cls.manager = ClientManager()
-        cls.tts_instances = cls.manager.create_tts_instances(OFFLINE_CLIENTS, check_credentials=False)
+        cls.tts_instances = cls.manager.create_tts_instances(
+            OFFLINE_CLIENTS, check_credentials=False
+        )
 
     def test_espeak_audio_creation(self) -> None:
         self._test_audio_creation(
@@ -225,7 +233,7 @@ class TestOnlineEngines(BaseTestFileCreation):
         cls.manager = ClientManager()
         # Create instances without checking credentials initially
         cls.tts_instances = {}
-        
+
         # Handle each service separately to avoid segfaults
         for name, config in ONLINE_CLIENTS.items():
             try:
@@ -234,10 +242,12 @@ class TestOnlineEngines(BaseTestFileCreation):
                     tts_class = config["class"]
                     cls.tts_instances[name] = tts_class(client)
             except Exception as e:
-                logging.warning(f"Failed to create TTS instance for {name}: {str(e)}")
+                logging.warning(f"Failed to create TTS instance for {name}: {e!s}")
                 continue
 
-    @pytest.mark.skipif(not os.getenv("GOOGLE_SA_PATH"), reason="Google credentials not set")
+    @pytest.mark.skipif(
+        not os.getenv("GOOGLE_SA_PATH"), reason="Google credentials not set"
+    )
     def test_google_audio_creation(self) -> None:
         if "google" not in self.tts_instances:
             self.skipTest("Google TTS instance not available")
@@ -246,70 +256,80 @@ class TestOnlineEngines(BaseTestFileCreation):
     def test_googletrans_audio_creation(self) -> None:
         if "googletrans" not in self.tts_instances:
             self.skipTest("Google Translate TTS instance not available")
-        self._test_audio_creation("googletrans", "This is a test using Google Translate TTS.")
+        self._test_audio_creation(
+            "googletrans", "This is a test using Google Translate TTS."
+        )
 
-    @pytest.mark.skipif(not os.getenv("MICROSOFT_TOKEN"), reason="Microsoft Azure credentials not set")
+    @pytest.mark.skipif(
+        not os.getenv("MICROSOFT_TOKEN"), reason="Microsoft Azure credentials not set"
+    )
     def test_microsoft_audio_creation(self) -> None:
         if "microsoft" not in self.tts_instances:
             self.skipTest("Microsoft TTS instance not available")
         self._test_audio_creation("microsoft", "This is a test using Microsoft TTS.")
 
     @pytest.mark.skipif(
-        not os.getenv("POLLY_REGION") or 
-        not os.getenv("POLLY_AWS_KEY_ID") or 
-        not os.getenv("POLLY_AWS_ACCESS_KEY"),
-        reason="Amazon Polly credentials not fully set"
+        not os.getenv("POLLY_REGION")
+        or not os.getenv("POLLY_AWS_KEY_ID")
+        or not os.getenv("POLLY_AWS_ACCESS_KEY"),
+        reason="Amazon Polly credentials not fully set",
     )
     def test_polly_audio_creation(self) -> None:
         """Test Polly TTS audio creation."""
         if "polly" not in self.tts_instances:
             self.skipTest("Polly TTS instance not available")
-        
+
         # Additional check for valid credentials
         polly = self.tts_instances["polly"]
-        if not hasattr(polly, '_client') or not polly._client:
+        if not hasattr(polly, "_client") or not polly._client:
             self.skipTest("Polly client not properly initialized")
-            
+
         try:
             # Create a temporary file for the test
             test_file = "polly-test.wav"
             if os.path.exists(test_file):
                 os.remove(test_file)
-                
+
             # Synthesize a short text
-            polly.synth_to_file("This is a test using Amazon Polly TTS.", test_file, "wav")
-            
+            polly.synth_to_file(
+                "This is a test using Amazon Polly TTS.", test_file, "wav"
+            )
+
             # Verify the file was created
-            self.assertTrue(os.path.exists(test_file))
-            self.assertGreater(os.path.getsize(test_file), 0)
-            
+            assert os.path.exists(test_file)
+            assert os.path.getsize(test_file) > 0
+
         except Exception as e:
-            logging.error(f"Error in Polly test: {str(e)}")
-            self.skipTest(f"Polly test failed: {str(e)}")
-            
+            logging.error(f"Error in Polly test: {e!s}")
+            self.skipTest(f"Polly test failed: {e!s}")
+
         finally:
             # Cleanup
-            if hasattr(polly, 'cleanup'):
+            if hasattr(polly, "cleanup"):
                 polly.cleanup()
             if os.path.exists(test_file):
-                try:
+                with contextlib.suppress(OSError):
                     os.remove(test_file)
-                except OSError:
-                    pass
 
-    @pytest.mark.skipif(not os.getenv("WATSON_API_KEY"), reason="Watson credentials not set")
+    @pytest.mark.skipif(
+        not os.getenv("WATSON_API_KEY"), reason="Watson credentials not set"
+    )
     def test_watson_audio_creation(self) -> None:
         if "watson" not in self.tts_instances:
             self.skipTest("Watson TTS instance not available")
         self._test_audio_creation("watson", "This is a test using IBM Watson TTS.")
 
-    @pytest.mark.skipif(not os.getenv("WITAI_TOKEN"), reason="WitAi credentials not set")
+    @pytest.mark.skipif(
+        not os.getenv("WITAI_TOKEN"), reason="WitAi credentials not set"
+    )
     def test_witai_audio_creation(self) -> None:
         if "witai" not in self.tts_instances:
             self.skipTest("WitAi TTS instance not available")
         self._test_audio_creation("witai", "This is a test using Wit.ai TTS.")
 
-    @pytest.mark.skipif(not os.getenv("ELEVENLABS_API_KEY"), reason="ElevenLabs credentials not set")
+    @pytest.mark.skipif(
+        not os.getenv("ELEVENLABS_API_KEY"), reason="ElevenLabs credentials not set"
+    )
     def test_elevenlabs_audio_creation(self) -> None:
         if "elevenlabs" not in self.tts_instances:
             self.skipTest("ElevenLabs TTS instance not available")

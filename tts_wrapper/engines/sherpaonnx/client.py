@@ -13,18 +13,19 @@ from typing import Any
 import numpy as np
 import requests
 
+
 class SherpaOnnxClient:
     """Client for Sherpa-ONNX TTS engine. Client class."""
 
     MODELS_FILE = "merged_models.json"
 
     def __init__(
-            self,
-            model_path: str | None = None,
-            tokens_path: str | None = None,
-            model_id: str | None = None,
-            no_default_download: bool = False,
-        ) -> None:
+        self,
+        model_path: str | None = None,
+        tokens_path: str | None = None,
+        model_id: str | None = None,
+        no_default_download: bool = False,
+    ) -> None:
         """Initialize the Sherpa-ONNX client.
 
         Args:
@@ -38,24 +39,26 @@ class SherpaOnnxClient:
         self._tokens_path = tokens_path
         self._model_id = model_id
         self._base_dir = Path(model_path) if model_path else Path.cwd()
-        
+
         # Initialize paths
         self.default_model_path = ""
         self.default_tokens_path = ""
         self.default_lexicon_path = ""
         self.default_dict_dir_path = ""
-        
+
         # Initialize ONNX components
         self.tts = None
         self.sample_rate = 16000  # Default sample rate
         self.audio_queue: queue.Queue = queue.Queue()
-        
+
         # Load model configuration
         self.json_models = self._load_models_and_voices()
-        
+
         # Only set up voice if we have a model_id or auto-download is enabled
         if self._model_id or not no_default_download:
-            self._model_id = self._model_id or "mms_eng"  # Default to English if not specified
+            self._model_id = (
+                self._model_id or "mms_eng"
+            )  # Default to English if not specified
             self.set_voice()
         else:
             logging.info("Skipping automatic model download (no_default_download=True)")
@@ -66,29 +69,28 @@ class SherpaOnnxClient:
         response.raise_for_status()
         destination.write_bytes(response.content)
 
-    def _check_files_exist(self, model_path: str, tokens_path: str, model_id: str) -> bool:
+    def _check_files_exist(
+        self, model_path: str, tokens_path: str, model_id: str
+    ) -> bool:
         """Check if model and token files exist.
-        
+
         Args:
             model_path: Path to model file
             tokens_path: Path to tokens file
             model_id: Voice model ID
-            
+
         Returns:
             True if both files exist
         """
         # Convert paths to Path objects
         model_file = Path(model_path)
         tokens_file = Path(tokens_path)
-        
+
         # Check that both files exist and are not empty
         if not model_file.exists() or not tokens_file.exists():
             return False
-            
-        if model_file.stat().st_size == 0 or tokens_file.stat().st_size == 0:
-            return False
-            
-        return True
+
+        return not (model_file.stat().st_size == 0 or tokens_file.stat().st_size == 0)
 
     def get_dict_dir(self, destination_dir: Path) -> str:
         """Get dict_dir from extracted model."""
@@ -115,17 +117,17 @@ class SherpaOnnxClient:
 
         # Handle None model_id
         safe_model_id = model_id or "default"
-        
+
         # Get model URL from JSON config
         models = self._load_models_and_voices()
         if safe_model_id not in models:
             msg = f"Model ID {safe_model_id} not found in configuration"
             raise ValueError(msg)
-            
+
         base_url = models[safe_model_id]["url"]
         model_url = f"{base_url}/model.onnx?download=true"
         tokens_url = f"{base_url}/tokens.txt"
-        
+
         # Set paths in voice directory
         model_path = destination_dir / "model.onnx"
         tokens_path = destination_dir / "tokens.txt"
@@ -148,10 +150,10 @@ class SherpaOnnxClient:
 
     def check_and_download_model(self, model_id: str) -> tuple[str, str, str, str]:
         """Check if model exists and download if not.
-        
+
         Args:
             model_id: Voice model ID
-            
+
         Returns:
             Tuple of (model_path, tokens_path, lexicon_path, dict_dir)
         """
@@ -159,18 +161,22 @@ class SherpaOnnxClient:
         base_dir = Path(self._model_path or "")
         voice_dir = base_dir / model_id
         voice_dir.mkdir(exist_ok=True)
-        
+
         # Expected paths for this voice
         model_path = str(voice_dir / "model.onnx")
         tokens_path = str(voice_dir / "tokens.txt")
-        
+
         # Check if files exist in voice directory
         if not self._check_files_exist(model_path, tokens_path, model_id):
-            logging.info(f"Downloading model and tokens languages for {model_id} because we can't find it")
-            
+            logging.info(
+                f"Downloading model and tokens languages for {model_id} because we can't find it"
+            )
+
             # Download to voice-specific directory
-            _, _, lexicon_path, dict_dir = self._download_model_and_tokens(voice_dir, model_id)
-            
+            _, _, lexicon_path, dict_dir = self._download_model_and_tokens(
+                voice_dir, model_id
+            )
+
             # Verify files were downloaded correctly
             if not self._check_files_exist(model_path, tokens_path, model_id):
                 msg = f"Failed to download model files for {model_id}"
@@ -178,7 +184,7 @@ class SherpaOnnxClient:
         else:
             lexicon_path = str(voice_dir / "lexicon.txt")
             dict_dir = self.get_dict_dir(voice_dir)
-            
+
         return model_path, tokens_path, lexicon_path, dict_dir
 
     def _init_onnx(self) -> None:
@@ -232,7 +238,8 @@ class SherpaOnnxClient:
 
         # Start generating audio and filling the queue
         threading.Thread(
-            target=self._stream_audio_to_queue, args=(text, sid, speed),
+            target=self._stream_audio_to_queue,
+            args=(text, sid, speed),
         ).start()
 
         # Yield audio chunks as they are produced
@@ -244,10 +251,15 @@ class SherpaOnnxClient:
 
             yield samples
 
-    def _stream_audio_to_queue(self, text: str, sid: int = 0, speed: float = 1.0) -> None:
+    def _stream_audio_to_queue(
+        self, text: str, sid: int = 0, speed: float = 1.0
+    ) -> None:
         """Generate audio and place chunks in the queue."""
         self.tts.generate(
-            text, sid=sid, speed=speed, callback=self.generated_audio_callback,
+            text,
+            sid=sid,
+            speed=speed,
+            callback=self.generated_audio_callback,
         )
         self.audio_queue.put(None)  # Signal the end of audio generation
 
@@ -263,7 +275,10 @@ class SherpaOnnxClient:
         self.audio_queue = queue.Queue()  # Reset the queue for new streaming session
         logging.info("Starting streaming synthesis for text: %s", text)
         self.tts.generate(
-            text, sid=sid, speed=speed, callback=self.generated_audio_callback,
+            text,
+            sid=sid,
+            speed=speed,
+            callback=self.generated_audio_callback,
         )
         self.audio_queue.put(None)  # Signal the end of generation
 
@@ -287,7 +302,7 @@ class SherpaOnnxClient:
                 "language_codes": [voice["language"][0]["Iso Code"]],
             }
             for key, voice in self.json_models.items()
-            if voice["id"].startswith("mms_")                
+            if voice["id"].startswith("mms_")
         ]
 
     def set_voice(self) -> None:
@@ -295,8 +310,10 @@ class SherpaOnnxClient:
         if not self._model_id:
             msg = "No model ID specified for voice setup"
             raise ValueError(msg)
-            
-        model_path, tokens_path, lexicon_path, dict_dir = self.check_and_download_model(self._model_id)
+
+        model_path, tokens_path, lexicon_path, dict_dir = self.check_and_download_model(
+            self._model_id
+        )
         self.default_model_path = model_path
         self.default_tokens_path = tokens_path
 
@@ -310,7 +327,7 @@ class SherpaOnnxClient:
 
         # Initialize the TTS model with the new voice settings
         self._init_onnx()
-        
+
         # Ensure the sample rate is set after initializing the TTS engine
         if self.tts:
             self.sample_rate = self.tts.sample_rate
@@ -323,13 +340,12 @@ class SherpaOnnxClient:
         samples = np.array(samples)
         return (samples * 32767).astype(np.int16).tobytes()
 
-
-    def _load_models_and_voices(self) -> (dict[str, Any]):
+    def _load_models_and_voices(self) -> dict[str, Any]:
         root_dir = Path(__file__).parent
-        config_path = root_dir / 'merged_models.json'
-        
+        config_path = root_dir / "merged_models.json"
+
         with config_path.open() as file:
             models_json = json.load(file)
         file.close()
-        
+
         return models_json

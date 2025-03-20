@@ -9,6 +9,7 @@ logging.basicConfig(level=logging.DEBUG)
 client = eSpeakClient()
 tts = eSpeakTTS(client)
 
+
 # Methods for specific tests
 def test_pausing_and_resuming():
     """Test pausing, resuming, and stopping audio."""
@@ -33,15 +34,19 @@ def test_pausing_and_resuming():
     except Exception as e:
         print(f"Error in pausing/resuming test: {e}")
 
+
 def test_saving_audio():
     """Test saving synthesized audio to a file."""
     try:
-        ssml_text = tts.ssml.add("A second sentence to save to an audio file", clear=True)
+        ssml_text = tts.ssml.add(
+            "A second sentence to save to an audio file", clear=True
+        )
         output_file = Path(f"output_google.mp3")
         tts.synth(ssml_text, str(output_file), format="mp3")
         print(f"Audio content saved to {output_file}")
     except Exception as e:
         print(f"Error in saving audio: {e}")
+
 
 def test_changing_voices():
     """Test changing voices and synthesizing text."""
@@ -55,8 +60,7 @@ def test_changing_voices():
 
         print("Getting voices...")
         english_voices = [
-            voice for voice in voices
-            if "English" in (voice.get("name") or [])
+            voice for voice in voices if "English" in (voice.get("name") or [])
         ]
 
         if not english_voices:
@@ -69,22 +73,30 @@ def test_changing_voices():
             voice_id = voice.get("id", "Unknown ID")
             language_codes = voice.get("language_codes", [])
             first_language_code = language_codes[0] if language_codes else "Unknown"
-            
-            print(f"Testing voice {i}: {display_name} ({first_language_code}) - ID: {voice_id}")
+
+            print(
+                f"Testing voice {i}: {display_name} ({first_language_code}) - ID: {voice_id}"
+            )
             try:
                 # Set the current voice and synthesize text
                 tts.set_voice(voice_id, first_language_code)
-                tts.speak_streamed(f"This is voice {i}. Testing the {display_name} voice.")
+                tts.speak_streamed(
+                    f"This is voice {i}. Testing the {display_name} voice."
+                )
             except Exception as e:
                 print(f"Error testing voice {i}: {e}")
     except Exception as e:
         print(f"Error in voice changing test: {e}")
 
+
 def test_callbacks():
     """Test onStart, onEnd, and word callbacks."""
+
     def my_callback(word: str, start_time: float, end_time: float) -> None:
         duration = end_time - start_time
-        print(f"Word: {word}, Start Time: {start_time}, End time: {end_time},  Duration: {duration:.3f}s")
+        print(
+            f"Word: {word}, Start Time: {start_time}, End time: {end_time},  Duration: {duration:.3f}s"
+        )
 
     def on_start() -> None:
         print("Starting")
@@ -100,6 +112,7 @@ def test_callbacks():
     except Exception as e:
         print(f"Error in callback test: {e}")
 
+
 def test_volume_control():
     """Test volume control."""
     try:
@@ -113,6 +126,7 @@ def test_volume_control():
             time.sleep(2)
     except Exception as e:
         print(f"Error in volume control test: {e}")
+
 
 # Main execution
 if __name__ == "__main__":

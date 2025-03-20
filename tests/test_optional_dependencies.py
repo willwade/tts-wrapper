@@ -9,9 +9,21 @@ optional_dependencies = {
     "boto3": ("tts_wrapper", "PollyTTS", "PollyClient"),
     "ibm_watson": ("tts_wrapper", "WatsonTTS", "WatsonClient"),
     "google_cloud_texttospeech": ("tts_wrapper", "GoogleTTS", "GoogleClient"),
-    "azure_cognitiveservices_speech": ("tts_wrapper", "MicrosoftTTS", "MicrosoftClient"),
-    "requests": ("tts_wrapper", "ElevenLabsTTS", "ElevenLabsClient"),  # Used by ElevenLabs and WitAI
-    "piper-tts": ("tts_wrapper", "PiperTTS", "PiperClient"),  # Assuming piper-tts needs to be added
+    "azure_cognitiveservices_speech": (
+        "tts_wrapper",
+        "MicrosoftTTS",
+        "MicrosoftClient",
+    ),
+    "requests": (
+        "tts_wrapper",
+        "ElevenLabsTTS",
+        "ElevenLabsClient",
+    ),  # Used by ElevenLabs and WitAI
+    "piper-tts": (
+        "tts_wrapper",
+        "PiperTTS",
+        "PiperClient",
+    ),  # Assuming piper-tts needs to be added
     "py3-ttsmms": ("tts_wrapper", "MMSTTS", "MMSClient"),
     "gTTS": ("tts_wrapper", "GoogleTransTTS", "GoogleTransClient"),
     "sherpa-onnx": ("tts_wrapper", "SherpaOnnxTTS", "SherpaOnnxClient"),
@@ -22,8 +34,13 @@ flattened_dependencies = [
     (module_name, *details) for module_name, details in optional_dependencies.items()
 ]
 
-@pytest.mark.parametrize(("module_name", "tts_wrapper", "tts_class", "client_class"), flattened_dependencies)
-def test_optional_dependencies(module_name, tts_wrapper, tts_class, client_class) -> None:
+
+@pytest.mark.parametrize(
+    ("module_name", "tts_wrapper", "tts_class", "client_class"), flattened_dependencies
+)
+def test_optional_dependencies(
+    module_name, tts_wrapper, tts_class, client_class
+) -> None:
     # Temporarily remove the module from sys.modules
     original_module = sys.modules.pop(module_name, None)
 

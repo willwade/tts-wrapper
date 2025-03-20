@@ -52,7 +52,10 @@ class GoogleTransClient:
         return output.read()
 
     def _create_wav_header(
-        self, output: BytesIO, sample_rate: int, nchannels: int,
+        self,
+        output: BytesIO,
+        sample_rate: int,
+        nchannels: int,
     ) -> bytes:
         """Creates a WAV header based on the MP3 properties (sample rate, channels, etc.)."""
         # Set WAV format constants

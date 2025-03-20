@@ -27,7 +27,6 @@ class GoogleTransTTS(AbstractTTS):
         # Convert the MP3 data to raw PCM using the utility method
         return self._convert_mp3_to_pcm(mp3_data)
 
-
     def set_voice(self, voice_id: str, lang_id: Optional[str] = None) -> None:
         super().set_voice(voice_id, lang_id)
         self.client.set_voice(voice_id)

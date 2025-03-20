@@ -1,12 +1,16 @@
 import logging
+from typing import Optional
 from xml.etree import ElementTree as ET
+
 from tts_wrapper.ssml import BaseSSMLRoot, SSMLNode
 
 
 class AVSynthSSMLNode(SSMLNode):
     """SSML node implementation for AVSynth."""
 
-    def __init__(self, tag: str, attrs: dict = None, children: list = None) -> None:
+    def __init__(
+        self, tag: str, attrs: Optional[dict] = None, children: Optional[list] = None
+    ) -> None:
         """Initialize the SSML node."""
         super().__init__(tag, attrs, children)
         self._children = children or []
@@ -17,7 +21,7 @@ class AVSynthSSMLNode(SSMLNode):
         """Add text to the node."""
         self._children.append(text)
 
-    def add(self, child: 'SSMLNode') -> None:
+    def add(self, child: "SSMLNode") -> None:
         """Add a child node."""
         self._children.append(child)
 
@@ -29,7 +33,7 @@ class AVSynthSSMLNode(SSMLNode):
         """Convert SSML to text with embedded commands for AVSpeechSynthesizer."""
         if self._tag == "speak":
             return "".join(str(c) for c in self._children)
-        elif self._tag == "break":
+        if self._tag == "break":
             # Convert SSML break to a pause
             time_str = self._attrs.get("time", "500ms")
             try:
@@ -46,22 +50,22 @@ class AVSynthSSMLNode(SSMLNode):
             # Handle rate, pitch, and volume
             text = "".join(str(c) for c in self._children)
             commands = []
-            
+
             if "rate" in self._attrs:
                 rate = self._attrs["rate"]
                 if rate in ["x-slow", "slow", "medium", "fast", "x-fast"]:
                     commands.append(f"[[rate {rate}]]")
-            
+
             if "pitch" in self._attrs:
                 pitch = self._attrs["pitch"]
                 if pitch in ["x-low", "low", "medium", "high", "x-high"]:
                     commands.append(f"[[pitch {pitch}]]")
-            
+
             if "volume" in self._attrs:
                 vol = self._attrs["volume"]
                 if vol in ["silent", "x-soft", "soft", "medium", "loud", "x-loud"]:
                     commands.append(f"[[volm {vol}]]")
-            
+
             return "".join(commands) + text
         else:
             # For unsupported tags, just return the text content
@@ -99,11 +103,11 @@ class AVSynthSSML(BaseSSMLRoot):
         self._root = AVSynthSSMLNode("speak")
 
     def construct_prosody_tag(
-        self, 
-        text: str, 
-        rate: str = None, 
-        volume: str = None, 
-        pitch: str = None
+        self,
+        text: str,
+        rate: Optional[str] = None,
+        volume: Optional[str] = None,
+        pitch: Optional[str] = None,
     ) -> str:
         """Construct a prosody tag with the given attributes."""
         attrs = {}
@@ -113,7 +117,7 @@ class AVSynthSSML(BaseSSMLRoot):
             attrs["volume"] = volume
         if pitch is not None:
             attrs["pitch"] = pitch
-            
+
         node = AVSynthSSMLNode("prosody", attrs)
         node.add_text(text)
         return str(node)
@@ -150,10 +154,16 @@ class AVSynthSSML(BaseSSMLRoot):
         self._root.add(break_node)
 
     def add_prosody(
-        self, text: str, rate: str = "medium", pitch: str = "medium", volume: str = "medium"
+        self,
+        text: str,
+        rate: str = "medium",
+        pitch: str = "medium",
+        volume: str = "medium",
     ) -> None:
         """Add a prosody tag with custom attributes."""
         prosody_node = SSMLNode(
-            "prosody", attrs={"rate": rate, "pitch": pitch, "volume": volume}, children=[text]
+            "prosody",
+            attrs={"rate": rate, "pitch": pitch, "volume": volume},
+            children=[text],
         )
         self._root.add(prosody_node)

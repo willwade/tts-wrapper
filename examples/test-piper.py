@@ -1,9 +1,9 @@
-
 from tts_wrapper import PiperClient, PiperTTS
 
 
 def my_callback(word: str, start_time: float) -> None:
-        pass
+    pass
+
 
 client = PiperClient()
 tts = PiperTTS(client)
@@ -18,4 +18,3 @@ tts.speak(ssml_text)
 #     # Now use `audio_content` as needed
 # except Exception as e:
 #     print(f"Error: {e}")
-

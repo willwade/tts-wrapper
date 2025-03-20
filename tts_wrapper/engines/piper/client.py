@@ -14,6 +14,7 @@ try:
         get_voices,
     )
     from piper.voice import PiperVoice
+
     piper_tts = True  # type: ignore
     logging.debug("Imported piper_tts successfully")
 except ImportError as e:
@@ -24,10 +25,11 @@ except ImportError as e:
 
 Credentials = tuple[str]
 
-#FORMATS = {
+# FORMATS = {
 #    "wav": "pcm",
 #    "mp3": "mp3",
-#}
+# }
+
 
 class PiperClient:
     def __init__(
@@ -44,7 +46,9 @@ class PiperClient:
         # Set download directory to first data directory by default
         if not download_dir:
             download_dir = os.path.join(os.path.expanduser("~"), ".piper", "data")
-            logging.debug("Download directory not provided. Using default: %s", download_dir)
+            logging.debug(
+                "Download directory not provided. Using default: %s", download_dir
+            )
             try:
                 os.makedirs(download_dir, exist_ok=True)
             except Exception as e:
@@ -69,14 +73,24 @@ class PiperClient:
                 else:
                     pass
 
-                ensure_voice_exists(model_path_str, [download_dir], download_dir, self.voices_info)
+                ensure_voice_exists(
+                    model_path_str, [download_dir], download_dir, self.voices_info
+                )
                 model_path, config_path = find_voice(model_path, [download_dir])
             except Exception as e:
                 logger.exception(f"Error loading voice: {e}")
                 raise
         self._client = PiperVoice.load(str(model_path), config_path, use_cuda)
 
-    def synth(self, text: str, speaker_id: Optional[int] = None, length_scale: Optional[float] = None, noise_scale: Optional[float] = None, noise_w: Optional[float] = None, sentence_silence: float = 0.0) -> bytes:
+    def synth(
+        self,
+        text: str,
+        speaker_id: Optional[int] = None,
+        length_scale: Optional[float] = None,
+        noise_scale: Optional[float] = None,
+        noise_w: Optional[float] = None,
+        sentence_silence: float = 0.0,
+    ) -> bytes:
         try:
             synthesize_args = {
                 "speaker_id": speaker_id,
@@ -86,7 +100,9 @@ class PiperClient:
                 "sentence_silence": sentence_silence,
             }
             audio_stream = self._client.synthesize_stream_raw(text, **synthesize_args)
-            return b"".join(audio_stream)  # Combining audio chunks into a single byte stream
+            return b"".join(
+                audio_stream
+            )  # Combining audio chunks into a single byte stream
         except Exception as e:
             logger.exception(f"Error synthesizing speech: {e}")
             raise

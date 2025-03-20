@@ -10,24 +10,26 @@ try:
 except ImportError:
     np = None  # type: ignore
 
+
 class MMSTTS(AbstractTTS):
-    def __init__(self, client: MMSClient, lang: Optional[str] = None, voice: Optional[str] = None) -> None:
+    def __init__(
+        self, client: MMSClient, lang: Optional[str] = None, voice: Optional[str] = None
+    ) -> None:
         super().__init__()
         self._client = client
         self._lang = lang or "eng"  # Default to English
         self._voice = voice or self._lang  # Use lang as voice ID for MMS
         self.audio_rate = 16000
 
-
-    def construct_prosody_tag(self, text:str ) -> str:
+    def construct_prosody_tag(self, text: str) -> str:
         properties = []
-        #commenting this for now as we don't have ways to control rate and pitch without ssml
-        #rate = self.get_property("rate")
-        #if rate != "":
+        # commenting this for now as we don't have ways to control rate and pitch without ssml
+        # rate = self.get_property("rate")
+        # if rate != "":
         #    properties.append(f'rate="{rate}"')
         #
-        #pitch = self.get_property("pitch")
-        #if pitch != "":
+        # pitch = self.get_property("pitch")
+        # if pitch != "":
         #    properties.append(f'pitch="{pitch}"')
 
         volume = self.get_property("volume")
@@ -36,9 +38,8 @@ class MMSTTS(AbstractTTS):
 
         prosody_content = " ".join(properties)
 
-        #text_with_tag = f'<prosody {property}="{volume_in_words}">{text}</prosody>'
+        # text_with_tag = f'<prosody {property}="{volume_in_words}">{text}</prosody>'
         return f"<prosody {prosody_content}>{text}</prosody>"
-
 
     def extract_text_from_tags(self, input_string: str) -> str:
         pattern = r"<[^>]+>(.*?)</[^>]+>"
@@ -75,17 +76,21 @@ class MMSTTS(AbstractTTS):
             generated_audio += b"\x00"
 
         # Convert to float32 array
-        samples = np.frombuffer(generated_audio, dtype=np.int16).astype(np.float32) / 32768.0
+        samples = (
+            np.frombuffer(generated_audio, dtype=np.int16).astype(np.float32) / 32768.0
+        )
 
         # Calculate current RMS
         rms = np.sqrt(np.mean(samples**2))
 
         # Normalize audio to a reference RMS (e.g., -20 dB)
-        target_rms = 10**(-20/20)
+        target_rms = 10 ** (-20 / 20)
         samples = samples * (target_rms / rms)
 
         # Apply logarithmic volume scaling
-        scaled_volume = np.exp2(volume / 100) - 1  # This maps 0-100 to a 0 to 1 range logarithmically
+        scaled_volume = (
+            np.exp2(volume / 100) - 1
+        )  # This maps 0-100 to a 0 to 1 range logarithmically
 
         # Apply volume change
         samples = samples * scaled_volume

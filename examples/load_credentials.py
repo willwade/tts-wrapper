@@ -20,15 +20,17 @@ def load_credentials(public_json_file="credentials.json") -> None:
                 for key, value in creds.items():
                     env_var = f"{service.upper()}_{key.upper()}"
                     os.environ[env_var] = value
-#                     print(f"Set {env_var} to {value}")
+
+    #                     print(f"Set {env_var} to {value}")
 
     # Check if private credentials file exists
     if os.path.exists(private_json_file):
-#         print(f"Loading private credentials from {private_json_file}")
+        #         print(f"Loading private credentials from {private_json_file}")
         set_env_vars_from_json(private_json_file)
     else:
-#         print(f"Loading public credentials from {public_json_file}")
+        #         print(f"Loading public credentials from {public_json_file}")
         set_env_vars_from_json(public_json_file)
+
 
 def set_env_vars_from_json(json_file) -> None:
     with open(json_file) as file:
@@ -46,10 +48,12 @@ def set_env_vars_from_json(json_file) -> None:
         else:
             set_env_vars_unix(env_vars)
 
+
 def set_env_vars_windows(env_vars) -> None:
     for var, value in env_vars.items():
         command = f'setx {var} "{value}"'
         os.system(command)
+
 
 def set_env_vars_unix(env_vars) -> None:
     shell = os.environ.get("SHELL", "/bin/bash")
@@ -67,8 +71,8 @@ def set_env_vars_unix(env_vars) -> None:
 
 
 if __name__ == "__main__":
-#     json_file = 'path/to/your/credentials.json'
-#     load_credentials(json_file)
+    #     json_file = 'path/to/your/credentials.json'
+    #     load_credentials(json_file)
 
     json_file = "credentials.json"
     set_env_vars_from_json(json_file)

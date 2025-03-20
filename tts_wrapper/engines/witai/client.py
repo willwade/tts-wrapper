@@ -1,3 +1,4 @@
+import logging
 from typing import Any
 
 import requests
@@ -10,17 +11,14 @@ class WitAiClient:
         if not credentials or not credentials[0]:
             msg = "An API token for Wit.ai must be provided"
             raise ValueError(msg)
-        try:
-            import requests
-        except ImportError:
-            msg = "requests"
-            raise ModuleNotInstalled(msg)
 
-        # Assuming credentials is a tuple where the first item is the token
-        self.token = credentials
+        # Extract the token from credentials
+        self.token = credentials[0]
         self.base_url = "https://api.wit.ai"
         self.api_version = "20240601"
         self.headers = {"Authorization": f"Bearer {self.token}"}
+        # Initialize logger
+        self.logger = logging.getLogger(__name__)
 
     def _get_mime_type(self, format: str) -> str:
         """Maps logical format names to MIME types."""
@@ -36,26 +34,28 @@ class WitAiClient:
         headers = {"Authorization": f"Bearer {self.token}"}
         try:
             response = requests.get(
-                f"{self.base_url}/voices?v={self.api_version}", headers=headers,
+                f"{self.base_url}/voices?v={self.api_version}",
+                headers=headers,
             )
             response.raise_for_status()
             voices = response.json()
             standardized_voices = []
-            for locale, voice_list in voices.items():
-                locale = locale.replace("_", "-")
-                for voice in voice_list:
-                    standardized_voices.append(
-                        {
-                            "id": voice["name"],
-                            "language_codes": [locale],
-                            "name": voice["name"].split("$")[1],
-                            "gender": voice["gender"],
-                            "styles": voice.get("styles", []),
-                        },
-                    )
+            for locale_key, voice_list in voices.items():
+                locale = locale_key.replace("_", "-")
+                voice_entries = [
+                    {
+                        "id": voice["name"],
+                        "language_codes": [locale],
+                        "name": voice["name"].split("$")[1],
+                        "gender": voice["gender"],
+                        "styles": voice.get("styles", []),
+                    }
+                    for voice in voice_list
+                ]
+                standardized_voices.extend(voice_entries)
             return standardized_voices
         except requests.exceptions.RequestException as e:
-            self.logger.exception(f"Failed to fetch voices from Wit.ai: {e}")
+            self.logger.exception("Failed to fetch voices from Wit.ai: %s", e)
             raise
 
     def synth(self, text: str, voice: str, format: str = "pcm") -> bytes:
@@ -73,5 +73,5 @@ class WitAiClient:
             response.raise_for_status()
             return response.content
         except requests.exceptions.RequestException as e:
-            self.logger.exception(f"Failed to synthesize text with Wit.ai: {e}")
+            self.logger.exception("Failed to synthesize text with Wit.ai: %s", e)
             raise

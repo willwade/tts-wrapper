@@ -38,7 +38,11 @@ class SherpaOnnxTTS(AbstractTTS):
 
     # Audio playback callback, called continuously to stream audio from the buffer
     def play_audio_callback(
-        self, outdata: np.ndarray, frames: int, time, status: sd.CallbackFlags,
+        self,
+        outdata: np.ndarray,
+        frames: int,
+        time,
+        status: sd.CallbackFlags,
     ) -> None:
 
         if self.audio_killed or (
@@ -75,7 +79,7 @@ class SherpaOnnxTTS(AbstractTTS):
     def get_voices(self) -> list[dict[str, Any]]:
         return self._client.get_voices()
 
-    def set_voice(self,lang_id: Optional[str] = None) -> None:
+    def set_voice(self, lang_id: Optional[str] = None) -> None:
         self._client.set_voice()
         self.audio_rate = (
             self._client.sample_rate
@@ -100,7 +104,7 @@ class SherpaOnnxTTS(AbstractTTS):
         words = text.split()
         audio_duration = len(audio_bytes) / (2 * self.audio_rate)  # Duration in seconds
         word_duration = audio_duration / len(words)
-        
+
         # Create evenly spaced word timings
         word_timings = []
         for i, word in enumerate(words):
@@ -137,7 +141,7 @@ class SherpaOnnxTTS(AbstractTTS):
     ) -> None:
         """
         Synthesize text to speech and stream it for playback.
-        
+
         Args:
             text: The text to synthesize
             save_to_file_path: Optional path to save the audio file
@@ -146,21 +150,23 @@ class SherpaOnnxTTS(AbstractTTS):
         try:
             # Generate audio data
             audio_data = self.synth_to_bytes(text)
-            
+
             # Save to file if requested
             if save_to_file_path:
                 with open(save_to_file_path, "wb") as f:
                     f.write(audio_data)
-            
+
             # Start playback using base class's system
             self.load_audio(audio_data)
             self.play()
-            
+
         except Exception as e:
             logging.exception("Error in speak_streamed: %s", e)
 
     def synth_to_bytestream(
-        self, text: Any, format: Optional[str] = "wav",
+        self,
+        text: Any,
+        format: Optional[str] = "wav",
     ) -> Generator[bytes, None, None]:
         """Synthesizes text to an in-memory bytestream in the specified audio format.
         Yields audio data chunks as they are generated.
@@ -196,7 +202,9 @@ class SherpaOnnxTTS(AbstractTTS):
 
                 # Convert PCM data to the desired audio format
                 converted_audio = self._convert_audio(
-                    current_audio, format, self.audio_rate,
+                    current_audio,
+                    format,
+                    self.audio_rate,
                 )
                 logging.info(
                     f"Converted audio chunk {chunk_idx} length: {len(converted_audio)} bytes in format: {format}",
@@ -216,7 +224,9 @@ class SherpaOnnxTTS(AbstractTTS):
             if audio_chunks:
                 current_audio = np.concatenate(audio_chunks, axis=0)
                 converted_audio = self._convert_audio(
-                    current_audio, format, self.audio_rate,
+                    current_audio,
+                    format,
+                    self.audio_rate,
                 )
                 logging.info(
                     f"Final converted audio length: {len(converted_audio)} bytes in format: {format}",

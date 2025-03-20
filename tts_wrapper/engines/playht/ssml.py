@@ -22,4 +22,4 @@ class PlayHTSSML(BaseSSMLRoot):
         return str(self._inner)
 
     def clear_ssml(self) -> None:
-        self._inner.clear_ssml() 
+        self._inner.clear_ssml()

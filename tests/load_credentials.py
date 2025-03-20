@@ -110,7 +110,8 @@ def decode_google_creds() -> None:
                     f"Google Service Account JSON created successfully at: {google_sa_path}"
                 )
             else:
-                raise ValueError("Failed to create the Google Service Account file.")
+                msg = "Failed to create the Google Service Account file."
+                raise ValueError(msg)
         except (OSError, ValueError) as e:
             msg = "Failed to decode or save GOOGLE_SA_FILE_B64"
             raise ValueError(msg) from e

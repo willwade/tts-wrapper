@@ -1,5 +1,6 @@
-from tts_wrapper.ssml import BaseSSMLRoot
-from tts_wrapper.ssml import SSMLNode
+from typing import Optional
+
+from tts_wrapper.ssml import BaseSSMLRoot, SSMLNode
 
 
 class eSpeakSSML(BaseSSMLRoot):
@@ -33,9 +34,11 @@ class eSpeakSSML(BaseSSMLRoot):
         """
         attributes = [f'{key}="{value}"' for key, value in kwargs.items()]
         attr_str = " ".join(attributes)
-        return f'<prosody {attr_str}>{text}</prosody>'
+        return f"<prosody {attr_str}>{text}</prosody>"
 
-    def construct_say_as(self, text: str, interpret_as: str, format: str = None) -> str:
+    def construct_say_as(
+        self, text: str, interpret_as: str, format: Optional[str] = None
+    ) -> str:
         """
         Constructs a <say-as> tag with interpret-as and optional format.
         :param text: The text to wrap.
@@ -55,7 +58,9 @@ class eSpeakSSML(BaseSSMLRoot):
         """
         return f'<emphasis level="{level}">{text}</emphasis>'
 
-    def construct_break(self, strength: str = None, time: str = None) -> str:
+    def construct_break(
+        self, strength: Optional[str] = None, time: Optional[str] = None
+    ) -> str:
         """
         Constructs a <break> tag.
         :param strength: Break strength (e.g., none, x-strong).

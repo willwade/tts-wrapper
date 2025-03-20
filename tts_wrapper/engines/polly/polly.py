@@ -40,7 +40,8 @@ class PollyTTS(AbstractTTS):
         return self.generated_audio
 
     def _process_word_timings(
-        self, word_timings: list[tuple[float, str]],
+        self,
+        word_timings: list[tuple[float, str]],
     ) -> list[tuple[float, float, str]]:
         processed_timings = []
         audio_duration = self.get_audio_duration()
@@ -50,7 +51,8 @@ class PollyTTS(AbstractTTS):
                 end = word_timings[i + 1][0]
             else:
                 end = min(
-                    start + 0.5, audio_duration,
+                    start + 0.5,
+                    audio_duration,
                 )  # Use the lesser of 0.5s or remaining audio duration
             processed_timings.append((start, end, word))
 
@@ -83,7 +85,6 @@ class PollyTTS(AbstractTTS):
 
         prosody_content = " ".join(properties)
         return f"<prosody {prosody_content}>{text}</prosody>"
-
 
     def mapped_to_predefined_word(self, volume: str) -> str:
         volume_in_float = float(volume)

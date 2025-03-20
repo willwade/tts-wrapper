@@ -1,10 +1,11 @@
+import base64
+import json
 import logging
 import subprocess
-import json
-import base64
-from typing import Any, Tuple, List, Generator, Dict, Optional, IO
-from pathlib import Path
+from collections.abc import Generator
 from importlib import resources
+from pathlib import Path
+from typing import IO, Any, Optional
 
 
 class AVSynthClient:
@@ -22,8 +23,7 @@ class AVSynthClient:
         # First try the package resources
         try:
             with resources.path(
-                "tts_wrapper.engines.avsynth", 
-                "SpeechBridge"
+                "tts_wrapper.engines.avsynth", "SpeechBridge"
             ) as bridge_path:
                 return bridge_path
         except Exception:
@@ -33,10 +33,11 @@ class AVSynthClient:
     def _check_swift_bridge(self) -> None:
         """Check if Swift is available and we're on macOS."""
         import platform
+
         if platform.system() != "Darwin":
             msg = "AVSynth is only supported on macOS"
             raise RuntimeError(msg)
-        
+
         try:
             subprocess.run(["swift", "--version"], capture_output=True, check=True)
         except (subprocess.CalledProcessError, FileNotFoundError):
@@ -50,20 +51,20 @@ class AVSynthClient:
                 ["swift", "build"],
                 cwd=Path(__file__).parent,
                 check=True,
-                capture_output=True
+                capture_output=True,
             )
         except subprocess.CalledProcessError as e:
             logging.error("Failed to build Swift bridge: %s", e.stderr)
             raise
 
-    def get_voices(self) -> List[dict[str, Any]]:
+    def get_voices(self) -> list[dict[str, Any]]:
         """Get available voices from AVSpeechSynthesizer."""
         try:
             result = subprocess.run(
                 [str(self.bridge_path), "list-voices"],
                 capture_output=True,
                 text=True,
-                check=True
+                check=True,
             )
             return json.loads(result.stdout)
         except subprocess.CalledProcessError as e:
@@ -77,16 +78,16 @@ class AVSynthClient:
         """Convert property values to the format expected by AVSpeechSynthesizer."""
         if value is None:
             return 0.5 if prop == "rate" else 1.0  # Default values
-            
+
         if isinstance(value, str):
             value = value.lower()
             if prop == "rate":
                 rate_map = {
-                    "x-slow": 0.1,    # Very slow
-                    "slow": 0.25,     # Slow
-                    "medium": 0.4,    # Normal speed (slightly slower than default)
-                    "fast": 0.5,      # Default AVSpeech rate
-                    "x-fast": 0.6     # Fast but not too fast
+                    "x-slow": 0.1,  # Very slow
+                    "slow": 0.25,  # Slow
+                    "medium": 0.4,  # Normal speed (slightly slower than default)
+                    "fast": 0.5,  # Default AVSpeech rate
+                    "x-fast": 0.6,  # Fast but not too fast
                 }
                 if value in rate_map:
                     return rate_map[value]
@@ -112,7 +113,7 @@ class AVSynthClient:
                     "low": 0.75,
                     "medium": 1.0,
                     "high": 1.25,
-                    "x-high": 1.5
+                    "x-high": 1.5,
                 }
                 if value in pitch_map:
                     return pitch_map[value]
@@ -122,11 +123,11 @@ class AVSynthClient:
                     return 1.0  # Default to medium pitch
         return float(value)
 
-    def synth(self, text: str, options: dict) -> Tuple[bytes, List[dict]]:
+    def synth(self, text: str, options: dict) -> tuple[bytes, list[dict]]:
         """Synthesize text to speech using AVSpeechSynthesizer."""
         try:
             cmd = [str(self.bridge_path), "synth", text]
-            
+
             # Check if text contains SSML markup
             text = text.strip()
             is_ssml = text.startswith("<speak>") and text.endswith("</speak>")
@@ -135,23 +136,23 @@ class AVSynthClient:
                 cmd.extend(["--is-ssml", "true"])
             else:
                 logging.debug("Using plain text with options: %s", options)
-            
+
             # Only add these options for non-SSML text
             if not is_ssml:
                 # Convert and add options if provided
                 if "voice" in options:
                     logging.debug("Setting voice: %s", options["voice"])
                     cmd.extend(["--voice", options["voice"]])
-                
+
                 # Handle rate, volume, and pitch with shorter lines
                 for prop in ["rate", "volume", "pitch"]:
                     if prop in options:
                         val = str(self._convert_property_value(prop, options[prop]))
                         logging.debug("Setting %s: %s", prop, val)
                         cmd.extend([f"--{prop}", val])
-            
+
             logging.debug("Running command: %s", " ".join(cmd))
-            
+
             # Run with timeout
             try:
                 result = subprocess.run(
@@ -159,23 +160,24 @@ class AVSynthClient:
                     capture_output=True,
                     text=True,
                     check=True,
-                    timeout=30  # Increased to 30 second timeout to match Swift
+                    timeout=30,  # Increased to 30 second timeout to match Swift
                 )
             except subprocess.TimeoutExpired:
                 logging.error("Speech synthesis timed out")
-                raise RuntimeError("Speech synthesis timed out after 30 seconds")
-                
+                msg = "Speech synthesis timed out after 30 seconds"
+                raise RuntimeError(msg)
+
             response = json.loads(result.stdout)
-            
+
             # Convert audio data from base64 if needed
             audio_data = response["audio_data"]
             if isinstance(audio_data, str):
                 audio_data = base64.b64decode(audio_data)
             elif isinstance(audio_data, list):
                 audio_data = bytes(audio_data)
-            
+
             return audio_data, response["word_timings"]
-            
+
         except subprocess.CalledProcessError as e:
             logging.error("Speech synthesis failed: %s", e.stderr)
             raise
@@ -184,10 +186,8 @@ class AVSynthClient:
             raise
 
     def synth_streaming(
-        self, 
-        text: str, 
-        options: Optional[Dict[str, Any]] = None
-    ) -> tuple[Generator[bytes, None, None], list[Dict[str, Any]]]:
+        self, text: str, options: Optional[dict[str, Any]] = None
+    ) -> tuple[Generator[bytes, None, None], list[dict[str, Any]]]:
         """Stream synthesized speech and word timings."""
         if options is None:
             options = {}
@@ -206,8 +206,9 @@ class AVSynthClient:
         )
 
         if process.stdout is None:
-            raise RuntimeError("Failed to open subprocess stdout")
-            
+            msg = "Failed to open subprocess stdout"
+            raise RuntimeError(msg)
+
         stdout: IO[bytes] = process.stdout
 
         # Read format info first
@@ -215,7 +216,8 @@ class AVSynthClient:
         while True:
             line = stdout.readline()
             if not line:
-                raise RuntimeError("Unexpected end of stream")
+                msg = "Unexpected end of stream"
+                raise RuntimeError(msg)
             line_str = line.decode("utf-8").strip()
             if line_str == "---AUDIO_START---":
                 break

@@ -7,7 +7,9 @@ from tts_wrapper import SherpaOnnxClient, SherpaOnnxTTS
 
 def main() -> None:
     # Configure logging to display informational messages
-    logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
+    logging.basicConfig(
+        level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
+    )
 
     try:
         # Initialize the SherpaOnnxClient
@@ -39,17 +41,26 @@ def main() -> None:
 
         # Open the output file in binary write mode
         with open(output_file, "wb") as f:
-            logging.info(f"Starting synthesis and streaming to {output_file} in {audio_format} format.")
+            logging.info(
+                f"Starting synthesis and streaming to {output_file} in {audio_format} format."
+            )
 
             # Iterate over the generator returned by synth_to_bytestream
-            for chunk_idx, audio_chunk in enumerate(tts.synth_to_bytestream(text, format=audio_format)):
-                logging.info(f"Received audio chunk {chunk_idx} with size {len(audio_chunk)} bytes")
+            for chunk_idx, audio_chunk in enumerate(
+                tts.synth_to_bytestream(text, format=audio_format)
+            ):
+                logging.info(
+                    f"Received audio chunk {chunk_idx} with size {len(audio_chunk)} bytes"
+                )
                 f.write(audio_chunk)  # Write the chunk to the file
 
-        logging.info(f"Audio successfully saved to {output_file} in {audio_format} format.")
+        logging.info(
+            f"Audio successfully saved to {output_file} in {audio_format} format."
+        )
 
     except Exception as e:
         logging.exception(f"An error occurred during synthesis: {e}")
+
 
 if __name__ == "__main__":
     main()

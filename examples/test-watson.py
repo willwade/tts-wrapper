@@ -81,14 +81,18 @@ tts.set_output_device(2)
 
 # ## calbacks
 
+
 def my_callback(word: str, start_time: float, end_time: float) -> None:
     end_time - start_time
+
 
 def on_start() -> None:
     pass
 
+
 def on_end() -> None:
     pass
+
 
 try:
     text = "Hello, This is a word timing test"

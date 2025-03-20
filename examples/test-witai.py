@@ -7,13 +7,16 @@ from tts_wrapper import WitAiClient, WitAiTTS
 # Load credentials
 load_credentials("credentials.json")
 
+
 def my_callback(word: str, start_time: float) -> None:
-        pass
+    pass
+
 
 client = WitAiClient(credentials=(os.getenv("WITAI_TOKEN")))
 tts = WitAiTTS(client)
 # voices = tts.get_voices()
 # print(voices)
+
 
 def my_callback(word: str, start_time: float, end_time: float) -> None:
     end_time - start_time
@@ -22,12 +25,13 @@ def my_callback(word: str, start_time: float, end_time: float) -> None:
 try:
     tts.set_output_device(2)
     text = "Hello, This is a word timing test"
-    ssml_text = (tts.ssml
-                 .say_as("Hello,", interpret_as="greeting")
-                 .break_(time="500ms")
-                 .emphasis("This is a word timing test", level="strong")
-                 .prosody("Let's slow this part down", rate="slow")
-                 .add("This is a normal sentence"))
+    ssml_text = (
+        tts.ssml.say_as("Hello,", interpret_as="greeting")
+        .break_(time="500ms")
+        .emphasis("This is a word timing test", level="strong")
+        .prosody("Let's slow this part down", rate="slow")
+        .add("This is a normal sentence")
+    )
     tts.start_playback_with_callbacks(ssml_text, callback=my_callback)
     # Now use `audio_content` as needed
 except Exception:
@@ -37,11 +41,14 @@ except Exception:
 def my_callback(word: str, start_time: float, end_time: float) -> None:
     end_time - start_time
 
+
 def on_start() -> None:
     pass
 
+
 def on_end() -> None:
     pass
+
 
 try:
     text = "Hello, This is a word timing test"

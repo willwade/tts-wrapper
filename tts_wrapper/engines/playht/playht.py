@@ -1,5 +1,5 @@
-from typing import Any, Optional
 import logging
+from typing import Any, Optional
 
 from tts_wrapper.engines.utils import estimate_word_timings
 from tts_wrapper.tts import AbstractTTS
@@ -10,7 +10,7 @@ from .ssml import PlayHTSSML
 
 class PlayHTTTS(AbstractTTS):
     """High-level TTS interface for Play.HT.
-    
+
     Inherits from AbstractTTS which provides:
         - pause()
         - resume()
@@ -41,7 +41,7 @@ class PlayHTTTS(AbstractTTS):
         options = {}
 
         # Strip SSML tags if present - PlayHTSSML will return just the text content
-        if text.startswith('<speak>') and text.endswith('</speak>'):
+        if text.startswith("<speak>") and text.endswith("</speak>"):
             text = str(text)  # PlayHTSSML.__str__ strips SSML tags
 
         # Add voice if set
@@ -60,7 +60,7 @@ class PlayHTTTS(AbstractTTS):
 
         # Get WAV data from API
         wav_data = self._client.synth(text, options)
-        
+
         # Always strip WAV header if present to return clean PCM data
         if wav_data[:4] == b"RIFF":
             return self._strip_wav_header(wav_data)
@@ -73,19 +73,19 @@ class PlayHTTTS(AbstractTTS):
         audio_format: Optional[str] = "wav",
     ) -> None:
         """Synthesize text and stream it for playback.
-        
+
         Optionally save the audio to a file after playback completes.
         """
         try:
             # Get clean PCM data
             audio_bytes = self.synth_to_bytes(text)
-            
+
             # Load the audio into the player
             self.load_audio(audio_bytes)
-            
+
             # Start playback
             self.play()
-            
+
             # Optionally save to file
             if save_to_file_path:
                 if audio_format == "mp3":
@@ -117,4 +117,4 @@ class PlayHTTTS(AbstractTTS):
         super().set_voice(voice_id, lang_id or "en-US")
         self._voice = voice_id
         if lang_id:
-            self._lang = lang_id 
+            self._lang = lang_id

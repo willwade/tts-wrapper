@@ -1,14 +1,15 @@
-import os
 import platform
 import subprocess
 import sys
 
+
 def is_espeak_installed():
     try:
-        subprocess.run(["espeak-ng", "--version"], check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        subprocess.run(["espeak-ng", "--version"], check=True, capture_output=True)
         return True
     except FileNotFoundError:
         return False
+
 
 def install_espeak():
     system = platform.system().lower()
@@ -16,12 +17,16 @@ def install_espeak():
         if system == "linux":
             print("Installing espeak-ng on Linux...")
             subprocess.run(["sudo", "apt-get", "update"], check=True)
-            subprocess.run(["sudo", "apt-get", "install", "-y", "espeak-ng"], check=True)
+            subprocess.run(
+                ["sudo", "apt-get", "install", "-y", "espeak-ng"], check=True
+            )
         elif system == "darwin":
             print("Installing espeak-ng on macOS...")
             subprocess.run(["brew", "install", "espeak-ng"], check=True)
         elif system == "windows":
-            print("Please download and install espeak-ng manually from: https://github.com/espeak-ng/espeak-ng/releases")
+            print(
+                "Please download and install espeak-ng manually from: https://github.com/espeak-ng/espeak-ng/releases"
+            )
             sys.exit(1)
         else:
             print(f"Unsupported platform: {system}")
@@ -29,6 +34,7 @@ def install_espeak():
     except subprocess.CalledProcessError as e:
         print(f"Error during installation: {e}")
         sys.exit(1)
+
 
 def main():
     # Check if espeak-ng is needed and install it if necessary
@@ -41,6 +47,7 @@ def main():
             print("espeak-ng is already installed.")
     else:
         print("No additional system dependencies to install.")
+
 
 if __name__ == "__main__":
     main()

@@ -9,8 +9,8 @@ try:
     tts = GoogleTransTTS(client)
 
     # Get available voices
-#     voices = tts.get_voices()
-#     print("Available voices:", voices)
+    #     voices = tts.get_voices()
+    #     print("Available voices:", voices)
 
     # Set the voice using ISO code
     iso_code = "en-co.uk"  # Example ISO code for the voice

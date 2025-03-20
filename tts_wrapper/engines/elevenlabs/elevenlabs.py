@@ -1,6 +1,7 @@
 import re
 from typing import Any, Optional
 
+from tts_wrapper.exceptions import ModuleNotInstalled
 from tts_wrapper.tts import AbstractTTS
 
 from . import ElevenLabsClient
@@ -31,12 +32,13 @@ class ElevenLabsTTS(AbstractTTS):
         if "volume=" in prosody_text:
             volume = self.get_volume_value(prosody_text)
             self.generated_audio = self.adjust_volume_value(
-                self.generated_audio, volume,
+                self.generated_audio,
+                volume,
             )
 
         # check if wav file has header. Strip header to make it raw
         if self.generated_audio[:4] == b"RIFF":
-            self.generated_audio = tts._strip_wav_header(self.generated_audio)
+            self.generated_audio = self._strip_wav_header(self.generated_audio)
 
         return self.generated_audio
 
@@ -77,7 +79,6 @@ class ElevenLabsTTS(AbstractTTS):
         output_samples = (clipped_audio * 32768).astype(np.int16)
         return output_samples.tobytes()
 
-
     def get_volume_value(self, text: str) -> float:
         pattern = r'volume="(\d+)"'
         match = re.search(pattern, text)
@@ -107,10 +108,10 @@ class ElevenLabsTTS(AbstractTTS):
         # text_with_tag = f'<prosody {property}="{volume_in_words}">{text}</prosody>'
         return f"<prosody {prosody_content}>{text}</prosody>"
 
-
     @property
-    def ssml(self)  -> "ElevenLabsSSMLRoot":
+    def ssml(self) -> "ElevenLabsSSMLRoot":
         from .ssml import ElevenLabsSSMLRoot  # pylint: disable=import-outside-toplevel
+
         return ElevenLabsSSMLRoot()
 
     def set_voice(self, voice_id: str, lang_id: Optional[str] = None) -> None:

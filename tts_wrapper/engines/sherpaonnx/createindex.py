@@ -105,7 +105,10 @@ def save_models(merged_models, filepath="merged_models.json") -> None:
 
 
 def merge_models(
-    mms_models, published_models, output_file="merged_models.json", force=False,
+    mms_models,
+    published_models,
+    output_file="merged_models.json",
+    force=False,
 ):
     # Load existing models if file exists and force flag is not set
     if os.path.exists(output_file) and not force:
@@ -173,7 +176,7 @@ def extract_language_code_vits(url, developer_type, developer, config_data=None)
 
     # Handle Piper models (e.g., vits-piper-en_GB-alan-low)
     if developer == "piper":
-        lang_match = re.search(r'vits-piper-(\w+)_(\w+)-', filename)
+        lang_match = re.search(r"vits-piper-(\w+)_(\w+)-", filename)
         if lang_match:
             lang_code = lang_match.group(1).lower()
             region = lang_match.group(2)
@@ -182,14 +185,14 @@ def extract_language_code_vits(url, developer_type, developer, config_data=None)
     # Handle Mimic3 models - try URL patterns first
     if developer == "mimic3":
         # Try standard pattern first (e.g., vits-mimic3-pl_PL-m-ailabs_low)
-        lang_match = re.search(r'vits-mimic3-(\w+)_(\w+)-', filename)
+        lang_match = re.search(r"vits-mimic3-(\w+)_(\w+)-", filename)
         if lang_match:
             lang_code = lang_match.group(1).lower()
             region = lang_match.group(2)
             return [(lang_code, region)]
-            
+
         # Try simple pattern (e.g., vits-mimic3-fa-haaniye_low)
-        lang_match = re.search(r'vits-mimic3-([a-z]{2})-', filename.lower())
+        lang_match = re.search(r"vits-mimic3-([a-z]{2})-", filename.lower())
         if lang_match:
             lang_code = lang_match.group(1)
             try:
@@ -200,7 +203,7 @@ def extract_language_code_vits(url, developer_type, developer, config_data=None)
             except LookupError:
                 pass
             return [(lang_code, "Unknown")]
-            
+
         # If URL patterns fail, try getting info from README
         lang_info = extract_mimic3_language_info(url)
         if lang_info:
@@ -208,7 +211,7 @@ def extract_language_code_vits(url, developer_type, developer, config_data=None)
 
     # Handle Coqui models (e.g., vits-coqui-sv-cv)
     if developer == "coqui":
-        lang_match = re.search(r'vits-coqui-(\w+)-', filename)
+        lang_match = re.search(r"vits-coqui-(\w+)-", filename)
         if lang_match:
             lang_code = lang_match.group(1).lower()
             try:
@@ -222,11 +225,10 @@ def extract_language_code_vits(url, developer_type, developer, config_data=None)
             return [(lang_code, "Unknown")]
 
     # Fallback to extracting from config if available
-    if config_data:
-        if isinstance(config_data, dict):
-            lang_code = config_data.get("language", "").lower()
-            if lang_code:
-                return [(lang_code, "Unknown")]
+    if config_data and isinstance(config_data, dict):
+        lang_code = config_data.get("language", "").lower()
+        if lang_code:
+            return [(lang_code, "Unknown")]
 
     # Try to extract from URL if no other method worked
     lang_match = lang_code_pattern.search(url)
@@ -239,17 +241,17 @@ def extract_language_code_vits(url, developer_type, developer, config_data=None)
 def extract_piper_language_info(url):
     """Extract language information from Piper model's MODEL_CARD file."""
     # Extract language code from the filename pattern: vits-piper-{lang_code}-{name}-{quality}
-    filename = url.split('/')[-1].replace('.tar.bz2', '')
-    if not filename.startswith('vits-piper-'):
+    filename = url.split("/")[-1].replace(".tar.bz2", "")
+    if not filename.startswith("vits-piper-"):
         return None
-        
+
     # Pattern: vits-piper-en_GB-name-quality
-    lang_match = re.search(r'vits-piper-(\w+)_(\w+)-', filename)
+    lang_match = re.search(r"vits-piper-(\w+)_(\w+)-", filename)
     if lang_match:
         lang_code = lang_match.group(1).lower()
         region = lang_match.group(2)
         return [(lang_code, region)]
-        
+
     return None
 
 
@@ -259,30 +261,30 @@ def extract_mimic3_language_info(url):
         readme_content = read_file_from_tar_bz2(url, "README.md")
         if not readme_content:
             return None
-        
+
         # Convert bytes to string if necessary
         if isinstance(readme_content, bytes):
-            readme_content = readme_content.decode('utf-8', errors='ignore')
-        
+            readme_content = readme_content.decode("utf-8", errors="ignore")
+
         # Try to find language information in the first line
-        first_line = readme_content.split('\n')[0].lower()
-        
+        first_line = readme_content.split("\n")[0].lower()
+
         # Common language mappings
         language_mappings = {
-            'persian': 'fa',
-            'farsi': 'fa',
-            'english': 'en',
-            'spanish': 'es',
-            'french': 'fr',
-            'german': 'de',
-            'italian': 'it',
-            'portuguese': 'pt',
-            'russian': 'ru',
-            'chinese': 'zh',
-            'japanese': 'ja',
-            'korean': 'ko'
+            "persian": "fa",
+            "farsi": "fa",
+            "english": "en",
+            "spanish": "es",
+            "french": "fr",
+            "german": "de",
+            "italian": "it",
+            "portuguese": "pt",
+            "russian": "ru",
+            "chinese": "zh",
+            "japanese": "ja",
+            "korean": "ko",
         }
-        
+
         # Try to find any of the language names in the first line
         for lang_name, lang_code in language_mappings.items():
             if lang_name in first_line:
@@ -295,9 +297,9 @@ def extract_mimic3_language_info(url):
                 except LookupError:
                     pass
                 return [(lang_code, "Unknown")]
-        
+
         # If we can't find a match, try to find any ISO language code in the URL
-        url_match = re.search(r'vits-mimic3-([a-z]{2})-', url.lower())
+        url_match = re.search(r"vits-mimic3-([a-z]{2})-", url.lower())
         if url_match:
             lang_code = url_match.group(1)
             try:
@@ -308,10 +310,10 @@ def extract_mimic3_language_info(url):
             except LookupError:
                 pass
             return [(lang_code, "Unknown")]
-            
+
     except Exception as e:
-        print(f"Error extracting Mimic3 language info: {str(e)}")
-    
+        print(f"Error extracting Mimic3 language info: {e!s}")
+
     return None
 
 
@@ -326,11 +328,11 @@ def read_file_from_tar_bz2(url, filename_pattern):
                         file = tar.extractfile(member)
                         return file.read().decode() if file else None
     except Exception as e:
-        print(f"Error reading {filename_pattern} from {url}: {str(e)}")
+        print(f"Error reading {filename_pattern} from {url}: {e!s}")
     return None
 
 
-def get_supported_languages () -> dict:
+def get_supported_languages() -> dict:
     languages_url = "https://huggingface.co/willwade/mms-tts-multilingual-models-onnx/raw/main/languages-supported.json"
     response_json = fetch_data_from_url(languages_url)
 
@@ -339,53 +341,54 @@ def get_supported_languages () -> dict:
         response_json[index]["Iso Code"] = "mms_" + iso_code
 
         url = model["ONNX Model URL"]
-        new_url = url.replace("api/models/", "", 1).replace("/tree/", "/resolve/")    
+        new_url = url.replace("api/models/", "", 1).replace("/tree/", "/resolve/")
         model["ONNX Model URL"] = new_url
         response_json[index]["ONNX Model URL"] = model["ONNX Model URL"]
 
         response_json[index] = transform_json_structure(response_json[index])
-    #result_json['languages_supported'] = response_json
+    # result_json['languages_supported'] = response_json
 
     return response_json
+
 
 def transform_json_structure(input_data):
     """
     Transform a single JSON object to the desired format with nested language information.
-    
+
     Args:
         input_data (dict): Input JSON data
-        
+
     Returns:
         dict: Transformed JSON data
     """
     # Create language information dictionary
     language_info = {
-        "Iso Code": input_data["Iso Code"].split('_')[-1],  # Extract 'abi' from 'mms_abi'
+        "Iso Code": input_data["Iso Code"].split("_")[
+            -1
+        ],  # Extract 'abi' from 'mms_abi'
         "Language Name": input_data["Language Name"],
-        "Country": input_data["Country"]
+        "Country": input_data["Country"],
     }
-    
+
     # Create new structure
-    transformed_data = {
+    return {
         "id": input_data["Iso Code"],
         "language": [language_info],  # Put language info in an array
         "Region": input_data["Region"],
         "ONNX Exists": input_data["ONNX Exists"],
         "Sample Exists": input_data["Sample Exists"],
-        "url": input_data["ONNX Model URL"]
+        "url": input_data["ONNX Model URL"],
     }
-    
-    return transformed_data
 
 
 def combine_json_parts(json_part1, json_part2):
     """
     Combine two JSON dictionaries, only adding 'other' if it doesn't exist in the first dict
-    
+
     Args:
         json_part1 (dict): First JSON part as dictionary
         json_part2 (dict): Second JSON part as dictionary
-    
+
     Returns:
         dict: Combined JSON object
     """
@@ -394,14 +397,15 @@ def combine_json_parts(json_part1, json_part2):
     combined = json_part1.copy()
 
     # Only add 'other' if it doesn't exist in the first dictionary
-    if 'Iso Code' not in combined:
+    if "Iso Code" not in combined:
         # Create a new combined dictionary starting with the object_json
-        
+
         # Add each item from array_json using the ISO code as the key
         for item in json_part2:
             combined[item["id"]] = item
-    
-    return combined    
+
+    return combined
+
 
 # Function to generate a unique model ID
 def generate_model_id(developer, lang_codes, name, quality) -> str:
@@ -411,11 +415,13 @@ def generate_model_id(developer, lang_codes, name, quality) -> str:
         else f"{developer}-{'_'.join(lang_codes)}-{name}"
     )
 
+
 # Function to fetch data from a URL
 def fetch_data_from_url(url: str) -> dict:
     response = requests.get(url)
     response.raise_for_status()
     return response.json()
+
 
 # Main function for fetching GitHub models
 def get_github_release_assets(repo, tag, merged_models, output_file):
@@ -432,7 +438,7 @@ def get_github_release_assets(repo, tag, merged_models, output_file):
     assets = release_info.get("assets", [])
     total_assets = len(assets)
     print(f"\nProcessing {total_assets} models...")
-    
+
     for idx, asset in enumerate(assets, 1):
         filename = asset["name"]
         asset_url = asset["browser_download_url"]
@@ -453,7 +459,7 @@ def get_github_release_assets(repo, tag, merged_models, output_file):
 
         # Check if the model has already been processed and saved
         if filename_no_ext in merged_models:
-            print(f"  → Skipping (already processed)")
+            print("  → Skipping (already processed)")
             continue
 
         # Extract language code, prioritizing config.json, fallback to URL
@@ -461,13 +467,15 @@ def get_github_release_assets(repo, tag, merged_models, output_file):
             asset_url,
             parts[0],
             developer,
-            None  # Skip config data for faster processing
+            None,  # Skip config data for faster processing
         )
-        
+
         # Print language information
         for lang_code, region in lang_codes_and_regions:
             lang_info = get_language_data(lang_code, region)
-            print(f"  → Language: {lang_info['language_name']} ({lang_info['lang_code']}, {lang_info['country']})")
+            print(
+                f"  → Language: {lang_info['language_name']} ({lang_info['lang_code']}, {lang_info['country']})"
+            )
 
         name = parts[3] if len(parts) > 3 else "unknown"
         quality = parts[4] if len(parts) > 4 else "unknown"
@@ -481,7 +489,10 @@ def get_github_release_assets(repo, tag, merged_models, output_file):
         ]
 
         id = generate_model_id(
-            developer, [code for code, _ in lang_codes_and_regions], name, quality,
+            developer,
+            [code for code, _ in lang_codes_and_regions],
+            name,
+            quality,
         )
 
         model_data = {
@@ -491,7 +502,9 @@ def get_github_release_assets(repo, tag, merged_models, output_file):
             "name": name,
             "language": lang_details,
             "quality": quality,
-            "sample_rate": 22050 if developer == "piper" else 16000,  # Default sample rates
+            "sample_rate": (
+                22050 if developer == "piper" else 16000
+            ),  # Default sample rates
             "num_speakers": 1,
             "url": asset_url,
             "compression": True,
@@ -504,6 +517,7 @@ def get_github_release_assets(repo, tag, merged_models, output_file):
 
     print(f"\nProcessed {total_assets} models successfully!")
     return merged_models
+
 
 # Known ISO 639-1 language codes (you can expand this as needed)
 known_lang_codes = {
@@ -556,18 +570,19 @@ def main() -> None:
 
     if merged_models_path.exists():
         print("merged models already exist, getting supported languages")
-        with open(merged_models_path, 'r') as file:
-            merge_models = json.load(file)
+        with open(merged_models_path) as file:
+            json.load(file)
     else:
         merged_models = get_github_release_assets(repo, tag, merged_models, output_file)
 
-    #add languages json to merged_models.json
+    # add languages json to merged_models.json
     print("Get suppported languages\n")
     languages_json = get_supported_languages()
 
-    models_languages = combine_json_parts (merged_models, languages_json)
-    print (models_languages)
+    models_languages = combine_json_parts(merged_models, languages_json)
+    print(models_languages)
     save_models(models_languages, output_file)
+
 
 if __name__ == "__main__":
     main()

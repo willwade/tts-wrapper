@@ -1,9 +1,9 @@
 import contextlib
 import os
+import sys
 import time
 from pathlib import Path
 from unittest.mock import Mock
-import sys
 
 import pytest
 
@@ -16,6 +16,8 @@ from tts_wrapper import (
     GoogleTTS,
     MicrosoftClient,
     MicrosoftTTS,
+    PlayHTClient,
+    PlayHTTTS,
     PollyClient,
     PollyTTS,
     SherpaOnnxClient,
@@ -26,8 +28,6 @@ from tts_wrapper import (
     WitAiTTS,
     eSpeakClient,
     eSpeakTTS,
-    PlayHTClient,
-    PlayHTTTS,
 )
 
 # Import AVSynth conditionally for macOS
@@ -37,11 +37,13 @@ if sys.platform == "darwin":
 # Dictionary to hold the TTS clients and their respective setup functions
 TTS_CLIENTS = {
     "polly": {
-        "client": lambda: PollyClient(credentials=(
-            os.getenv("POLLY_REGION"),
-            os.getenv("POLLY_AWS_KEY_ID"),
-            os.getenv("POLLY_AWS_ACCESS_KEY"),
-        )),
+        "client": lambda: PollyClient(
+            credentials=(
+                os.getenv("POLLY_REGION"),
+                os.getenv("POLLY_AWS_KEY_ID"),
+                os.getenv("POLLY_AWS_ACCESS_KEY"),
+            )
+        ),
         "class": PollyTTS,
     },
     "google": {
@@ -49,18 +51,22 @@ TTS_CLIENTS = {
         "class": GoogleTTS,
     },
     "microsoft": {
-        "client": lambda: MicrosoftClient(credentials=(
-            os.getenv("MICROSOFT_TOKEN"),
-            os.getenv("MICROSOFT_REGION"),
-        )),
+        "client": lambda: MicrosoftClient(
+            credentials=(
+                os.getenv("MICROSOFT_TOKEN"),
+                os.getenv("MICROSOFT_REGION"),
+            )
+        ),
         "class": MicrosoftTTS,
     },
     "watson": {
-        "client": lambda: WatsonClient(credentials=(
-            os.getenv("WATSON_API_KEY"),
-            os.getenv("WATSON_REGION"),
-            os.getenv("WATSON_INSTANCE_ID"),
-        )),
+        "client": lambda: WatsonClient(
+            credentials=(
+                os.getenv("WATSON_API_KEY"),
+                os.getenv("WATSON_REGION"),
+                os.getenv("WATSON_INSTANCE_ID"),
+            )
+        ),
         "class": WatsonTTS,
     },
     "elevenlabs": {
@@ -76,7 +82,9 @@ TTS_CLIENTS = {
         "class": GoogleTransTTS,
     },
     "sherpaonnx": {
-        "client": lambda: SherpaOnnxClient(model_path=None, tokens_path=None, model_id="mms_eng"),
+        "client": lambda: SherpaOnnxClient(
+            model_path=None, tokens_path=None, model_id="mms_eng"
+        ),
         "class": SherpaOnnxTTS,
     },
     "espeak": {
@@ -101,11 +109,13 @@ if sys.platform == "darwin":
         "class": AVSynthTTS,
     }
 
+
 def create_tts_client(service):
     config = TTS_CLIENTS[service]
     client = config["client"]()
     tts_class = config["class"]
     return tts_class(client)
+
 
 @pytest.mark.synthetic
 @pytest.mark.parametrize("service", TTS_CLIENTS.keys())
@@ -131,8 +141,8 @@ def test_tts_engine(service) -> None:
             time.sleep(3)
             tts.ssml.clear_ssml()
 
-            tts.set_property("volume","90")
-            tts.set_property("pitch","x-high")
+            tts.set_property("volume", "90")
+            tts.set_property("pitch", "x-high")
 
             text_read_2 = "This is louder than before"
             text_with_prosody = tts.construct_prosody_tag(text_read_2)
@@ -173,6 +183,7 @@ def test_tts_engine(service) -> None:
             tts.speak_streamed(ssml_text_part2)
     except Exception:
         pass
+
 
 @pytest.mark.synthetic
 @pytest.mark.parametrize("service", TTS_CLIENTS.keys())
@@ -218,7 +229,9 @@ def test_playback_with_callbacks(service):
 
     # Check that my_callback was called for each word in the text
     words_in_text = text.split()  # Split the text into individual words
-    assert my_callback.call_count == len(words_in_text), "Callback not called for each word."
+    assert my_callback.call_count == len(
+        words_in_text
+    ), "Callback not called for each word."
 
     # Ensure each callback call has the correct structure: word, start_time, and end_time
     for call, word in zip(my_callback.call_args_list, words_in_text):
@@ -228,30 +241,29 @@ def test_playback_with_callbacks(service):
         assert isinstance(args[2], float), "Expected end_time to be a float"
         assert args[2] > args[1], "End time should be greater than start time"
 
+
 @pytest.mark.synthetic
 def test_sherpaonnx_no_default_download():
     """Test that SherpaOnnxClient respects no_default_download flag."""
     # Initialize client with no_default_download=True
     client = SherpaOnnxClient(
-        model_path=None, 
-        tokens_path=None, 
-        no_default_download=True
+        model_path=None, tokens_path=None, no_default_download=True
     )
-    
+
     # Verify that tts is None (no model downloaded)
     assert client.tts is None
-    
+
     # Verify that model_id is None
     assert client._model_id is None
-    
+
     # Now explicitly set a voice
     client._model_id = "mms_eng"
     client.set_voice()
-    
+
     # Verify that model is now downloaded and initialized
     assert client.tts is not None
     assert client._model_id == "mms_eng"
-    
+
     # Test that we can use the voice after explicit setup
     try:
         client.synth("Test after explicit voice setup")

@@ -16,7 +16,7 @@ voices = tts.get_voices()
 print(f"\nFound {len(voices)} voices:")
 for voice in voices[:20]:  # Show first 20 voices
     # Get first language code from the list
-    language = voice['language_codes'][0] if voice['language_codes'] else 'unknown'
+    language = voice["language_codes"][0] if voice["language_codes"] else "unknown"
     print(f"- {voice['name']} ({language}) [ID: {voice['id']}]")
     print(f"  Gender: {voice['gender']}")
 
@@ -49,8 +49,10 @@ print(f"Text to synthesize: {text}")
 def word_callback(word: str, start: float, end: float) -> None:
     """Called for each word as it's spoken."""
     duration = end - start
-    print(f"Word: {word:12} Start: {start:5.2f}s  End: {end:5.2f}s  "
-          f"Duration: {duration:5.2f}s")
+    print(
+        f"Word: {word:12} Start: {start:5.2f}s  End: {end:5.2f}s  "
+        f"Duration: {duration:5.2f}s"
+    )
 
 
 def on_start():
@@ -71,8 +73,10 @@ audio_bytes = tts.synth_to_bytes(text)
 print("\nWord timings received:")
 for start, end, word in tts.timings:
     duration = end - start
-    print(f"Word: {word:12} Start: {start:5.2f}s  End: {end:5.2f}s  "
-          f"Duration: {duration:5.2f}s")
+    print(
+        f"Word: {word:12} Start: {start:5.2f}s  End: {end:5.2f}s  "
+        f"Duration: {duration:5.2f}s"
+    )
 
 # Now play with callbacks
 print("\nStarting playback...")

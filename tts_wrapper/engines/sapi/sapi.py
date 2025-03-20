@@ -1,21 +1,24 @@
-from tts_wrapper.tts import AbstractTTS
-from .client import SAPIClient
-from collections.abc import Generator
-from typing import Any, Callable, NoReturn, Union
-from .ssml import SAPISSML
 import sys
+from collections.abc import Generator
+from typing import Any, Optional, Union
+
+from tts_wrapper.tts import AbstractTTS
+
+from .client import SAPIClient
 
 if sys.platform == "win32":
     try:
         import comtypes.client
     except ImportError:
-        raise ImportError("comtypes is required for SAPI support. Install it with `pip install py3-tts-wrapper[sapi]`.")
+        msg = "comtypes is required for SAPI support. Install it with `pip install py3-tts-wrapper[sapi]`."
+        raise ImportError(msg)
 else:
-    raise ImportError("SAPI is only supported on Windows.")
+    msg = "SAPI is only supported on Windows."
+    raise ImportError(msg)
 
 
 class SAPIEngine(AbstractTTS):
-    def __init__(self, sapi_version: int = 5, voice: str = None) -> None:
+    def __init__(self, sapi_version: int = 5, voice: Optional[str] = None) -> None:
         super().__init__()
         self.client = SAPIClient(sapi_version=sapi_version)
         self.voice = voice or "default"

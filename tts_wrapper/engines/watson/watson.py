@@ -27,7 +27,8 @@ class WatsonTTS(AbstractTTS):
         return 0.0
 
     def _process_word_timings(
-        self, word_timings: list[tuple[float, str]],
+        self,
+        word_timings: list[tuple[float, str]],
     ) -> list[tuple[float, float, str]]:
         processed_timings = []
         audio_duration = self.get_audio_duration()
@@ -37,7 +38,8 @@ class WatsonTTS(AbstractTTS):
                 end_time = word_timings[i + 1][0]
             else:
                 end_time = min(
-                    float(start_time) + 0.5, audio_duration,
+                    float(start_time) + 0.5,
+                    audio_duration,
                 )  # Convert start_time to float
             processed_timings.append((float(start_time), float(end_time), word))
 
@@ -49,7 +51,8 @@ class WatsonTTS(AbstractTTS):
 
         try:
             self.generated_audio = self._client.synth_with_timings(
-                str(text), self._voice,
+                str(text),
+                self._voice,
             )
             self.audio_format = "wav"
 

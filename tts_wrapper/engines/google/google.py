@@ -42,7 +42,11 @@ class GoogleTTS(AbstractTTS):
 
     # Audio playback callback, called continuously to stream audio from the buffer
     def play_audio_callback(
-        self, outdata: np.ndarray, frames: int, time_info, status: sd.CallbackFlags,
+        self,
+        outdata: np.ndarray,
+        frames: int,
+        time_info,
+        status: sd.CallbackFlags,
     ) -> None:
         if self.audio_killed or (
             self.audio_started and self.audio_buffer.empty() and self.audio_stopped
@@ -91,7 +95,10 @@ class GoogleTTS(AbstractTTS):
             text = str(text)
         logging.info("Synthesizing text: %s", text)
         result = self._client.synth(
-            str(text), self._voice, self._lang, include_timepoints=True,
+            str(text),
+            self._voice,
+            self._lang,
+            include_timepoints=True,
         )
         self.generated_audio = result["audio_content"]
         # No need to set audio_format here; it's managed in synth_to_bytestream
@@ -105,7 +112,8 @@ class GoogleTTS(AbstractTTS):
         return self.generated_audio
 
     def _process_word_timings(
-        self, timepoints: list[dict[str, Any]],
+        self,
+        timepoints: list[dict[str, Any]],
     ) -> list[tuple[float, float, str]]:
         processed_timings = []
         audio_duration = self.get_audio_duration()
@@ -127,7 +135,8 @@ class GoogleTTS(AbstractTTS):
                 end_time = float(word_timepoints[i + 1]["timeSeconds"])
             else:
                 end_time = min(
-                    start_time + 0.5, audio_duration,
+                    start_time + 0.5,
+                    audio_duration,
                 )  # Use the lesser of 0.5s or remaining audio duration
 
             processed_timings.append((start_time, end_time, word))
@@ -162,7 +171,6 @@ class GoogleTTS(AbstractTTS):
 
         return f"<prosody {prosody_content}>{text}</prosody>"
 
-
     def mapped_to_predefined_word(self, volume: str) -> str:
         volume_in_float = float(volume)
         if volume_in_float == 0:
@@ -184,7 +192,9 @@ class GoogleTTS(AbstractTTS):
         return re.split(r"(?<=[.!?]) +", text)
 
     def synth_to_bytestream(
-        self, text: Any, format: Optional[str] = "wav",
+        self,
+        text: Any,
+        format: Optional[str] = "wav",
     ) -> Generator[bytes, None, None]:
         """Synthesizes text to an in-memory bytestream and retrieves word timings using.
 
@@ -200,18 +210,21 @@ class GoogleTTS(AbstractTTS):
             self.timings = estimate_word_timings(text)
 
             ## Split the text into smaller segments (e.g., sentences) for incremental synthesis
-            #text_segments = self._split_text(text)
+            # text_segments = self._split_text(text)
 
-            #for segment_idx, segment in enumerate(text_segments):
-        # Generate audio stream data and yield as chunks
+            # for segment_idx, segment in enumerate(text_segments):
+            # Generate audio stream data and yield as chunks
             for timing in self.timings:
-                #logging.info("Synthesizing segment {segment_idx}: %s", segment)
+                # logging.info("Synthesizing segment {segment_idx}: %s", segment)
                 word = timing[2]
                 logging.info("Synthesizing segment %s", word)
                 round(timing[1] - timing[0], 4)
-                #print(f"timing: {word_time} seconds")
+                # print(f"timing: {word_time} seconds")
                 result = self._client.synth(
-                    str(word), self._voice, self._lang, include_timepoints=True,
+                    str(word),
+                    self._voice,
+                    self._lang,
+                    include_timepoints=True,
                 )
                 audio_bytes = result["audio_content"]
 
@@ -233,7 +246,9 @@ class GoogleTTS(AbstractTTS):
                     audio_bytes = audio_bytes[44:]
                     pcm_data = np.frombuffer(audio_bytes, dtype=np.int16)
                     converted_audio = self._convert_audio(
-                        pcm_data, format, self.audio_rate,
+                        pcm_data,
+                        format,
+                        self.audio_rate,
                     )
                     chunk_size = 4096  # Number of bytes per chunk
                     audio_io = BytesIO(converted_audio)

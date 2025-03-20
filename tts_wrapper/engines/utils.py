@@ -1,7 +1,4 @@
-import os
-import random
 import re
-import string
 import tempfile
 import wave
 from io import BytesIO
@@ -18,6 +15,7 @@ def process_wav(raw: bytes) -> bytes:
 def create_temp_filename(suffix="") -> str:
     with tempfile.NamedTemporaryFile(suffix=suffix, delete=False) as temp_file:
         return temp_file.name
+
 
 def estimate_word_timings(text: str, wpm: int = 150) -> list[tuple[float, float, str]]:
     # Remove SSML tags
@@ -52,11 +50,10 @@ def estimate_word_timings(text: str, wpm: int = 150) -> list[tuple[float, float,
 
         # Add natural variations
         variation = (hash(word) % 20 - 10) / 100  # -10% to +10% variation
-        duration *= (1 + variation)
+        duration *= 1 + variation
 
         end_time = current_time + duration
         timings.append((current_time, end_time, word))
         current_time = end_time
 
     return timings
-
