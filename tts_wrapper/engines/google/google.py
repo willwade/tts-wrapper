@@ -94,10 +94,10 @@ class GoogleTTS(AbstractTTS):
             text = self.ssml.add(text)
             text = str(text)
         logging.info("Synthesizing text: %s", text)
-        
+
         # Use voice_id if provided, otherwise use the default voice
         voice_to_use = voice_id or self._voice
-        
+
         result = self._client.synth(
             str(text),
             voice_to_use,

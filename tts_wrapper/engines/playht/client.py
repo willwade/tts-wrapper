@@ -24,11 +24,11 @@ class PlayHTClient:
         else:
             self.api_key = api_key
             self.user_id = user_id
-        
+
         if not self.api_key:
             msg = "API key is required"
             raise ValueError(msg)
-        
+
         if not self.user_id:
             # Try to get user_id from environment variable
             import os
@@ -36,7 +36,7 @@ class PlayHTClient:
             if not self.user_id:
                 msg = "User ID is required"
                 raise ValueError(msg)
-        
+
         self.base_url = "https://api.play.ht/api/v2"
         self.headers = {
             "accept": "application/json",

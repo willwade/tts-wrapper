@@ -26,10 +26,10 @@ class WitAiTTS(AbstractTTS):
             text = self.ssml.add(str(text))
         word_timings = estimate_word_timings(str(text))
         self.set_timings(word_timings)
-        
+
         # Use voice_id if provided, otherwise use the default voice
         voice_to_use = voice_id or self._voice
-        
+
         generated_audio = self._client.synth(str(text), voice_to_use)
 
         if generated_audio[:4] == b"RIFF":

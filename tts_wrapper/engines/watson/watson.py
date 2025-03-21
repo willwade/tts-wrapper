@@ -52,7 +52,7 @@ class WatsonTTS(AbstractTTS):
         try:
             # Use voice_id if provided, otherwise use the default voice
             voice_to_use = voice_id or self._voice
-            
+
             self.generated_audio = self._client.synth_with_timings(
                 str(text),
                 voice_to_use,

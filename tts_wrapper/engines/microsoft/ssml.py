@@ -15,8 +15,8 @@ class MicrosoftSSML(BaseSSMLRoot):
             {
                 "version": "1.0",
                 "xml:lang": self.lang,
-                "xmlns": "https://www.w3.org/2001/10/synthesis",
-                "xmlns:mstts": "https://www.w3.org/2001/mstts",
+                "xmlns": "http://www.w3.org/2001/10/synthesis",
+                "xmlns:mstts": "http://www.w3.org/2001/mstts",
             },
         ).add(self._inner)
         self._prosody = None

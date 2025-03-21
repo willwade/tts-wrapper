@@ -36,7 +36,7 @@ class AVSynthTTS(AbstractTTS):
 
         # Use voice_id if provided, otherwise use the default voice
         voice_to_use = voice_id or self._voice
-        
+
         # Add voice if set and text is not SSML
         if voice_to_use and not self._is_ssml(text):
             options["voice"] = voice_to_use

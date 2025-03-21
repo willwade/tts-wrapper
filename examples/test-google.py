@@ -78,25 +78,40 @@ tts.set_output_device(4)
 # ## calbacks
 #
 def my_callback(word: str, start_time: float, end_time: float) -> None:
-    end_time - start_time
+    duration = end_time - start_time
+    print(f"Word: {word}, Start Time: {start_time:.3f}, End Time: {end_time:.3f}, Duration: {duration:.3f}s")
 
 
 def on_start() -> None:
-    pass
+    print("Speech started")
 
 
 def on_end() -> None:
-    pass
+    print("Speech ended")
 
+
+import time
 
 try:
     text = "Hello, This is a word timing test"
+    print(f"\nText to synthesize: {text}")
+    words_in_text = text.split()
+    print(f"Words in text: {len(words_in_text)}")
+    
+    # Connect the callbacks
     tts.connect("onStart", on_start)
     tts.connect("onEnd", on_end)
+    
+    # Start playback with callbacks
     tts.start_playback_with_callbacks(text, callback=my_callback)
-except Exception:
-    pass
-
+    
+    # Wait for speech to complete
+    while tts.isplaying:
+        time.sleep(0.1)
+        
+    print("Playback complete")
+except Exception as e:
+    print(f"Error in callback test: {e}")
 
 # # volume control test
 # print("Volume setting is from 0-100")
