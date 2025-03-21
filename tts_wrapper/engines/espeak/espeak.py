@@ -120,16 +120,29 @@ class eSpeakTTS(AbstractTTS):
         """
         processed_timings = []
         audio_duration = self.get_audio_duration()
-
+        
+        # Track positions to avoid duplicate words
+        seen_positions = set()
+        
         for i, word_info in enumerate(word_timings):
             start_time = word_info["start_time"]
             word_text = word_info["word"]
+            position = word_info["text_position"]
+            
+            # Skip if we've already processed a word at this position
+            # This helps prevent duplicates from our expanded word boundary approach
+            if position in seen_positions:
+                continue
+                
+            seen_positions.add(position)
 
             # Determine the end time
             if i + 1 < len(word_timings):
                 end_time = word_timings[i + 1]["start_time"]
             else:
-                end_time = audio_duration  # Last word ends with audio duration
+                # For the last word, use the audio duration
+                # Make sure it's valid (greater than start_time)
+                end_time = max(audio_duration, start_time + 0.2)  # Ensure at least 200ms duration
 
             # Append the processed tuple
             processed_timings.append((start_time, end_time, word_text))

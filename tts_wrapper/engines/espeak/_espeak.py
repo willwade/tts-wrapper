@@ -1,11 +1,13 @@
-import ctypes
 import logging
 import queue
 import struct
+import ctypes
 from ctypes import (
     CFUNCTYPE,
     POINTER,
     Structure,
+    Union,
+    c_char,
     c_char_p,
     c_int,
     c_short,
@@ -16,13 +18,13 @@ from ctypes import (
 from typing import Any
 
 
-class EventID(ctypes.Union):
+class EventID(Union):
     """Union for event ID in EspeakEvent."""
 
     _fields_ = [
-        ("number", ctypes.c_int),  # Used for WORD and SENTENCE events
-        ("name", ctypes.c_char_p),  # Used for MARK and PLAY events
-        ("string", ctypes.c_char * 8),  # Used for phoneme names
+        ("number", c_int),  # Used for WORD and SENTENCE events
+        ("name", c_char_p),  # Used for MARK and PLAY events
+        ("string", c_char * 8),  # Used for phoneme names
     ]
 
 
@@ -30,13 +32,13 @@ class EspeakEvent(Structure):
     """Structure for eSpeak events."""
 
     _fields_ = [
-        ("type", ctypes.c_int),  # Event type (e.g., word, sentence, etc.)
-        ("unique_identifier", ctypes.c_uint),  # Message identifier
-        ("text_position", ctypes.c_int),  # Start position in the text
-        ("length", ctypes.c_int),  # Length of the text segment
-        ("audio_position", ctypes.c_int),  # Time in milliseconds within the audio
-        ("sample", ctypes.c_int),  # Sample ID (internal use)
-        ("user_data", ctypes.c_void_p),  # Pointer supplied by the calling program
+        ("type", c_int),  # Event type (e.g., word, sentence, etc.)
+        ("unique_identifier", c_uint),  # Message identifier
+        ("text_position", c_int),  # Start position in the text
+        ("length", c_int),  # Length of the text segment
+        ("audio_position", c_int),  # Time in milliseconds within the audio
+        ("sample", c_int),  # Sample ID (internal use)
+        ("user_data", c_void_p),  # Pointer supplied by the calling program
         ("id", EventID),  # Union for event ID
     ]
 
@@ -306,10 +308,44 @@ class EspeakLib:
                 if current_event.type == self.EVENT_WORD:
                     try:
                         # Extract word text from input
-                        word_text = self.input_text[
-                            current_event.text_position : current_event.text_position
-                            + current_event.length
-                        ].strip()
+                        text_position = current_event.text_position
+                        length = current_event.length
+
+                        # Get the raw word segment from the input text
+                        raw_word_text = self.input_text[text_position:text_position + length]
+
+                        # Find the complete word by expanding to word boundaries
+                        # Look backward for the start of the word (whitespace or beginning of text)
+                        start_pos = text_position
+                        while start_pos > 0 and not self.input_text[start_pos-1].isspace():
+                            start_pos -= 1
+
+                        # Look forward for the end of the word (whitespace or end of text)
+                        end_pos = text_position + length
+                        while end_pos < len(self.input_text) and not self.input_text[end_pos].isspace():
+                            end_pos += 1
+
+                        # Extract the complete word
+                        word_text = self.input_text[start_pos:end_pos].strip()
+
+                        # Split into individual words if we have multiple words
+                        words = word_text.split()
+                        if len(words) > 1:
+                            # Use only the word that contains the original position
+                            for word in words:
+                                word_start = self.input_text.find(word, start_pos, end_pos)
+                                word_end = word_start + len(word)
+                                if word_start <= text_position < word_end:
+                                    word_text = word
+                                    start_pos = word_start
+                                    end_pos = word_end
+                                    break
+
+                        # Add detailed debug logging to compare original and expanded word
+                        logging.debug(
+                            f"Word expansion: Original='{raw_word_text}' ({text_position}:{text_position+length}), "
+                            f"Expanded='{word_text}' ({start_pos}:{end_pos})"
+                        )
 
                         # Skip empty or whitespace-only words
                         if not word_text or word_text.isspace():
@@ -338,9 +374,11 @@ class EspeakLib:
 
                         word = {
                             "start_time": start_time,
-                            "text_position": current_event.text_position,
-                            "length": current_event.length,
+                            "text_position": start_pos,  # Use the adjusted position
+                            "length": end_pos - start_pos,  # Use the adjusted length
                             "word": word_text,
+                            "original_position": text_position,  # Keep original for debugging
+                            "original_length": length,  # Keep original for debugging
                         }
                         logging.debug(f"Word event: {word}")
                         self.word_timings.append(word)
