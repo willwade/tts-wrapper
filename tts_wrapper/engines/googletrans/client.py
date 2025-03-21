@@ -93,6 +93,11 @@ class GoogleTransClient:
         tld = parts[1] if len(parts) > 1 else "com"
         return lang, tld
 
+    @property
+    def voice(self) -> str:
+        """Returns the current voice ID (combination of lang and tld)."""
+        return f"{self.lang}-{self.tld}"
+
     def set_voice(self, voice_id: str) -> None:
         self.lang, self.tld = self._parse_voice_id(voice_id)
 
