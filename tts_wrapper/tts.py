@@ -508,9 +508,7 @@ class AbstractTTS(ABC):
         """
         try:
             # Check if the engine supports streaming
-            if hasattr(self, "stream_synthesis") and callable(
-                self.stream_synthesis
-            ):
+            if hasattr(self, "stream_synthesis") and callable(self.stream_synthesis):
                 # Get streaming generator
                 generator = self.stream_synthesis(text, voice_id)
 
@@ -547,7 +545,9 @@ class AbstractTTS(ABC):
                     word_timings = []
                     for i, word in enumerate(words):
                         start_time = i * word_duration
-                        end_time = (i + 1) * word_duration if i < len(words) - 1 else duration
+                        end_time = (
+                            (i + 1) * word_duration if i < len(words) - 1 else duration
+                        )
                         word_timings.append((start_time, end_time, word))
                     self.set_timings(word_timings)
 
@@ -629,7 +629,9 @@ class AbstractTTS(ABC):
                 self.stream.close()
                 self.stream = None
 
-    def set_timings(self, timings: list[tuple[float, str] | tuple[float, float, str]]) -> None:
+    def set_timings(
+        self, timings: list[tuple[float, str] | tuple[float, float, str]]
+    ) -> None:
         """
         Set the word timings for the synthesized speech.
 
@@ -639,8 +641,10 @@ class AbstractTTS(ABC):
             A list of tuples containing word timings.
             Each tuple can be either (start_time, word) or (start_time, end_time, word).
         """
+        logging.debug("Setting timings: %s", timings)
         self.timings = []
         if not timings:
+            logging.debug("No timings provided, returning empty list")
             return
 
         # Calculate total duration for estimating end times if needed
@@ -655,6 +659,7 @@ class AbstractTTS(ABC):
         if total_duration == 0 and timings:
             # Estimate based on the last start time plus a small buffer
             total_duration = timings[-1][0] + 0.5
+            logging.debug("Estimated total duration: %s", total_duration)
 
         # Process the timings
         for i, timing in enumerate(timings):
@@ -663,8 +668,13 @@ class AbstractTTS(ABC):
                 # Use ternary operator for cleaner code
                 end_time = timings[i + 1][0] if i < len(timings) - 1 else total_duration
                 self.timings.append((start_time, end_time, word))
+                logging.debug("Processed 2-tuple timing: %s", timing)
+                logging.debug("Converted to: (%s, %s, %s)", start_time, end_time, word)
             else:
                 self.timings.append(timing)
+                logging.debug("Added 3-tuple timing: %s", timing)
+
+        logging.debug("Final timings: %s", self.timings)
 
     def get_timings(self) -> list[tuple[float, float, str]]:
         """Retrieve the word timings for the spoken text."""
@@ -802,7 +812,9 @@ class AbstractTTS(ABC):
 
     def _convert_to_ssml(self, text: str) -> str:
         """Convert plain text to simple SSML."""
-        ssml_parts = ['<speak version="1.0" xmlns="http://www.w3.org/2001/10/synthesis">']
+        ssml_parts = [
+            '<speak version="1.0" xmlns="http://www.w3.org/2001/10/synthesis">'
+        ]
         words = text.split()
         for i, word in enumerate(words):
             ssml_parts.append(f'<mark name="word{i}"/>{word}')
@@ -829,7 +841,11 @@ class AbstractTTS(ABC):
             logging.exception("Failed to set output device")
 
     def _convert_pcm_to_format(
-        self, pcm_data: np.ndarray, output_format: str, samplerate: int, channels: int = 1
+        self,
+        pcm_data: np.ndarray,
+        output_format: str,
+        samplerate: int,
+        channels: int = 1,
     ) -> bytes:
         """
         Convert PCM data to the specified audio format.

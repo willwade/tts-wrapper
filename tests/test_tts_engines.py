@@ -65,9 +65,9 @@ def check_credentials(service):
         if service == "polly":
             client = PollyClient(
                 credentials=(
+                    os.getenv("POLLY_REGION"),
                     os.getenv("POLLY_AWS_KEY_ID"),
                     os.getenv("POLLY_AWS_ACCESS_KEY"),
-                    os.getenv("POLLY_REGION"),
                 )
             )
         elif service == "google":
@@ -78,7 +78,7 @@ def check_credentials(service):
             client = MicrosoftClient(
                 credentials=(
                     os.getenv("MICROSOFT_TOKEN"),
-                    os.getenv("MICROSOFT_REGION")
+                    os.getenv("MICROSOFT_REGION"),
                 )
             )
         elif service == "watson":
@@ -90,13 +90,9 @@ def check_credentials(service):
                 )
             )
         elif service == "elevenlabs":
-            client = ElevenLabsClient(
-                credentials=os.getenv("ELEVENLABS_API_KEY")
-            )
+            client = ElevenLabsClient(credentials=os.getenv("ELEVENLABS_API_KEY"))
         elif service == "witai":
-            client = WitAiClient(
-                credentials=os.getenv("WITAI_API_KEY")
-            )
+            client = WitAiClient(credentials=os.getenv("WITAI_API_KEY"))
         elif service == "googletrans":
             client = GoogleTransClient()
         elif service == "sherpaonnx":
@@ -105,10 +101,7 @@ def check_credentials(service):
             client = eSpeakClient()
         elif service == "playht":
             client = PlayHTClient(
-                credentials=(
-                    os.getenv("PLAYHT_USER_ID"),
-                    os.getenv("PLAYHT_API_KEY")
-                )
+                credentials=(os.getenv("PLAYHT_USER_ID"), os.getenv("PLAYHT_API_KEY"))
             )
         elif service == "avsynth" and sys.platform == "darwin":
             client = AVSynthClient()
@@ -135,9 +128,9 @@ def create_tts_client(service):
     if service == "polly":
         client = PollyClient(
             credentials=(
+                os.getenv("POLLY_REGION"),
                 os.getenv("POLLY_AWS_KEY_ID"),
                 os.getenv("POLLY_AWS_ACCESS_KEY"),
-                os.getenv("POLLY_REGION"),
             )
         )
         return PollyTTS(client)
@@ -148,10 +141,7 @@ def create_tts_client(service):
         return GoogleTTS(client)
     if service == "microsoft":
         client = MicrosoftClient(
-            credentials=(
-                os.getenv("MICROSOFT_TOKEN"),
-                os.getenv("MICROSOFT_REGION")
-            )
+            credentials=(os.getenv("MICROSOFT_TOKEN"), os.getenv("MICROSOFT_REGION"))
         )
         return MicrosoftTTS(client)
     if service == "watson":
@@ -164,14 +154,10 @@ def create_tts_client(service):
         )
         return WatsonTTS(client)
     if service == "elevenlabs":
-        client = ElevenLabsClient(
-            credentials=os.getenv("ELEVENLABS_API_KEY")
-        )
+        client = ElevenLabsClient(credentials=os.getenv("ELEVENLABS_API_KEY"))
         return ElevenLabsTTS(client)
     if service == "witai":
-        client = WitAiClient(
-            credentials=os.getenv("WITAI_API_KEY")
-        )
+        client = WitAiClient(credentials=os.getenv("WITAI_API_KEY"))
         return WitAiTTS(client)
     if service == "googletrans":
         client = GoogleTransClient()
@@ -184,10 +170,7 @@ def create_tts_client(service):
         return eSpeakTTS(client)
     if service == "playht":
         client = PlayHTClient(
-            credentials=(
-                os.getenv("PLAYHT_USER_ID"),
-                os.getenv("PLAYHT_API_KEY")
-            )
+            credentials=(os.getenv("PLAYHT_USER_ID"), os.getenv("PLAYHT_API_KEY"))
         )
         return PlayHTTTS(client)
     if service == "avsynth" and sys.platform == "darwin":
@@ -202,7 +185,9 @@ def create_tts_client(service):
 def test_synth_to_bytes(service):
     # Skip tests for engines with invalid credentials
     if not check_credentials(service):
-        pytest.skip(f"{service.capitalize()} TTS credentials are invalid or unavailable")
+        pytest.skip(
+            f"{service.capitalize()} TTS credentials are invalid or unavailable"
+        )
 
     tts = create_tts_client(service)
 
@@ -233,7 +218,9 @@ def test_synth_to_bytes(service):
 def test_playback_with_callbacks(service):
     # Skip tests for engines with invalid credentials
     if not check_credentials(service):
-        pytest.skip(f"{service.capitalize()} TTS credentials are invalid or unavailable")
+        pytest.skip(
+            f"{service.capitalize()} TTS credentials are invalid or unavailable"
+        )
 
     # Initialize TTS client for the service
     tts = create_tts_client(service)
@@ -301,14 +288,22 @@ def test_playback_with_callbacks(service):
         args, _ = call  # Extract args from each callback call
 
         # Check that we have 3 arguments (word, start_time, end_time)
-        assert len(args) == 3, f"Callback {i} has wrong number of arguments: {len(args)}"
+        assert (
+            len(args) == 3
+        ), f"Callback {i} has wrong number of arguments: {len(args)}"
 
         # Check that the word is a string
-        assert isinstance(args[0], str), f"Callback {i} word is not a string: {type(args[0])}"
+        assert isinstance(
+            args[0], str
+        ), f"Callback {i} word is not a string: {type(args[0])}"
 
         # Check that start_time and end_time are floats
-        assert isinstance(args[1], float), f"Callback {i} start_time is not a float: {type(args[1])}"
-        assert isinstance(args[2], float), f"Callback {i} end_time is not a float: {type(args[2])}"
+        assert isinstance(
+            args[1], float
+        ), f"Callback {i} start_time is not a float: {type(args[1])}"
+        assert isinstance(
+            args[2], float
+        ), f"Callback {i} end_time is not a float: {type(args[2])}"
 
         # Check that start_time is less than end_time
         assert args[1] <= args[2], (

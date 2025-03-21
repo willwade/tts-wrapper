@@ -21,7 +21,7 @@ def check_playht_api_key(api_key: str) -> bool:
     headers = {
         "Authorization": f"Bearer {api_key}",
         "Content-Type": "application/json",
-        "X-USER-ID": user_id
+        "X-USER-ID": user_id,
     }
     response = requests.get(url, headers=headers)
     return response.status_code == 200
