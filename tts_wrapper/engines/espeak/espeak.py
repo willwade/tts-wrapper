@@ -31,7 +31,9 @@ class eSpeakTTS(AbstractTTS):
         self.word_timings: list[tuple[float, float, str]] = []
         self.on_end = None
 
-    def synth_to_bytes(self, text: str | AbstractSSMLNode, voice_id: str | None = None) -> bytes:
+    def synth_to_bytes(
+        self, text: str | AbstractSSMLNode, voice_id: str | None = None
+    ) -> bytes:
         """Convert text to audio bytes.
 
         Args:

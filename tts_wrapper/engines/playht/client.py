@@ -32,6 +32,7 @@ class PlayHTClient:
         if not self.user_id:
             # Try to get user_id from environment variable
             import os
+
             self.user_id = os.getenv("PLAYHT_USER_ID")
             if not self.user_id:
                 msg = "User ID is required"

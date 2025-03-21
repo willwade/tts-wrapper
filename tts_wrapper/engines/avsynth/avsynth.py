@@ -74,7 +74,9 @@ class AVSynthTTS(AbstractTTS):
 
         return audio_data
 
-    def synth_to_bytestream(self, text: Any, voice_id: Optional[str] = None) -> Generator[bytes, None, None]:
+    def synth_to_bytestream(
+        self, text: Any, voice_id: Optional[str] = None
+    ) -> Generator[bytes, None, None]:
         """
         Synthesize text to a stream of audio bytes.
 

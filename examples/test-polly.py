@@ -3,7 +3,7 @@ import sys
 from unittest.mock import MagicMock
 
 # Add the parent directory to the path so we can import the package
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 from tts_wrapper import PollyClient, PollyTTS
 
@@ -13,26 +13,24 @@ try:
     region = os.getenv("POLLY_REGION")
     aws_key_id = os.getenv("POLLY_AWS_KEY_ID")
     aws_access_key = os.getenv("POLLY_AWS_ACCESS_KEY")
-    
+
     if region and aws_key_id and aws_access_key:
         print("Using real PollyClient with AWS credentials")
-        client = PollyClient(
-            credentials=(region, aws_key_id, aws_access_key)
-        )
+        client = PollyClient(credentials=(region, aws_key_id, aws_access_key))
         using_real_client = True
     else:
         raise ValueError("AWS credentials not found in environment variables")
-        
+
 except Exception as e:
     print(f"Could not initialize real PollyClient: {e}")
     print("Using MockPollyClient instead")
-    
+
     # Create a mock PollyClient
     class MockPollyClient:
         def __init__(self, *args, **kwargs):
             self.last_voice_used = None
             print("Initialized MockPollyClient")
-        
+
         def synth_with_timings(self, ssml, voice):
             self.last_voice_used = voice
             print(f"MockPollyClient.synth_with_timings called with voice: '{voice}'")
@@ -41,18 +39,18 @@ except Exception as e:
                 (0.1, "This"),
                 (0.3, "is"),
                 (0.5, "a"),
-                (0.7, "test")
+                (0.7, "test"),
             ]
-        
+
         def get_voices(self):
             return [
                 {"id": "Matthew", "name": "Matthew", "gender": "Male"},
                 {"id": "Joanna", "name": "Joanna", "gender": "Female"},
                 {"id": "Olivia", "name": "Olivia", "gender": "Female"},
                 {"id": "Brian", "name": "Brian", "gender": "Male"},
-                {"id": "Amy", "name": "Amy", "gender": "Female"}
+                {"id": "Amy", "name": "Amy", "gender": "Female"},
             ]
-    
+
     client = MockPollyClient()
     using_real_client = False
 
@@ -66,7 +64,9 @@ print(f"Voice ID set in TTS: {tts._voice}")
 # Test synthesizing a simple text
 print("\nSynthesizing speech with the selected voice...")
 try:
-    audio_bytes = tts.synth_to_bytes("This is a test of the Amazon Polly voice selection.")
+    audio_bytes = tts.synth_to_bytes(
+        "This is a test of the Amazon Polly voice selection."
+    )
     print(f"Generated audio length: {len(audio_bytes)} bytes")
     if not using_real_client:
         print(f"Last voice used in client: '{client.last_voice_used}'")

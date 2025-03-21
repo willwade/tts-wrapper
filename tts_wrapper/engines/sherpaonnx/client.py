@@ -59,7 +59,7 @@ class SherpaOnnxClient:
             self._model_id = (
                 self._model_id or "mms_eng"
             )  # Default to English if not specified
-            self.set_voice()
+            self.set_voice(voice_id=self._model_id)
         else:
             logging.info("Skipping automatic model download (no_default_download=True)")
 
@@ -305,11 +305,28 @@ class SherpaOnnxClient:
             if voice["id"].startswith("mms_")
         ]
 
-    def set_voice(self) -> None:
-        """Set voice using model data."""
-        if not self._model_id:
+    def set_voice(
+        self, voice_id: str | None = None, lang_id: str | None = None
+    ) -> None:
+        """
+        Set voice using model data.
+
+        Parameters
+        ----------
+        voice_id : str | None, optional
+            The ID of the voice to use. If provided, this overrides the model_id set during initialization.
+        lang_id : str | None, optional
+            The language ID. Currently not used by SherpaOnnx but included for interface compatibility.
+        """
+        # If voice_id is provided, use it instead of the model_id set during initialization
+        model_id_to_use = voice_id or self._model_id
+
+        if not model_id_to_use:
             msg = "No model ID specified for voice setup"
             raise ValueError(msg)
+
+        # Store the model_id for future reference
+        self._model_id = model_id_to_use
 
         model_path, tokens_path, lexicon_path, dict_dir = self.check_and_download_model(
             self._model_id

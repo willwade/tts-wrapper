@@ -28,7 +28,7 @@ class SherpaOnnxTTS(AbstractTTS):
         super().__init__()
         self._client = client
         if voice:
-            self.set_voice(voice, lang)
+            self.set_voice(voice_id=voice, lang_id=lang)
         self.audio_rate = self._client.sample_rate
         self.audio_buffer = queue.Queue()
         self.playback_finished = threading.Event()
@@ -79,13 +79,48 @@ class SherpaOnnxTTS(AbstractTTS):
     def get_voices(self) -> list[dict[str, Any]]:
         return self._client.get_voices()
 
-    def set_voice(self, lang_id: Optional[str] = None) -> None:
-        self._client.set_voice()
-        self.audio_rate = (
-            self._client.sample_rate
-        )  # Update the audio_rate based on the selected voice
+    def set_voice(
+        self, voice_id: Optional[str] = None, lang_id: Optional[str] = None
+    ) -> None:
+        """
+        Set the voice for synthesis.
 
-    def synth_to_bytes(self, text: str) -> bytes:
+        Parameters
+        ----------
+        voice_id : Optional[str], optional
+            The ID of the voice to use for synthesis.
+            Note: SherpaOnnx may not support all voice selection methods.
+        lang_id : Optional[str], optional
+            The language ID to use for synthesis.
+
+        Note
+        ----
+        SherpaOnnx has limited voice selection capabilities compared to other TTS engines.
+        This method attempts to set the voice if possible, but may not have the same
+        flexibility as other TTS engines.
+        """
+        # Call the client's set_voice method with the provided parameters
+        self._client.set_voice(voice_id=voice_id, lang_id=lang_id)
+        # Update the audio_rate based on the selected voice
+        self.audio_rate = self._client.sample_rate
+
+    def synth_to_bytes(self, text: str, voice_id: Optional[str] = None) -> bytes:
+        """
+        Transform written text to audio bytes.
+
+        Parameters
+        ----------
+        text : str
+            The text to synthesize.
+        voice_id : Optional[str], optional
+            The ID of the voice to use for synthesis.
+            Note: SherpaOnnx doesn't support dynamic voice switching, so this parameter is ignored.
+
+        Returns
+        -------
+        bytes
+            Raw PCM data with no headers for sounddevice playback.
+        """
         text = str(text)
         if not self._is_ssml(text):
             text = self.ssml.add(text)

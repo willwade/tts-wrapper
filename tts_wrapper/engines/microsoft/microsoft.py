@@ -2,7 +2,10 @@
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING, Any
+import threading
+import time
+from datetime import timedelta
+from typing import TYPE_CHECKING, Any, Callable
 
 from tts_wrapper.tts import AbstractTTS
 
@@ -48,6 +51,11 @@ class MicrosoftTTS(AbstractTTS):
 
         # Configure synthesizer for streaming
         self._setup_synthesizer()
+
+        # Initialize timers list
+        self.timers = []
+        self._word_timings_processed = False
+        self._word_timings = []  # Class variable to store word timings
 
     def _setup_synthesizer(self) -> None:
         """Set up the speech synthesizer with proper configuration."""
@@ -157,7 +165,9 @@ class MicrosoftTTS(AbstractTTS):
     def synth_to_bytes(self, text: Any, voice_id: str | None = None) -> bytes:
         """Convert text to speech."""
         text = str(text)
-        word_timings = []
+        # Initialize a list to store word timings
+        self._word_timings = []
+        logging.debug("Initialized word_timings: %s", self._word_timings)
 
         # Use voice_id if provided, otherwise use the default voice
         if voice_id and voice_id != self._voice:
@@ -168,20 +178,54 @@ class MicrosoftTTS(AbstractTTS):
         else:
             restore_voice = False
 
-        def handle_word_boundary(evt):
-            if evt.text and not evt.text.isspace():
-                word_timings.append(
-                    (
-                        evt.audio_offset / 10000000,  # Convert to seconds
-                        evt.duration / 10000000,  # Convert to seconds
-                        evt.text,
-                    )
-                )
+        # Create a list to store word timings
+        word_timings = []
 
-        # Connect word boundary callback
-        self.synthesizer.synthesis_word_boundary.connect(handle_word_boundary)
+        # Create a callback function to handle word boundary events
+        def handle_word_boundary(evt):
+            logging.debug(
+                "Word boundary event: %s, offset: %s, duration: %s",
+                evt.text,
+                evt.audio_offset,
+                evt.duration,
+            )
+
+            if evt.text and not evt.text.isspace():
+                logging.debug("Condition met, adding word timing")
+                # Convert to seconds, handling potential timedelta objects
+                start_time = self._convert_to_seconds(evt.audio_offset)
+                duration = self._convert_to_seconds(evt.duration)
+                end_time = start_time + duration  # Calculate end time
+
+                # Create the timing tuple
+                timing = (start_time, end_time, evt.text)
+                logging.debug("Created timing tuple: %s", timing)
+
+                # Append to the list
+                word_timings.append(timing)
+                logging.debug(
+                    "Added word timing: %s, start: %s, end: %s",
+                    evt.text,
+                    start_time,
+                    end_time,
+                )
+                logging.debug("Current word_timings: %s", word_timings)
+                logging.debug("Current word_timings length: %d", len(word_timings))
 
         try:
+            # Create a new speech synthesizer for this specific synthesis
+            speech_config = speechsdk.SpeechConfig(
+                subscription=self._client._subscription_key,
+                region=self._client._subscription_region,
+            )
+            speech_config.speech_synthesis_voice_name = self._voice
+            synthesizer = speechsdk.SpeechSynthesizer(
+                speech_config=speech_config, audio_config=None
+            )
+
+            # Connect word boundary callback
+            synthesizer.synthesis_word_boundary.connect(handle_word_boundary)
+
             # Check if text already contains SSML
             if not self._is_ssml(text):
                 # Check for prosody properties
@@ -206,13 +250,23 @@ class MicrosoftTTS(AbstractTTS):
                 )
                 logging.debug("Final SSML: %s", text)
 
-            # Always use speak_ssml_async
-            result = self.synthesizer.speak_ssml_async(text).get()
+            # Use synchronous speak_ssml
+            result = synthesizer.speak_ssml(text)
 
             if result.reason == speechsdk.ResultReason.SynthesizingAudioCompleted:
                 audio_data = result.audio_data
+
                 # Set word timings for callbacks
-                self.set_timings(word_timings)
+                logging.debug("Word timings collected: %s", word_timings)
+                logging.debug("Word timings length: %d", len(word_timings))
+
+                # Store the word timings directly in self.timings
+                if word_timings:
+                    self.timings = word_timings.copy()
+                    logging.debug("Directly set self.timings: %s", self.timings)
+                else:
+                    logging.debug("No word timings collected, self.timings not set")
+
                 return audio_data
 
             if result.reason == speechsdk.ResultReason.Canceled:
@@ -227,11 +281,107 @@ class MicrosoftTTS(AbstractTTS):
 
         finally:
             # Disconnect event handlers
-            self.synthesizer.synthesis_word_boundary.disconnect_all()
+            if "synthesizer" in locals():
+                synthesizer.synthesis_word_boundary.disconnect_all()
             if restore_voice:
                 self.set_voice(original_voice, self._lang)
+
+    def get_word_timings(self) -> list[tuple[float, float, str]]:
+        """Get word timings directly from the synthesizer."""
+        return self._word_timings
 
     def _is_ssml(self, text: str) -> bool:
         """Check if text contains SSML markup."""
         text = text.strip()
-        return text.startswith("<speak>") and text.endswith("</speak>")
+        # Check for both simple <speak> tags and those with namespaces
+        return text.startswith("<speak") and text.endswith("</speak>")
+
+    def _convert_to_seconds(self, value: int | float | timedelta) -> float:
+        """
+        Convert a value to seconds, handling different types.
+
+        Parameters
+        ----------
+        value : Union[int, float, timedelta]
+            The value to convert to seconds. Can be:
+            - int/float: Assumed to be in 100-nanosecond units (Azure's format)
+            - timedelta: A datetime.timedelta object
+
+        Returns
+        -------
+        float
+            The value converted to seconds
+        """
+        if isinstance(value, timedelta):
+            return value.total_seconds()
+        if isinstance(value, (int, float)):
+            return value / 10000000  # Convert from 100-nanosecond units to seconds
+        logging.warning(f"Unknown time value type: {type(value)}, value: {value}")
+        # Try to convert to float as a fallback
+        try:
+            return float(value) / 10000000
+        except (TypeError, ValueError):
+            logging.error(f"Could not convert {value} to seconds")
+            return 0.0
+
+    def start_playback_with_callbacks(
+        self, text: str, callback: Callable | None = None, voice_id: str | None = None
+    ) -> None:
+        """
+        Start playback of the given text with callbacks triggered at each word.
+
+        Parameters
+        ----------
+        text : str
+            The text to be spoken.
+        callback : Callable, optional
+            A callback function to invoke at each word
+            with arguments (word, start, end).
+            If None, `self.on_word_callback` is used.
+        voice_id : str | None, optional
+            The ID of the voice to use for synthesis. If None, uses the voice set by set_voice.
+        """
+        if callback is None:
+            callback = self.on_word_callback
+
+        # Synthesize the audio and collect word timings
+        audio_data = self.synth_to_bytes(text, voice_id)
+
+        # Load and play the audio
+        self.load_audio(audio_data)
+        self.play()
+
+        start_time = time.time()
+
+        # Use the word timings collected during synthesis
+        try:
+            logging.debug("Setting up callbacks for timings: %s", self.timings)
+            for start, end, word in self.timings:
+                delay = max(0, start - (time.time() - start_time))
+                timer = threading.Timer(delay, callback, args=(word, start, end))
+                timer.start()
+                self.timers.append(timer)
+        except (ValueError, TypeError):
+            logging.exception("Error in start_playback_with_callbacks")
+
+    def speak_streamed(self, text: str | SSML, voice_id: str | None = None) -> None:
+        """
+        Synthesize text to speech and stream it for playback.
+
+        Parameters
+        ----------
+        text : str | SSML
+            The text to synthesize and stream.
+        voice_id : str | None, optional
+            The ID of the voice to use for synthesis. If None, uses the voice set by set_voice.
+        """
+        # Override the speak_streamed method to use our word timings
+        try:
+            # Synthesize the audio and collect word timings
+            audio_data = self.synth_to_bytes(text, voice_id)
+
+            # Load and play the audio
+            self.load_audio(audio_data)
+            self.play()
+        except Exception:
+            logging.exception("Error in streaming synthesis")
