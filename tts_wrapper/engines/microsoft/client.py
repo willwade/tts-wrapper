@@ -1,6 +1,13 @@
-from typing import Any, Optional
+from __future__ import annotations
+
+import logging
+from typing import TYPE_CHECKING, Any, Optional
 
 from tts_wrapper.exceptions import ModuleNotInstalled
+from tts_wrapper.tts import AbstractTTS
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 try:
     import requests
@@ -18,11 +25,20 @@ Credentials = tuple[str, Optional[str]]
 FORMATS = {"wav": "Riff24Khz16BitMonoPcm"}
 
 
-class MicrosoftClient:
+class MicrosoftClient(AbstractTTS):
+    """Client for Microsoft Azure TTS service."""
+
     def __init__(
         self,
-        credentials: Optional[Credentials] = None,
+        credentials: Credentials | None = None,
     ) -> None:
+        """Initialize the client with credentials.
+
+        Args:
+            credentials: Tuple of (subscription_key, region)
+        """
+        super().__init__()
+
         if speechsdk is None:
             msg = "speechsdk"
             raise ModuleNotInstalled(msg)
@@ -39,6 +55,9 @@ class MicrosoftClient:
             region=self._subscription_region,
         )
 
+        # Default audio rate for playback
+        self.audio_rate = 16000
+
     def check_credentials(self) -> bool:
         """Verifies that the provided credentials are valid by initializing SpeechConfig."""
         try:
@@ -51,8 +70,12 @@ class MicrosoftClient:
         except Exception:
             return False
 
-    def get_voices(self) -> list[dict[str, Any]]:
-        """Fetches available voices from Microsoft Azure TTS service using REST API with optimized connection handling."""
+    def _get_voices(self) -> list[dict[str, Any]]:
+        """Fetches available voices from Microsoft Azure TTS service.
+
+        Returns:
+            List of voice dictionaries with raw language information
+        """
         import requests
 
         # Extract the subscription key and region from the speech_config
@@ -75,6 +98,7 @@ class MicrosoftClient:
 
         voices = response.json()
         standardized_voices = []
+
         for voice in voices:
             voice_dict = {
                 "id": voice["ShortName"],
@@ -83,4 +107,70 @@ class MicrosoftClient:
                 "gender": voice["Gender"],  # 'Gender' is already a string
             }
             standardized_voices.append(voice_dict)
+
         return standardized_voices
+
+    def set_voice(self, voice_id: str, lang: str | None = None) -> None:
+        """Set the voice to use for synthesis.
+
+        Args:
+            voice_id: The voice ID to use (e.g., "en-US-AriaNeural")
+            lang: Optional language code (not used in Microsoft)
+        """
+        self.speech_config.speech_synthesis_voice_name = voice_id
+
+    def synth_to_bytes(self, text: Any, voice_id: str | None = None) -> bytes:
+        """Transform written text to audio bytes.
+
+        Args:
+            text: The text to synthesize
+            voice_id: Optional voice ID to use for this synthesis
+
+        Returns:
+            Raw audio bytes in WAV format
+        """
+        # Set voice if provided
+        if voice_id:
+            self.set_voice(voice_id)
+
+        # Create a synthesizer
+        synthesizer = speechsdk.SpeechSynthesizer(speech_config=self.speech_config)
+
+        # Synthesize text to audio
+        result = synthesizer.speak_text_async(str(text)).get()
+
+        # Check for errors
+        if result.reason != speechsdk.ResultReason.SynthesizingAudioCompleted:
+            msg = f"Speech synthesis failed: {result.reason}"
+            raise Exception(msg)
+
+        # Get audio data
+        return result.audio_data
+
+
+    def synth(
+        self,
+        text: Any,
+        output_file: str | Path,
+        output_format: str = "wav",
+        voice_id: str | None = None,
+    ) -> None:
+        """Synthesize text to audio and save to a file.
+
+        Args:
+            text: The text to synthesize
+            output_file: Path to save the audio file
+            output_format: Format to save as (only "wav" is supported)
+            voice_id: Optional voice ID to use for this synthesis
+        """
+        # Check format
+        if output_format.lower() != "wav":
+            msg = f"Unsupported format: {output_format}. Only 'wav' is supported."
+            raise ValueError(msg)
+
+        # Get audio bytes
+        audio_bytes = self.synth_to_bytes(text, voice_id)
+
+        # Save to file
+        with open(output_file, "wb") as f:
+            f.write(audio_bytes)

@@ -78,19 +78,85 @@ class AbstractTTS(ABC):
         self.pyaudio = None
 
     @abstractmethod
-    def get_voices(self) -> list[dict[str, Any]]:
-        """Retrieve a list of available voices from the TTS service."""
+    def _get_voices(self) -> list[dict[str, Any]]:
+        """Retrieve a list of available voices from the TTS service.
+
+        This is an internal method that should be implemented by each engine.
+        It should return a list of dictionaries with at least the following keys:
+        - id: The unique identifier for the voice
+        - name: The display name of the voice
+        - language_codes: A list of language codes supported by the voice
+        - gender: The gender of the voice (if available)
+        """
+
+    def get_voices(self, langcodes: str = "bcp47") -> list[dict[str, Any]]:
+        """Retrieve a list of available voices from the TTS service with normalized language codes.
+
+        Args:
+            langcodes: Format of language codes to return. Options:
+                - "bcp47": BCP-47 format (e.g., "en-US", "fr-FR")
+                - "iso639_3": ISO 639-3 format (e.g., "eng", "fra")
+                - "display": Human-readable display names (e.g., "English (United States)", "French (France)")
+                - "all": Return all formats as a dictionary
+
+        Returns:
+            List of voice dictionaries with standardized language information
+        """
+        from .language_utils import LanguageNormalizer
+
+        # Get the raw voices from the engine-specific implementation
+        raw_voices = self._get_voices()
+        standardized_voices = []
+
+        for voice in raw_voices:
+            # Process each language code for this voice
+            normalized_lang_codes = []
+            normalized_lang_codes_dict = {}
+
+            for lang_code in voice["language_codes"]:
+                # Normalize the language code
+                normalized_lang = LanguageNormalizer.normalize(lang_code)
+
+                # Store based on requested format
+                if langcodes.lower() == "bcp47":
+                    normalized_lang_codes.append(normalized_lang.bcp47)
+                elif langcodes.lower() == "iso639_3":
+                    normalized_lang_codes.append(normalized_lang.iso639_3)
+                elif langcodes.lower() == "display":
+                    normalized_lang_codes.append(normalized_lang.display_name)
+                elif langcodes.lower() == "all":
+                    normalized_lang_codes_dict[lang_code] = {
+                        "bcp47": normalized_lang.bcp47,
+                        "iso639_3": normalized_lang.iso639_3,
+                        "display": normalized_lang.display_name,
+                    }
+                else:
+                    # Default to BCP-47 if invalid format is specified
+                    normalized_lang_codes.append(normalized_lang.bcp47)
+
+            # Create the voice data dictionary
+            voice_data = voice.copy()  # Copy all original fields
+
+            # Update the language_codes field with normalized codes
+            if langcodes.lower() == "all":
+                voice_data["language_codes"] = normalized_lang_codes_dict
+            else:
+                voice_data["language_codes"] = normalized_lang_codes
+
+            standardized_voices.append(voice_data)
+
+        return standardized_voices
 
     def check_credentials(self) -> bool:
         """
-        Verify that the provided credentials are valid by calling get_voices.
+        Verify that the provided credentials are valid by calling _get_voices.
 
         This method should be implemented by the child classes to handle the
           specific credential checks.
-        Also try not to use get_voices. It can be wasteful in credits/bandwidth.
+        Also try not to use _get_voices. It can be wasteful in credits/bandwidth.
         """
         try:
-            voices = self.get_voices()
+            voices = self._get_voices()
             return bool(voices)
         except (ConnectionError, ValueError):
             return False

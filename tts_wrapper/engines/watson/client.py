@@ -1,29 +1,37 @@
+from __future__ import annotations
+
 import json
 import logging
 import struct
 import threading
-from typing import Any
+from typing import TYPE_CHECKING, Any, Callable
 
 from tts_wrapper.exceptions import ModuleNotInstalled
+from tts_wrapper.tts import AbstractTTS
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 Credentials = tuple[str, str, str]  # api_key, region, instance_id
 
 # FORMATS = {"wav": "audio/wav", "mp3": "audio/mp3"}
 
 
-class WatsonClient:
+class WatsonClient(AbstractTTS):
     def __init__(
         self,
         credentials: Credentials,
         disableSSLVerification: bool = False,
     ) -> None:
+        super().__init__()
         self.api_key, self.region, self.instance_id = credentials
         self.disableSSLVerification = disableSSLVerification
 
         self._client = None
         self.iam_token = None
         self.ws_url = None
-        self.word_timings = []
+        self.word_timings: list[dict[str, Any]] = []
+        self.audio_rate = 22050  # Default sample rate for Watson TTS
 
         self._initialize_ibm_watson()
 
@@ -67,7 +75,73 @@ class WatsonClient:
             # Construct the WebSocket URL
             self.ws_url = f"wss://api.{self.region}.text-to-speech.watson.cloud.ibm.com/instances/{self.instance_id}/v1/synthesize"
 
-    def synth(self, ssml: str, voice: str) -> bytes:
+    def set_voice(self, voice_id: str, lang: str | None = None) -> None:
+        """Set the voice to use for synthesis.
+
+        Args:
+            voice_id: The voice ID to use
+            lang: Optional language code (not used in Watson)
+        """
+        self.voice_id = voice_id
+
+    def synth_to_bytes(self, text: Any, voice_id: str | None = None) -> bytes:
+        """Transform written text to audio bytes.
+
+        Args:
+            text: The text to synthesize
+            voice_id: Optional voice ID to use for this synthesis
+
+        Returns:
+            Raw audio bytes in WAV format
+        """
+        self._initialize_ibm_watson()
+
+        # Use provided voice_id or the one set with set_voice
+        voice = voice_id if voice_id else getattr(self, "voice_id", None)
+
+        if not voice:
+            # Use a default voice if none is set
+            voices = self._get_voices()
+            if voices:
+                voice = voices[0]["id"]
+            else:
+                voice = "en-US_AllisonV3Voice"  # Default voice
+
+        return (
+            self._client.synthesize(text=str(text), voice=voice, accept="audio/wav")
+            .get_result()
+            .content
+        )
+
+    def synth(
+        self,
+        text: Any,
+        output_file: str | Path,
+        output_format: str = "wav",
+        voice_id: str | None = None,
+    ) -> None:
+        """Synthesize text to audio and save to a file.
+
+        Args:
+            text: The text to synthesize
+            output_file: Path to save the audio file
+            output_format: Format to save as (only "wav" is supported)
+            voice_id: Optional voice ID to use for this synthesis
+        """
+        # Check format
+        if output_format.lower() != "wav":
+            msg = f"Unsupported format: {output_format}. Only 'wav' is supported."
+            raise ValueError(msg)
+
+        # Get audio bytes
+        audio_bytes = self.synth_to_bytes(text, voice_id)
+
+        # Save to file
+        with open(output_file, "wb") as f:
+            f.write(audio_bytes)
+
+    def synth_raw(self, ssml: str, voice: str) -> bytes:
+        """Legacy method for backward compatibility."""
         self._initialize_ibm_watson()
         return (
             self._client.synthesize(text=str(ssml), voice=voice, accept="audio/wav")
@@ -133,7 +207,27 @@ class WatsonClient:
         finally:
             ws.close()
 
-    def get_audio_duration(self, audio_content: bytes) -> float:
+    def get_audio_duration(self) -> float:
+        """Get the duration of the loaded audio in seconds.
+
+        Returns:
+            Duration in seconds
+        """
+        if not hasattr(self, "_audio_bytes") or not self._audio_bytes:
+            return 0.0
+
+        return self._get_audio_duration(self._audio_bytes)
+
+    def _get_audio_duration(self, audio_content: bytes) -> float:
+        """Parse WAV header to get audio duration.
+
+        Args:
+            audio_content: Raw WAV audio bytes
+
+        Returns:
+            Duration in seconds
+        """
+        # Parse WAV header to get sample rate and number of samples
         riff, size, fformat = struct.unpack("<4sI4s", audio_content[:12])
         if riff != b"RIFF" or fformat != b"WAVE":
             msg = "Not a WAV file"
@@ -156,11 +250,88 @@ class WatsonClient:
         num_samples = subchunk2_size // (channels * (bits_per_sample // 8))
         return num_samples / sample_rate
 
-    def get_voices(self) -> list[dict[str, Any]]:
+    def connect(self, event_name: str, callback: Callable[[], None]) -> None:
+        """Connect a callback to an event.
+
+        Args:
+            event_name: Name of the event to connect to (e.g., 'onStart', 'onEnd')
+            callback: Function to call when the event occurs
+        """
+        if not hasattr(self, "_callbacks"):
+            self._callbacks: dict[str, list[Callable[[], None]]] = {}
+        if event_name not in self._callbacks:
+            self._callbacks[event_name] = []
+        self._callbacks[event_name].append(callback)
+
+    def start_playback_with_callbacks(
+        self, text: str, callback: Callable | None = None, voice_id: str | None = None
+    ) -> None:
+        """Start playback with word timing callbacks.
+
+        Args:
+            text: The text to synthesize
+            callback: Function to call for each word timing
+            voice_id: Optional voice ID to use for this synthesis
+        """
+        # Trigger onStart callbacks
+        if hasattr(self, "_callbacks") and "onStart" in self._callbacks:
+            for cb in self._callbacks["onStart"]:
+                cb()
+
+        # Use provided voice_id or the one set with set_voice
+        voice = voice_id if voice_id else getattr(self, "voice_id", None)
+
+        if not voice:
+            # Use a default voice if none is set
+            voices = self._get_voices()
+            if voices:
+                voice = voices[0]["id"]
+            else:
+                voice = "en-US_AllisonV3Voice"  # Default voice
+
+        # Synthesize with word timings
+        try:
+            self._audio_bytes = self.synth_with_timings(str(text), voice)
+
+            # Call the callback for each word timing if provided
+            if callback is not None and self.word_timings:
+                for timing in self.word_timings:
+                    if isinstance(timing, tuple) and len(timing) == 2:
+                        start_time, word = timing
+                        # Estimate end time as start time + 0.3 seconds
+                        callback(word, start_time, start_time + 0.3)
+        except Exception:
+            # Fallback to regular synthesis without timings
+            self._audio_bytes = self.synth_to_bytes(text, voice)
+
+            # Estimate word timings based on text length
+            if callback is not None:
+                words = str(text).split()
+                total_duration = self._get_audio_duration(self._audio_bytes)
+                time_per_word = total_duration / len(words) if words else 0
+
+                current_time = 0.0
+                for word in words:
+                    end_time = current_time + time_per_word
+                    callback(word, current_time, end_time)
+                    current_time = end_time
+
+        # Trigger onEnd callbacks
+        if hasattr(self, "_callbacks") and "onEnd" in self._callbacks:
+            for cb in self._callbacks["onEnd"]:
+                cb()
+
+    def _get_voices(self) -> list[dict[str, Any]]:
+        """Fetches available voices from Watson.
+
+        Returns:
+            List of voice dictionaries with raw language information
+        """
         self._initialize_ibm_watson()
         voice_data = self._client.list_voices().get_result()
         voices = voice_data["voices"]
         standardized_voices = []
+
         for voice in voices:
             standardized_voice = {
                 "id": voice["name"],
@@ -169,4 +340,5 @@ class WatsonClient:
                 "gender": voice["gender"],
             }
             standardized_voices.append(standardized_voice)
+
         return standardized_voices

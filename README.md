@@ -5,7 +5,7 @@
 
 > **Contributions are welcome! Check our [contribution guide](./CONTRIBUTING.md).**
 
-_TTS-Wrapper_ simplifies using text-to-speech APIs by providing a unified interface across multiple services, allowing easy integration and manipulation of TTS capabilities. 
+_TTS-Wrapper_ simplifies using text-to-speech APIs by providing a unified interface across multiple services, allowing easy integration and manipulation of TTS capabilities.
 
  > ℹ️ Full documentation is available at [https://willwade.github.io/tts-wrapper/](https://willwade.github.io/tts-wrapper/)
 
@@ -22,7 +22,7 @@ _TTS-Wrapper_ simplifies using text-to-speech APIs by providing a unified interf
 - Microsoft Azure TTS
 - IBM Watson
 - ElevenLabs
-- Wit.Ai 
+- Wit.Ai
 - eSpeak-NG
 - Play.HT
 - AVSynth (macOS only)
@@ -65,7 +65,7 @@ _TTS-Wrapper_ simplifies using text-to-speech APIs by providing a unified interf
 **Notes**:
 - **SSML**: Entries marked with No* indicate that while the engine doesn't support SSML natively, the wrapper will automatically strip SSML tags and process the plain text.
 - **Word Boundaries**: Entries marked with No** use an estimation-based timing system that may not be accurate for precise synchronization needs.
-- **Callbacks**: 
+- **Callbacks**:
   - "Full" supports accurate word-level timing callbacks, onStart, and onEnd events
   - "Basic" supports onStart and onEnd events, with estimated word timings
 - **Playback Control**: All engines support pause, resume, and stop functionality through the wrapper's unified interface
@@ -151,27 +151,24 @@ pip install "py3-tts-wrapper[google,watson,polly,elevenlabs,microsoft,sherpaonnx
 
 ```python
 from tts_wrapper import PollyClient
-pollyClient = PollyClient(credentials=('aws_key_id', 'aws_secret_access_key'))
 
-from tts_wrapper import PollyTTS
-
-tts = PollyTTS(pollyClient)
-ssml_text = tts.ssml.add('Hello, <break time="500ms"/> world!')
-tts.speak(ssml_text)
+# Initialize the client - it's also the TTS engine
+client = PollyClient(credentials=('aws_key_id', 'aws_secret_access_key'))
+ssml_text = client.ssml.add('Hello, <break time="500ms"/> world!')
+client.speak(ssml_text)
 ```
 
 You can use SSML or plain text
 
 ```python
 from tts_wrapper import PollyClient
-pollyClient = PollyClient(credentials=('aws_key_id', 'aws_secret_access_key'))
-from tts_wrapper import PollyTTS
 
-tts = PollyTTS(pollyClient)
-tts.speak('Hello world')
+# Initialize the client - it's also the TTS engine
+client = PollyClient(credentials=('aws_key_id', 'aws_secret_access_key'))
+client.speak('Hello world')
 ```
 
-For a full demo see the examples folder. You'll need to fill out the credentials.json (or credentials-private.json). Use them from cd'ing into the examples folder. 
+For a full demo see the examples folder. You'll need to fill out the credentials.json (or credentials-private.json). Use them from cd'ing into the examples folder.
 Tips on gaining keys are below.
 
 ### Authorization
@@ -181,65 +178,57 @@ Each service uses different methods for authentication:
 #### Polly
 
 ```python
-from tts_wrapper import PollyTTS, PollyClient
+from tts_wrapper import PollyClient
 client = PollyClient(credentials=('aws_region','aws_key_id', 'aws_secret_access_key'))
-
-tts = PollyTTS(client)
 ```
 
 #### Google
 
 ```python
-from tts_wrapper import GoogleTTS, GoogleClient
+from tts_wrapper import GoogleClient
 client = GoogleClient(credentials=('path/to/creds.json'))
-
-tts = GoogleTTS(client)
 ```
 or pass the auth file as dict - so in memory
 
 ```python
-from tts_wrapper import GoogleTTS, GoogleClient
+from tts_wrapper import GoogleClient
+import json
+import os
 
 with open(os.getenv("GOOGLE_SA_PATH"), "r") as file:
     credentials_dict = json.load(file)
 
 client = GoogleClient(credentials=os.getenv('GOOGLE_SA_PATH'))
-client = GoogleClient(credentials=credentials_dict)]
+# Or use the dictionary directly
+client = GoogleClient(credentials=credentials_dict)
 ```
 
 #### Microsoft
 
 ```python
-from tts_wrapper import MicrosoftTTS, MicrosoftClient
+from tts_wrapper import MicrosoftClient
 client = MicrosoftClient(credentials=('subscription_key','subscription_region'))
-
-tts = MicrosoftTTS(client)
 ```
 
 #### Watson
 
 ```python
-from tts_wrapper import WatsonTTS, WatsonClient
+from tts_wrapper import WatsonClient
 client = WatsonClient(credentials=('api_key', 'region', 'instance_id'))
-
-tts = WatsonTTS(client)
 ```
 
 **Note** If you have issues with SSL certification try
 
 ```python
-from tts_wrapper import WatsonTTS, WatsonClient
+from tts_wrapper import WatsonClient
 client = WatsonClient(credentials=('api_key', 'region', 'instance_id'),disableSSLVerification=True)
-
-tts = WatsonTTS(client)
 ```
 
 #### ElevenLabs
 
 ```python
-from tts_wrapper import ElevenLabsTTS, ElevenLabsClient
+from tts_wrapper import ElevenLabsClient
 client = ElevenLabsClient(credentials=('api_key'))
-tts = ElevenLabsTTS(client)
 ```
 
 - **Note**: ElevenLabs does not support SSML.
@@ -247,17 +236,15 @@ tts = ElevenLabsTTS(client)
 #### Wit.Ai
 
 ```python
-from tts_wrapper import WitAiTTS, WitAiClient
+from tts_wrapper import WitAiClient
 client = WitAiClient(credentials=('token'))
-tts = WitAiTTS(client)
 ```
 
 #### Play.HT
 
 ```python
-from tts_wrapper import PlayHTClient, PlayHTTTS
+from tts_wrapper import PlayHTClient
 client = PlayHTClient(credentials=('api_key', 'user_id'))
-tts = PlayHTTTS(client)
 ```
 
 - **Note**: Play.HT does not support SSML, but we automatically strip SSML tags if present.
@@ -265,18 +252,15 @@ tts = PlayHTTTS(client)
 #### UWP
 
 ```python
-from tts_wrapper import UWPTTS, UWPClient
+from tts_wrapper import UWPClient
 client = UWPClient()
-tts = UWPTTS(client)
 ```
 
 #### eSpeak
 
 ```python
-from tts_wrapper import eSpeakClient, eSpeakTTS
-
+from tts_wrapper import eSpeakClient
 client = eSpeakClient()
-tts = eSpeakTTS(client)
 ```
 
 Note: Requires espeak-ng to be installed on your system.
@@ -284,10 +268,8 @@ Note: Requires espeak-ng to be installed on your system.
 #### SAPI (Windows)
 
 ```python
-from tts_wrapper import SAPIClient, SAPITTS
-
+from tts_wrapper import SAPIClient
 client = SAPIClient()
-tts = SAPITTS(client)
 ```
 
 Note: Only available on Windows systems.
@@ -295,48 +277,43 @@ Note: Only available on Windows systems.
 #### AVSynth (macOS)
 
 ```python
-from tts_wrapper import AVSynthClient, AVSynthTTS
-
+from tts_wrapper import AVSynthClient
 client = AVSynthClient()
-tts = AVSynthTTS(client)
 ```
 
 Note: Only available on macOS. Provides high-quality speech synthesis with word timing support and voice property control.
 
 #### GoogleTrans
 
-Uses the gTTS library. 
+Uses the gTTS library.
 
 ```python
-from tts_wrapper import GoogleTransClient, GoogleTransTTS
+from tts_wrapper import GoogleTransClient
 voice_id = "en-co.uk"  # Example voice ID for UK English
 client = GoogleTransClient(voice_id)
-# Initialize the TTS engine
-tts = GoogleTransTTS(client)
 ```
 
 #### Sherpa-ONNX
 
-You can provide blank model path and tokens path - and we will use a default location.. 
+You can provide blank model path and tokens path - and we will use a default location..
 
 ```python
-from tts_wrapper import SherpaOnnxClient, SherpaOnnxTTS
+from tts_wrapper import SherpaOnnxClient
 client = SherpaOnnxClient(model_path=None, tokens_path=None)
-tts = SherpaOnnxTTS(client)
 ```
 
 Set a voice like
 
 ```python
 # Find voices/langs availables
-voices = tts.get_voices()
+voices = client.get_voices()
 print("Available voices:", voices)
 
 # Set the voice using ISO code
 iso_code = "eng"  # Example ISO code for the voice - also ID in voice details
-tts.set_voice(iso_code)
+client.set_voice(iso_code)
 ```
-and then use speak, speak_streamed etc.. 
+and then use speak, speak_streamed etc..
 
 You then can perform the following methods.
 
@@ -347,7 +324,7 @@ You then can perform the following methods.
 Even if you don't use SSML features that much its wise to use the same syntax - so pass SSML not text to all engines
 
 ```python
-ssml_text = tts.ssml.add('Hello world!')
+ssml_text = client.ssml.add('Hello world!')
 ```
 
 #### Plain Text
@@ -355,34 +332,32 @@ ssml_text = tts.ssml.add('Hello world!')
 If you want to keep things simple each engine will convert plain text to SSML if its not.
 
 ```python
-tts.speak('Hello World!')
+client.speak('Hello World!')
 ```
 
-#### Speak 
+#### Speak
 
 This will use the default audio output of your device to play the audio immediately
 
 ```python
-tts.speak(ssml_text)
+client.speak(ssml_text)
 ```
 
 #### Check Credentials
 
-This will check if the credentials are valid. Its only on the client object. Eg
+This will check if the credentials are valid:
 
 ```python
-
-    client = MicrosoftClient(
-        credentials=(os.getenv("MICROSOFT_TOKEN"), os.getenv("MICROSOFT_REGION"))
-    )
-    if client.check_credentials():
-        print("Credentials are valid.")
-    else:
-        print("Credentials are invalid."
-
+client = MicrosoftClient(
+    credentials=(os.getenv("MICROSOFT_TOKEN"), os.getenv("MICROSOFT_REGION"))
+)
+if client.check_credentials():
+    print("Credentials are valid.")
+else:
+    print("Credentials are invalid.")
 ```
 
-NB: Each engine has a different way of checking credentials. If they dont have a supported the parent class will check get_voices. If you want to save calls just do a get_voices call.
+NB: Each engine has a different way of checking credentials. If they don't have a specific implementation, the parent class will check get_voices. If you want to save API calls, you can just do a get_voices call directly.
 
 #### Streaming and Playback Control
 
@@ -399,21 +374,18 @@ pip install py3-tts-wrapper[controlaudio,google.. etc
 then
 
 ```python
-
-client = GoogleClient(..)
-tts = GoogleTTS(client)
+client = GoogleClient(credentials="path/to/credentials.json")
 try:
     text = "This is a pause and resume test. The text will be longer, depending on where the pause and resume works"
-    audio_bytes = tts.synth_to_bytes(text)
-    tts.load_audio(audio_bytes)
+    audio_bytes = client.synth_to_bytes(text)
+    client.load_audio(audio_bytes)
     print("Play audio for 3 seconds")
-    tts.play(1)
-    tts.pause(8)
-    tts.resume()
+    client.play(1)
+    client.pause(8)
+    client.resume()
     time.sleep(6)
 finally:
-    tts.cleanup()
-
+    client.cleanup()
 ```
 
 - the pause and resume are in seconds from the start of the audio
@@ -429,26 +401,26 @@ sudo apt-get install portaudio19-dev
 #### File Output
 
 ```python
-tts.synth_to_file(ssml_text, 'output.mp3', format='mp3')
+client.synth_to_file(ssml_text, 'output.mp3', format='mp3')
 ```
-there is also "synth" method which is legacy. Note we support saving as mp3, wav or flac. 
+there is also "synth" method which is legacy. Note we support saving as mp3, wav or flac.
 
-```Python
-tts.synth('<speak>Hello, world!</speak>', 'hello.mp3', format='mp3)
+```python
+client.synth('<speak>Hello, world!</speak>', 'hello.mp3', format='mp3')
 ```
 Note you can also stream - and save. Just note it saves at the end of streaming entirely..
 
 ```python
-ssml_text = tts.ssml.add('Hello world!')
+ssml_text = client.ssml.add('Hello world!')
 
-tts.speak_streamed(ssml_text,filepath,'wav')
+client.speak_streamed(ssml_text, filepath, 'wav')
 ```
 
 
 #### Fetch Available Voices
 
 ```python
-voices = tts.get_voices()
+voices = client.get_voices()
 print(voices)
 ```
 
@@ -457,13 +429,13 @@ NB: All voices will have a id, dict of language_codes, name and gender. Just not
 #### Voice Selection
 
 ```python
-tts.set_voice(voice_id,lang_code=en-US)
+client.set_voice(voice_id, lang_code="en-US")
 ```
 
 e.g.
 
 ```python
-tts.set_voice('en-US-JessaNeural','en-US')
+client.set_voice('en-US-JessaNeural', 'en-US')
 ```
 
 Use the id - not a name
@@ -471,18 +443,18 @@ Use the id - not a name
 #### SSML
 
 ```python
-ssml_text = tts.ssml.add('Hello, <break time="500ms"/> world!')
-tts.speak(ssml_text)
+ssml_text = client.ssml.add('Hello, <break time="500ms"/> world!')
+client.speak(ssml_text)
 ```
 
 #### Volume, Rate and Pitch Control
 
 Set volume:
 ```python
-tts.set_property("volume", "90")
+client.set_property("volume", "90")
 text_read = f"The current volume is 90"
-text_with_prosody = tts.construct_prosody_tag(text_read)
-ssml_text = tts.ssml.add(text_with_prosody)
+text_with_prosody = client.construct_prosody_tag(text_read)
+ssml_text = client.ssml.add(text_with_prosody)
 ```
 - Volume is set on a scale of 0 (silent) to 100 (maximum).
 - The default volume is 100 if not explicitly specified.
@@ -490,10 +462,10 @@ ssml_text = tts.ssml.add(text_with_prosody)
 Set rate:
 
 ```python
-tts.set_property("rate", "slow")
+client.set_property("rate", "slow")
 text_read = f"The current rate is SLOW"
-text_with_prosody = tts.construct_prosody_tag(text_read)
-ssml_text = tts.ssml.add(text_with_prosody)
+text_with_prosody = client.construct_prosody_tag(text_read)
+ssml_text = client.ssml.add(text_with_prosody)
 ```
 Speech Rate:
 - Rate is controlled using predefined options:
@@ -506,10 +478,10 @@ Speech Rate:
 
 Set pitch:
 ```python
-tts.set_property("pitch", "high")
-text_read = f"The current pitch is SLOW"
-text_with_prosody = tts.construct_prosody_tag(text_read)
-ssml_text = tts.ssml.add(text_with_prosody)
+client.set_property("pitch", "high")
+text_read = f"The current pitch is HIGH"
+text_with_prosody = client.construct_prosody_tag(text_read)
+ssml_text = client.ssml.add(text_with_prosody)
 ```
 Pitch Control:
 - Pitch is adjusted using predefined options that affect the vocal tone:
@@ -520,22 +492,22 @@ Pitch Control:
     - x-high: Very high pitch.
 - If not explicitly set, the pitch defaults to medium.
 
-Use the ```tts.ssml.clear_ssml()``` method to clear all entries from the ssml list
+Use the ```client.ssml.clear_ssml()``` method to clear all entries from the ssml list
 
 #### `set_property()`
 This method allows setting properties like `rate`, `volume`, and `pitch`.
 
 ```python
-tts.set_property("rate", "fast")
-tts.set_property("volume", "80")
-tts.set_property("pitch", "high")
+client.set_property("rate", "fast")
+client.set_property("volume", "80")
+client.set_property("pitch", "high")
 ```
 
 #### `get_property()`
 This method retrieves the value of properties such as `volume`, `rate`, or `pitch`.
 
 ```python
-current_volume = tts.get_property("volume")
+current_volume = client.get_property("volume")
 print(f"Current volume: {current_volume}")
 ```
 
@@ -557,10 +529,10 @@ def on_end():
 
 try:
     text = "Hello, This is a word timing test"
-    ssml_text = tts.ssml.add(text)
-    tts.connect('onStart', on_start)
-    tts.connect('onEnd', on_end)
-    tts.start_playback_with_callbacks(ssml_text, callback=my_callback)
+    ssml_text = client.ssml.add(text)
+    client.connect('onStart', on_start)
+    client.connect('onEnd', on_end)
+    client.start_playback_with_callbacks(ssml_text, callback=my_callback)
 except Exception as e:
     print(f"Error: {e}")
 ```
@@ -587,7 +559,7 @@ This method allows registering callback functions for events like `onStart` or `
 def on_start():
     print("Speech started")
 
-tts.connect('onStart', on_start)
+client.connect('onStart', on_start)
 ```
 
 
@@ -599,21 +571,21 @@ The wrapper provides several methods for audio output, each suited for different
 
 The simplest method - plays audio immediately:
 ```python
-tts.speak("Hello world")
+client.speak("Hello world")
 ```
 
 ### 2. Streaming Playback
 
 Recommended for longer texts - streams audio as it's being synthesized:
 ```python
-tts.speak_streamed("This is a long text that will be streamed as it's synthesized")
+client.speak_streamed("This is a long text that will be streamed as it's synthesized")
 ```
 
 ### 3. File Output
 
 Save synthesized speech to a file:
 ```python
-tts.synth_to_file("Hello world", "output.wav")
+client.synth_to_file("Hello world", "output.wav")
 ```
 
 ### 4. Raw Audio Data
@@ -621,7 +593,7 @@ tts.synth_to_file("Hello world", "output.wav")
 For advanced use cases where you need the raw audio data:
 ```python
 # Get raw PCM audio data as bytes
-audio_bytes = tts.synth_to_bytes("Hello world")
+audio_bytes = client.synth_to_bytes("Hello world")
 ```
 
 ### Audio Format Notes
@@ -631,10 +603,10 @@ audio_bytes = tts.synth_to_bytes("Hello world")
   ```python
   from pydub import AudioSegment
   import io
-  
+
   # Get WAV data
-  audio_bytes = tts.synth_to_bytes("Hello world")
-  
+  audio_bytes = client.synth_to_bytes("Hello world")
+
   # Convert to MP3
   wav_audio = AudioSegment.from_wav(io.BytesIO(audio_bytes))
   wav_audio.export("output.mp3", format="mp3")
@@ -650,7 +622,7 @@ You can use the `synth_to_bytestream` method to synthesize audio in any supporte
 
 ```python
 # Synthesize text into a bytestream in MP3 format
-bytestream = tts.synth_to_bytestream("Hello, this is a test", format="mp3")
+bytestream = client.synth_to_bytestream("Hello, this is a test", format="mp3")
 
 # Save the audio bytestream to a file
 with open("output.mp3", "wb") as f:
@@ -672,13 +644,13 @@ import sounddevice as sd
 import numpy as np
 
 # Synthesize text into a bytestream in WAV format
-bytestream = tts.synth_to_bytestream("Hello, this is a live playback test", format="wav")
+bytestream = client.synth_to_bytestream("Hello, this is a live playback test", format="wav")
 
 # Convert the bytestream back to raw PCM audio data for playback
 audio_data = np.frombuffer(bytestream.read(), dtype=np.int16)
 
 # Play the audio using sounddevice
-sd.play(audio_data, samplerate=tts.audio_rate)
+sd.play(audio_data, samplerate=client.audio_rate)
 sd.wait()
 
 print("Live playback completed")
@@ -694,40 +666,39 @@ print("Live playback completed")
 For advanced use cases where you need direct control over audio playback, you can use the raw audio data methods:
 
 ```python
-from tts_wrapper import AVSynthClient, AVSynthTTS
+from tts_wrapper import AVSynthClient
 import numpy as np
 import sounddevice as sd
 
-# Initialize TTS
+# Initialize TTS client
 client = AVSynthClient()
-tts = AVSynthTTS(client)
 
 # Method 1: Direct playback of entire audio
-def play_audio_stream(tts, text: str):
+def play_audio_stream(client, text: str):
     """Play entire audio at once."""
     # Get raw audio data
-    audio_data = tts.synth_to_bytes(text)
-    
+    audio_data = client.synth_to_bytes(text)
+
     # Convert to numpy array for playback
     samples = np.frombuffer(audio_data, dtype=np.int16)
-    
+
     # Play the audio
-    sd.play(samples, samplerate=tts.audio_rate)
+    sd.play(samples, samplerate=client.audio_rate)
     sd.wait()
 
 # Method 2: Chunked playback for more control
-def play_audio_chunked(tts, text: str, chunk_size: int = 4096):
+def play_audio_chunked(client, text: str, chunk_size: int = 4096):
     """Process and play audio in chunks for more control."""
     # Get raw audio data
-    audio_data = tts.synth_to_bytes(text)
-    
+    audio_data = client.synth_to_bytes(text)
+
     # Create a continuous stream
     stream = sd.OutputStream(
-        samplerate=tts.audio_rate,
+        samplerate=client.audio_rate,
         channels=1,  # Mono audio
         dtype=np.int16
     )
-    
+
     with stream:
         # Process in chunks
         for i in range(0, len(audio_data), chunk_size):
@@ -825,7 +796,7 @@ This guide provides a step-by-step approach to adding a new engine to the existi
 1. **Create a new folder** for your engine within the `engines` directory. Name this folder according to your engine, such as `witai` for Wit.ai.
 
    Directory structure:
-   
+
    ```
    engines/witai/
    ```
@@ -833,9 +804,8 @@ This guide provides a step-by-step approach to adding a new engine to the existi
 2. **Create necessary files** within this new folder:
 
    - `__init__.py` - Makes the directory a Python package.
-   - `client.py` - Handles all interactions with the TTS API.
-   - `engine.py` - Contains the TTS class that integrates with your abstract TTS system.
-   - `ssml.py` - Defines any SSML handling specific to this engine.
+   - `client.py` - Handles all interactions with the TTS API and implements the AbstractTTS interface.
+   - `ssml.py` - Defines any SSML handling specific to this engine (optional).
 
    Final directory setup:
 
@@ -844,68 +814,56 @@ This guide provides a step-by-step approach to adding a new engine to the existi
    └── witai/
        ├── __init__.py
        ├── client.py
-       ├── engine.py
        └── ssml.py
    ```
 
 #### Step 2: Implement Client Functionality in `client.py`
 
-Implement authentication and necessary setup for API connection. This file should manage tasks such as sending synthesis requests and fetching available voices.
+Implement authentication and necessary setup for API connection. This file should manage tasks such as sending synthesis requests and fetching available voices. The client class should inherit from AbstractTTS.
 
 ```python
-class TTSClient:
-    def __init__(self, api_key):
-        self.api_key = api_key
+from tts_wrapper.tts import AbstractTTS
+
+class WitAiClient(AbstractTTS):
+    def __init__(self, credentials=None):
+        super().__init__()
+        self.token = credentials[0] if credentials else None
+        self.audio_rate = 24000  # Default sample rate for this engine
         # Setup other necessary API connection details here
 
-    def synth(self, text, options):
-        # Code to send a synthesis request to the TTS API
-        pass
-
-    def get_voices(self):
+    def _get_voices(self):
         # Code to retrieve available voices from the TTS API
+        # Return raw voice data that will be processed by the base class
+        pass
+
+    def synth_to_bytes(self, text, voice_id=None):
+        # Code to send a synthesis request to the TTS API
+        # Return raw audio bytes
+        pass
+
+    def synth(self, text, output_file, output_format="wav", voice_id=None):
+        # Code to synthesize speech and save to a file
         pass
 ```
 
-#### Step 3: Define the TTS Engine in `engine.py`
+#### Step 3: Implement SSML Handling (if needed)
 
-This class should inherit from the abstract TTS class and implement required methods such as `get_voices` and `synth_to_bytes`.
-
-```python
-from .client import TTSClient
-from your_tts_module.abstract_tts import AbstractTTS
-
-class WitTTS(AbstractTTS):
-    def __init__(self, api_key):
-        super().__init__()
-        self.client = TTSClient(api_key)
-
-    def get_voices(self):
-        return self.client.get_voices()
-
-    def synth_to_bytes(self, text, format='wav'):
-        return self.client.synth(text, {'format': format})
-```
-
-#### Step 4: Implement SSML Handling in `ssml.py`
-
-If the engine has specific SSML requirements or supports certain SSML tags differently, implement this logic here.
+If the engine has specific SSML requirements or supports certain SSML tags differently, implement this logic in `ssml.py`.
 
 ```python
-from your_tts_module.abstract_ssml import BaseSSMLRoot, SSMLNode
+from tts_wrapper.ssml import BaseSSMLRoot, SSMLNode
 
-class EngineSSML(BaseSSMLRoot):
+class WitAiSSML(BaseSSMLRoot):
     def add_break(self, time='500ms'):
         self.root.add(SSMLNode('break', attrs={'time': time}))
 ```
 
-#### Step 5: Update `__init__.py`
+#### Step 4: Update `__init__.py`
 
-Make sure the `__init__.py` file properly imports and exposes the TTS class and any other public classes or functions from your engine.
+Make sure the `__init__.py` file properly imports and exposes the client class.
 
 ```python
-from .engine import WitTTS
-from .ssml import EngineSSML
+from .client import WitAiClient
 ```
 
 #### NB: Credentials Files

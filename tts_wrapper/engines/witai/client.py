@@ -29,8 +29,12 @@ class WitAiClient:
         }
         return formats.get(format, "audio/raw")  # Default to PCM if unspecified
 
-    def get_voices(self) -> list[dict[str, Any]]:
-        """Fetches available voices from Wit.ai."""
+    def _get_voices(self) -> list[dict[str, Any]]:
+        """Fetches available voices from Wit.ai.
+
+        Returns:
+            List of voice dictionaries with raw language information
+        """
         headers = {"Authorization": f"Bearer {self.token}"}
         try:
             response = requests.get(
@@ -40,19 +44,22 @@ class WitAiClient:
             response.raise_for_status()
             voices = response.json()
             standardized_voices = []
+
             for locale_key, voice_list in voices.items():
+                # Get the original locale (e.g., "en_US")
                 locale = locale_key.replace("_", "-")
-                voice_entries = [
-                    {
-                        "id": voice["name"],
-                        "language_codes": [locale],
-                        "name": voice["name"].split("$")[1],
-                        "gender": voice["gender"],
-                        "styles": voice.get("styles", []),
-                    }
-                    for voice in voice_list
-                ]
-                standardized_voices.extend(voice_entries)
+
+                for voice in voice_list:
+                    standardized_voices.append(
+                        {
+                            "id": voice["name"],
+                            "language_codes": [locale],
+                            "name": voice["name"].split("$")[1],
+                            "gender": voice["gender"],
+                            "styles": voice.get("styles", []),
+                        }
+                    )
+
             return standardized_voices
         except requests.exceptions.RequestException as e:
             self.logger.exception("Failed to fetch voices from Wit.ai: %s", e)

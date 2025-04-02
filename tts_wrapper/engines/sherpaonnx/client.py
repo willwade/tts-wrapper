@@ -13,8 +13,10 @@ from typing import Any
 import numpy as np
 import requests
 
+from tts_wrapper.tts import AbstractTTS
 
-class SherpaOnnxClient:
+
+class SherpaOnnxClient(AbstractTTS):
     """Client for Sherpa-ONNX TTS engine. Client class."""
 
     MODELS_FILE = "merged_models.json"
@@ -34,6 +36,8 @@ class SherpaOnnxClient:
             model_id: Voice model ID
             no_default_download: If True, skip automatic download of default model
         """
+        super().__init__()
+
         # Initialize instance variables
         self._model_path = model_path
         self._tokens_path = tokens_path
@@ -49,6 +53,7 @@ class SherpaOnnxClient:
         # Initialize ONNX components
         self.tts = None
         self.sample_rate = 16000  # Default sample rate
+        self.audio_rate = 16000  # Default audio rate for playback
         self.audio_queue: queue.Queue = queue.Queue()
 
         # Load model configuration
@@ -282,8 +287,81 @@ class SherpaOnnxClient:
         )
         self.audio_queue.put(None)  # Signal the end of generation
 
-    def synth(self, text: str, sid: int = 0, speed: float = 1.0) -> tuple[bytes, int]:
-        """Generate the full audio without streaming."""
+    def synth_to_bytes(self, text: Any, voice_id: str | None = None) -> bytes:
+        """Transform written text to audio bytes.
+
+        Parameters
+        ----------
+        text : Any
+            The text to synthesize, can be plain text or SSML.
+        voice_id : str | None, optional
+            The ID of the voice to use for synthesis. If None, uses the voice set by set_voice.
+
+        Returns
+        -------
+        bytes
+            Raw PCM data with no headers for sounddevice playback.
+        """
+        self._init_onnx()
+
+        # If voice_id is provided, use it
+        if voice_id:
+            self.set_voice(voice_id)
+
+        # Extract sid from the current model
+        sid = 0  # Default speaker ID
+
+        # Generate audio
+        audio = self.tts.generate(str(text), sid=sid, speed=1.0)
+        if len(audio.samples) == 0:
+            msg = "Error in generating audio"
+            raise ValueError(msg)
+
+        # Convert to bytes
+        audio_bytes = self._convert_samples_to_bytes(audio.samples)
+
+        # Set audio rate for playback
+        self.audio_rate = self.sample_rate
+
+        return audio_bytes
+
+    def synth(
+        self,
+        text: Any,
+        output_file: str | Path,
+        output_format: str = "wav",
+        voice_id: str | None = None,
+    ) -> None:
+        """Synthesizes text to audio and saves it to a file.
+
+        Parameters
+        ----------
+        text : Any
+            The text to synthesize.
+        output_file : str | Path
+            The path to save the audio file to.
+        output_format : str
+            The format to save the audio file as. Default is "wav".
+        voice_id : str | None, optional
+            The ID of the voice to use for synthesis. If None, uses the voice set by set_voice.
+        """
+        import soundfile as sf
+
+        # Convert text to audio bytes
+        audio_bytes = self.synth_to_bytes(text, voice_id)
+
+        # Convert bytes to numpy array for soundfile
+        import numpy as np
+
+        audio_array = np.frombuffer(audio_bytes, dtype=np.int16)
+
+        # Save to file
+        sf.write(output_file, audio_array, self.audio_rate, format=output_format)
+
+    def synth_raw(
+        self, text: str, sid: int = 0, speed: float = 1.0
+    ) -> tuple[bytes, int]:
+        """Generate the full audio without streaming (legacy method)."""
         self._init_onnx()
         audio = self.tts.generate(text, sid=sid, speed=speed)
         if len(audio.samples) == 0:
@@ -292,18 +370,26 @@ class SherpaOnnxClient:
         audio_bytes = self._convert_samples_to_bytes(audio.samples)
         return audio_bytes, self.sample_rate
 
-    def get_voices(self) -> list[dict[str, str]]:
-        """Get available voices."""
-        return [
-            {
-                "id": voice["id"],
-                "name": voice["language"][0]["Language Name"],
-                "gender": "N",
-                "language_codes": [voice["language"][0]["Iso Code"]],
-            }
-            for key, voice in self.json_models.items()
-            if voice["id"].startswith("mms_")
-        ]
+    def _get_voices(self) -> list[dict[str, Any]]:
+        """Get available voices from the SherpaOnnx TTS service.
+
+        Returns:
+            List of voice dictionaries with raw language information
+        """
+        voices = []
+
+        for voice in self.json_models.values():
+            if voice["id"].startswith("mms_"):
+                voices.append(
+                    {
+                        "id": voice["id"],
+                        "name": voice["language"][0]["Language Name"],
+                        "language_codes": [voice["language"][0]["Iso Code"]],
+                        "gender": "N",
+                    }
+                )
+
+        return voices
 
     def set_voice(
         self, voice_id: str | None = None, lang_id: str | None = None

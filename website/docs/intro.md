@@ -59,12 +59,13 @@ For a detailed comparison of features across all engines, see our [Engines Overv
 - Streaming capabilities
 
 ### Developer-Friendly
+- Simple, unified architecture where engine clients directly implement the TTS interface
 - Consistent API across all engines
 - Type hints for better IDE support
-- Comprehensive documentation 
+- Comprehensive documentation
 - Rich example collection (see [examples](https://github.com/willwade/py3-tts-wrapper/tree/main/examples))
 - Active community support
 
 ## Getting Started
 
-Ready to get started? Check out our [Installation Guide](installation) to set up TTS Wrapper in your project, then move on to the [Basic Usage](guides/basic-usage) guide to learn how to use the library. 
+Ready to get started? Check out our [Installation Guide](installation) to set up TTS Wrapper in your project, then move on to the [Basic Usage](guides/basic-usage) guide to learn how to use the library.

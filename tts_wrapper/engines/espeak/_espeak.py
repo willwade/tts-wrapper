@@ -1,7 +1,7 @@
+import ctypes
 import logging
 import queue
 import struct
-import ctypes
 from ctypes import (
     CFUNCTYPE,
     POINTER,

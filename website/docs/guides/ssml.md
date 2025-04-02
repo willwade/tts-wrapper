@@ -11,14 +11,13 @@ Speech Synthesis Markup Language (SSML) support in TTS Wrapper is engine-depende
 Each TTS engine provides an SSML handler through the `ssml` property:
 
 ```python
-from tts_wrapper import PollyClient, PollyTTS
+from tts_wrapper import PollyClient
 
 client = PollyClient(credentials=('region', 'key_id', 'access_key'))
-tts = PollyTTS(client)
 
 # Create SSML using the handler
-ssml_text = tts.ssml.add('Hello <break time="500ms"/> world!')
-tts.speak(ssml_text)
+ssml_text = client.ssml.add('Hello <break time="500ms"/> world!')
+client.speak(ssml_text)
 ```
 
 ## Engine-Specific SSML
@@ -56,13 +55,13 @@ Each engine's SSML handler provides helper methods for common operations:
 
 ```python
 # Clear any existing SSML content
-tts.ssml.clear_ssml()
+client.ssml.clear_ssml()
 
 # Add text (may be plain text or SSML depending on engine)
-tts.ssml.add("Text to speak")
+client.ssml.add("Text to speak")
 
 # Get plain text (strips SSML tags)
-plain_text = tts.ssml.get_text()
+plain_text = client.ssml.get_text()
 ```
 
 ## Best Practices
@@ -77,28 +76,28 @@ plain_text = tts.ssml.get_text()
 Here's how to handle SSML across different engines:
 
 ```python
-def speak_with_pause(tts, text: str, pause_ms: int = 500) -> None:
+def speak_with_pause(client, text: str, pause_ms: int = 500) -> None:
     """Demonstrate SSML handling across engines."""
-    
+
     # Get the SSML handler for this engine
-    ssml = tts.ssml
+    ssml = client.ssml
     ssml.clear_ssml()
-    
-    if isinstance(tts, PollyTTS):
+
+    if isinstance(client, PollyClient):
         # Use Polly-specific SSML
         ssml_text = f'<speak>First part <break time="{pause_ms}ms"/> Second part</speak>'
-    elif isinstance(tts, AVSynthTTS):
+    elif isinstance(client, AVSynthClient):
         # Use AVSynth command format
         ssml_text = f'First part [[slnc {pause_ms}]] Second part'
     else:
         # For engines without SSML support, just use plain text
         ssml_text = f'First part. Second part'
-    
-    tts.speak(ssml.add(ssml_text))
+
+    client.speak(ssml.add(ssml_text))
 ```
 
 ## Next Steps
 
 - Learn about [audio control features](audio-control) for playback manipulation
 - Explore [streaming capabilities](streaming) for real-time synthesis
-- Check out [callback functionality](callbacks) for speech events 
+- Check out [callback functionality](callbacks) for speech events

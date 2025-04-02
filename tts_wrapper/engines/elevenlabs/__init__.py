@@ -1,2 +1,4 @@
 from .client import ElevenLabsClient
-from .elevenlabs import ElevenLabsTTS
+
+# For backward compatibility
+ElevenLabsTTS = ElevenLabsClient

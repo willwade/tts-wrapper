@@ -16,38 +16,38 @@ client = MicrosoftClient(
 tts = MicrosoftTTS(client)
 
 
-def test_speech(text: str, description: str = "") -> None:
-    """Helper to test speech with proper pausing."""
-    if description:
-        print(f"\n{description}")
-    print(f"Speaking: {text}")
-    tts.speak(text)
-    time.sleep(3)  # Wait for speech to complete
+# def test_speech(text: str, description: str = "") -> None:
+#     """Helper to test speech with proper pausing."""
+#     if description:
+#         print(f"\n{description}")
+#     print(f"Speaking: {text}")
+#     tts.speak(text)
+#     time.sleep(3)  # Wait for speech to complete
 
 
-print("\nTesting basic speech synthesis...")
-test_speech("This is a test of basic speech synthesis.")
+# print("\nTesting basic speech synthesis...")
+# test_speech("This is a test of basic speech synthesis.")
 
-print("\nTesting speech rates...")
-# Test predefined rates
-for rate in ["x-slow", "slow", "medium", "fast", "x-fast"]:
-    tts.set_property("rate", rate)
-    test_speech(f"This is {rate} speech rate.", f"Testing {rate} rate")
+# print("\nTesting speech rates...")
+# # Test predefined rates
+# for rate in ["x-slow", "slow", "medium", "fast", "x-fast"]:
+#     tts.set_property("rate", rate)
+#     test_speech(f"This is {rate} speech rate.", f"Testing {rate} rate")
 
-# Test numeric rates
-for rate in ["25", "50", "75"]:
-    tts.set_property("rate", rate)
-    test_speech(f"This is speech at {rate} percent speed.", f"Testing {rate}% rate")
+# # Test numeric rates
+# for rate in ["25", "50", "75"]:
+#     tts.set_property("rate", rate)
+#     test_speech(f"This is speech at {rate} percent speed.", f"Testing {rate}% rate")
 
-print("\nTesting volume levels...")
-for volume in ["20", "50", "100"]:
-    tts.set_property("volume", volume)
-    test_speech(f"This is volume level {volume}.", f"Testing volume {volume}")
+# print("\nTesting volume levels...")
+# for volume in ["20", "50", "100"]:
+#     tts.set_property("volume", volume)
+#     test_speech(f"This is volume level {volume}.", f"Testing volume {volume}")
 
-print("\nTesting pitch levels...")
-for pitch in ["x-low", "low", "medium", "high", "x-high"]:
-    tts.set_property("pitch", pitch)
-    test_speech(f"This is {pitch} pitch.", f"Testing {pitch} pitch")
+# print("\nTesting pitch levels...")
+# for pitch in ["x-low", "low", "medium", "high", "x-high"]:
+#     tts.set_property("pitch", pitch)
+#     test_speech(f"This is {pitch} pitch.", f"Testing {pitch} pitch")
 
 
 def my_callback(word: str, start_time: float, end_time: float) -> None:
@@ -79,6 +79,9 @@ try:
 
     # Start playback with callbacks
     tts.start_playback_with_callbacks(text, callback=my_callback)
+
+    # Debug: Print the timings collected
+    print(f"Timings collected: {tts.timings}")
 
     # Wait for speech to complete
     while tts.isplaying:

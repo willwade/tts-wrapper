@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import logging
 import math
 import os
@@ -8,7 +10,7 @@ import winreg
 from ctypes import POINTER, c_int, c_ulong, c_void_p, c_wchar_p
 from queue import Queue
 from threading import Thread
-from typing import Any, Union
+from typing import TYPE_CHECKING, Any, Callable
 
 import comtypes
 import comtypes.client
@@ -17,8 +19,12 @@ from comtypes import COMMETHOD, GUID, HRESULT, windll
 from tts_wrapper.engines.utils import (
     estimate_word_timings,  # Import the timing estimation function
 )
+from tts_wrapper.tts import AbstractTTS
 
 from .ssml import SAPISSML
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 SAPI4_CLSID = "{179F3D56-1B0B-42B2-A962-59B7EF59FE1B}"
 SAPI5_CLSID = "SAPI.SpVoice"
@@ -170,18 +176,20 @@ def configure_sapi4_surrogacy(clsid: str, appid: str, dll_path: str) -> None:
     print("SAPI 4 surrogacy setup completed.")
 
 
-class SAPIClient:
+class SAPIClient(AbstractTTS):
     def __init__(self, sapi_version: int = 5):
         """
         Initialize the SAPI client for SAPI4 or SAPI5.
         Args:
             sapi_version (int): SAPI version to use (4 or 5).
         """
+        super().__init__()
         if platform.system() != "Windows":
             msg = "SAPI is only supported on Windows."
             raise UnsupportedPlatformError(msg)
         comtypes.CoInitialize()
-        self._ssml = SAPISSML()
+        self.ssml = SAPISSML()
+        self.audio_rate = 16000  # Default sample rate for SAPI
         if sapi_version == 4:
             try:
                 clsid = "A910187F-0C7A-45AC-92CC-59EDAFB77B53"
@@ -219,9 +227,13 @@ class SAPIClient:
             msg = "Events are not supported for SAPI 4."
             raise NotImplementedError(msg)
 
-    def get_voices(self) -> list[dict[str, Any]]:
+    def get_voices(self, langcodes: str = "bcp47") -> list[dict[str, Any]]:
         """
         Retrieve available voices.
+
+        Args:
+            langcodes: Format for language codes (not used in SAPI)
+
         Returns:
             List[dict]: A list of voices with metadata.
         """
@@ -239,11 +251,13 @@ class SAPIClient:
             for voice in voices
         ]
 
-    def set_voice(self, voice_id: str) -> None:
+    def set_voice(self, voice_id: str, lang: str | None = None) -> None:
         """
         Set the active voice by ID.
+
         Args:
-            voice_id (str): The ID of the voice to set.
+            voice_id: The ID of the voice to set
+            lang: Optional language code (not used in SAPI)
         """
         for voice in self._tts.GetVoices():
             if voice.Id == voice_id:
@@ -252,7 +266,7 @@ class SAPIClient:
         msg = f"Voice with ID {voice_id} not found."
         raise ValueError(msg)
 
-    def set_property(self, name: str, value: Union[str, int, float]) -> None:
+    def set_property(self, name: str, value: str | int | float) -> None:
         print("property set")
         """
         Set a property for the TTS engine.
@@ -268,20 +282,22 @@ class SAPIClient:
             msg = f"Unknown property: {name}"
             raise KeyError(msg)
 
-    def synth(self, ssml: str) -> tuple[bytes, list[dict]]:
+    def synth_raw(self, text: str) -> tuple[bytes, list[dict]]:
         """
-        Synthesize SSML into audio and return raw data with word timings.
+        Synthesize text into audio and return raw data with word timings.
+
         Args:
-            ssml (str): SSML-formatted text to synthesize.
+            text: Text to synthesize
+
         Returns:
-            Tuple[bytes, List[dict]]: Audio bytes and word timing metadata.
+            Tuple[bytes, List[dict]]: Audio bytes and word timing metadata
         """
         logging.debug("SAPI synthesis to bytes started.")
-        audio_queue = Queue()
+        audio_queue: Queue = Queue()
 
-        # word_timings = []
-        if not self._is_ssml(ssml):
-            ssml = self._convert_to_ssml(ssml)
+        # Convert to SSML if needed
+        if not self._is_ssml(text):
+            text = self._convert_to_ssml(text)
 
         def audio_writer():
             comtypes.CoInitialize()
@@ -290,7 +306,7 @@ class SAPIClient:
             stream = comtypes.client.CreateObject("SAPI.SpMemoryStream")
             stream.Format = format
             self._tts.AudioOutputStream = stream
-            self._tts.Speak(ssml)
+            self._tts.Speak(text)
 
             audio_queue.put(stream.GetData())
 
@@ -303,7 +319,57 @@ class SAPIClient:
 
         logging.debug("SAPI synthesis completed.")
 
+        # Estimate word timings based on text
+        word_timings = estimate_word_timings(text)
+
         return audio_bytes, word_timings
+
+    def synth_to_bytes(self, text: Any, voice_id: str | None = None) -> bytes:
+        """
+        Transform written text to audio bytes.
+
+        Args:
+            text: The text to synthesize
+            voice_id: Optional voice ID to use for this synthesis
+
+        Returns:
+            Raw audio bytes
+        """
+        # Set voice if provided
+        if voice_id:
+            self.set_voice(voice_id)
+
+        # Get audio data with word timings
+        audio_bytes, _ = self.synth_raw(str(text))
+        return audio_bytes
+
+    def synth(
+        self,
+        text: Any,
+        output_file: str | Path,
+        output_format: str = "wav",
+        voice_id: str | None = None,
+    ) -> None:
+        """
+        Synthesize text to audio and save to a file.
+
+        Args:
+            text: The text to synthesize
+            output_file: Path to save the audio file
+            output_format: Format to save as (only "wav" is supported)
+            voice_id: Optional voice ID to use for this synthesis
+        """
+        # Check format
+        if output_format.lower() != "wav":
+            msg = f"Unsupported format: {output_format}. Only 'wav' is supported."
+            raise ValueError(msg)
+
+        # Get audio bytes
+        audio_bytes = self.synth_to_bytes(text, voice_id)
+
+        # Save to file
+        with open(output_file, "wb") as f:
+            f.write(audio_bytes)
 
     def _is_ssml(self, text: str) -> bool:
         return bool(re.match(r"^\s*<speak>", text, re.IGNORECASE))
@@ -315,6 +381,61 @@ class SAPIClient:
             ssml_parts.append(f'<mark name="word{i}"/>{word}')
         ssml_parts.append("</speak>")
         return " ".join(ssml_parts)
+
+    def connect(self, event_name: str, callback: Callable[[], None]) -> None:
+        """Connect a callback to an event.
+
+        Args:
+            event_name: Name of the event to connect to (e.g., 'onStart', 'onEnd')
+            callback: Function to call when the event occurs
+        """
+        if not hasattr(self, "_callbacks"):
+            self._callbacks = {}
+        if event_name not in self._callbacks:
+            self._callbacks[event_name] = []
+        self._callbacks[event_name].append(callback)
+
+    def start_playback_with_callbacks(
+        self, text: str, callback: Callable | None = None, voice_id: str | None = None
+    ) -> None:
+        """Start playback with word timing callbacks.
+
+        Args:
+            text: The text to synthesize
+            callback: Function to call for each word timing
+            voice_id: Optional voice ID to use for this synthesis
+        """
+        # Set voice if provided
+        if voice_id:
+            self.set_voice(voice_id)
+
+        # Trigger onStart callbacks
+        if hasattr(self, "_callbacks") and "onStart" in self._callbacks:
+            for cb in self._callbacks["onStart"]:
+                cb()
+
+        # Get audio bytes and word timings
+        audio_bytes, word_timings = self.synth_raw(str(text))
+
+        # Call the callback for each word timing if provided
+        if callback is not None:
+            for timing in word_timings:
+                if isinstance(timing, tuple) and len(timing) == 3:
+                    # Tuple format: (word, start_time, end_time)
+                    callback(timing[0], timing[1], timing[2])
+                elif (
+                    isinstance(timing, dict)
+                    and "word" in timing
+                    and "start" in timing
+                    and "end" in timing
+                ):
+                    # Dict format: {"word": word, "start": start_time, "end": end_time}
+                    callback(timing["word"], timing["start"], timing["end"])
+
+        # Trigger onEnd callbacks
+        if hasattr(self, "_callbacks") and "onEnd" in self._callbacks:
+            for cb in self._callbacks["onEnd"]:
+                cb()
 
     def synth_streaming(self, ssml: str) -> tuple[Queue, list[dict]]:
         """

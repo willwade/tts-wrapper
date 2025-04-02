@@ -7,51 +7,41 @@ import pytest
 
 from tts_wrapper import (
     ElevenLabsClient,
-    ElevenLabsTTS,
     GoogleClient,
     GoogleTransClient,
-    GoogleTransTTS,
-    GoogleTTS,
     MicrosoftClient,
-    MicrosoftTTS,
     PlayHTClient,
-    PlayHTTTS,
     PollyClient,
-    PollyTTS,
     SherpaOnnxClient,
-    SherpaOnnxTTS,
     WatsonClient,
-    WatsonTTS,
     WitAiClient,
-    WitAiTTS,
     eSpeakClient,
-    eSpeakTTS,
 )
 
 # Import AVSynth conditionally for macOS
 if sys.platform == "darwin":
-    from tts_wrapper import AVSynthClient, AVSynthTTS
+    from tts_wrapper import AVSynthClient
 
-# Dictionary mapping service names to their TTS classes
+# Dictionary mapping service names to their client classes
 TTS_CLIENTS = {
-    "polly": PollyTTS,
-    "google": GoogleTTS,
-    "microsoft": MicrosoftTTS,
-    "watson": WatsonTTS,
-    "elevenlabs": ElevenLabsTTS,
-    "witai": WitAiTTS,
-    "googletrans": GoogleTransTTS,
-    "sherpaonnx": SherpaOnnxTTS,
-    "espeak": eSpeakTTS,
-    "playht": PlayHTTTS,
+    "polly": PollyClient,
+    "google": GoogleClient,
+    "microsoft": MicrosoftClient,
+    "watson": WatsonClient,
+    "elevenlabs": ElevenLabsClient,
+    "witai": WitAiClient,
+    "googletrans": GoogleTransClient,
+    "sherpaonnx": SherpaOnnxClient,
+    "espeak": eSpeakClient,
+    "playht": PlayHTClient,
 }
 
 # Add AVSynth only on macOS
 if sys.platform == "darwin":
-    TTS_CLIENTS["avsynth"] = AVSynthTTS
+    TTS_CLIENTS["avsynth"] = AVSynthClient
 
 # Dictionary to cache credential validation results
-VALID_CREDENTIALS = {}
+VALID_CREDENTIALS: dict[str, bool] = {}
 
 
 def check_credentials(service):
@@ -59,6 +49,28 @@ def check_credentials(service):
     # Return cached result if available
     if service in VALID_CREDENTIALS:
         return VALID_CREDENTIALS[service]
+
+    # For AVSynth, check if we're on macOS
+    if service == "avsynth":
+        if sys.platform != "darwin":
+            VALID_CREDENTIALS[service] = False
+            return False
+        VALID_CREDENTIALS[service] = True
+        return True
+
+    # Special cases for services that don't need credentials
+    if service in ["espeak", "sherpaonnx", "googletrans"]:
+        # For these services, just return True
+        VALID_CREDENTIALS[service] = True
+        return True
+
+    # For PlayHT, check if environment variables are set
+    if service == "playht":
+        if os.getenv("PLAYHT_USER_ID") and os.getenv("PLAYHT_API_KEY"):
+            VALID_CREDENTIALS[service] = True
+            return True
+        VALID_CREDENTIALS[service] = False
+        return False
 
     try:
         # Create client based on service type
@@ -124,58 +136,46 @@ def check_credentials(service):
 
 def create_tts_client(service):
     """Create a TTS client for the specified service."""
-    # First create the client instance
     if service == "polly":
-        client = PollyClient(
+        return PollyClient(
             credentials=(
                 os.getenv("POLLY_REGION"),
                 os.getenv("POLLY_AWS_KEY_ID"),
                 os.getenv("POLLY_AWS_ACCESS_KEY"),
             )
         )
-        return PollyTTS(client)
     if service == "google":
         # For Google, credentials should be a file path
         credentials_path = os.getenv("GOOGLE_SA_PATH")
-        client = GoogleClient(credentials=credentials_path)
-        return GoogleTTS(client)
+        return GoogleClient(credentials=credentials_path)
     if service == "microsoft":
-        client = MicrosoftClient(
+        return MicrosoftClient(
             credentials=(os.getenv("MICROSOFT_TOKEN"), os.getenv("MICROSOFT_REGION"))
         )
-        return MicrosoftTTS(client)
     if service == "watson":
-        client = WatsonClient(
+        return WatsonClient(
             credentials=(
                 os.getenv("WATSON_API_KEY"),
                 os.getenv("WATSON_REGION"),
                 os.getenv("WATSON_INSTANCE_ID"),
             )
         )
-        return WatsonTTS(client)
     if service == "elevenlabs":
-        client = ElevenLabsClient(credentials=os.getenv("ELEVENLABS_API_KEY"))
-        return ElevenLabsTTS(client)
+        return ElevenLabsClient(credentials=os.getenv("ELEVENLABS_API_KEY"))
     if service == "witai":
-        client = WitAiClient(credentials=os.getenv("WITAI_API_KEY"))
-        return WitAiTTS(client)
+        return WitAiClient(credentials=os.getenv("WITAI_API_KEY"))
     if service == "googletrans":
-        client = GoogleTransClient()
-        return GoogleTransTTS(client)
+        return GoogleTransClient()
     if service == "sherpaonnx":
-        client = SherpaOnnxClient()
-        return SherpaOnnxTTS(client)
+        return SherpaOnnxClient()
     if service == "espeak":
-        client = eSpeakClient()
-        return eSpeakTTS(client)
+        return eSpeakClient()
     if service == "playht":
-        client = PlayHTClient(
+        return PlayHTClient(
             credentials=(os.getenv("PLAYHT_USER_ID"), os.getenv("PLAYHT_API_KEY"))
         )
-        return PlayHTTTS(client)
     if service == "avsynth" and sys.platform == "darwin":
-        client = AVSynthClient()
-        return AVSynthTTS(client)
+        return AVSynthClient()
     msg = f"Unknown service or not available on this platform: {service}"
     raise ValueError(msg)
 
@@ -189,12 +189,12 @@ def test_synth_to_bytes(service):
             f"{service.capitalize()} TTS credentials are invalid or unavailable"
         )
 
-    tts = create_tts_client(service)
+    client = create_tts_client(service)
 
     # Plain text demo
     text = "Hello, this is a test."
     try:
-        audio_bytes = tts.synth_to_bytes(text)
+        audio_bytes = client.synth_to_bytes(text)
         assert isinstance(audio_bytes, bytes)
         assert len(audio_bytes) > 0
     except Exception as e:
@@ -202,8 +202,8 @@ def test_synth_to_bytes(service):
 
     # SSML text demo
     try:
-        ssml_text = tts.ssml.add(text)
-        audio_bytes = tts.synth_to_bytes(ssml_text)
+        ssml_text = client.ssml.add(text)
+        audio_bytes = client.synth_to_bytes(ssml_text)
         assert isinstance(audio_bytes, bytes)
         assert len(audio_bytes) > 0
     except (AttributeError, NotImplementedError):
@@ -216,14 +216,26 @@ def test_synth_to_bytes(service):
 @pytest.mark.synthetic
 @pytest.mark.parametrize("service", TTS_CLIENTS.keys())
 def test_playback_with_callbacks(service):
-    # Skip tests for engines with invalid credentials
-    if not check_credentials(service):
+    # Special handling for services that don't need credentials
+    if service in ["espeak", "sherpaonnx", "googletrans"]:
+        # These services don't need credentials, continue with the test
+        pass
+    # For AVSynth, check if we're on macOS
+    elif service == "avsynth":
+        if sys.platform != "darwin":
+            pytest.skip("AVSynth is only available on macOS")
+    # For PlayHT, check if environment variables are set
+    elif service == "playht":
+        if not (os.getenv("PLAYHT_USER_ID") and os.getenv("PLAYHT_API_KEY")):
+            pytest.skip("PlayHT credentials are not set")
+    # For other services, check credentials
+    elif not check_credentials(service):
         pytest.skip(
             f"{service.capitalize()} TTS credentials are invalid or unavailable"
         )
 
     # Initialize TTS client for the service
-    tts = create_tts_client(service)
+    client = create_tts_client(service)
 
     # Mocks for callbacks
     my_callback = Mock()
@@ -233,18 +245,18 @@ def test_playback_with_callbacks(service):
     # Example text and SSML text
     text = "Hello, this is a word timing test"
     try:
-        ssml_text = tts.ssml.add(text)
+        ssml_text = client.ssml.add(text)
     except (AttributeError, NotImplementedError):
         # Fall back to plain text for engines that don't support SSML
         ssml_text = text
 
     # Connect mock callbacks to the TTS instance
-    tts.connect("onStart", on_start)
-    tts.connect("onEnd", on_end)
+    client.connect("onStart", on_start)
+    client.connect("onEnd", on_end)
 
     # Run playback with callbacks
     try:
-        tts.start_playback_with_callbacks(ssml_text, callback=my_callback)
+        client.start_playback_with_callbacks(ssml_text, callback=my_callback)
         # Wait for playback to start and complete
         time.sleep(1)  # Wait for playback to start
         # Wait additional time for playback to complete
@@ -272,7 +284,6 @@ def test_playback_with_callbacks(service):
     # 2. Some engines may combine words or split them differently
 
     # Instead of checking exact word matches, we'll verify:
-    # - For most engines, there should be approximately the same number of callbacks as words
     # - Each callback should have the right structure (word, start_time, end_time)
     # - The timing values should be reasonable (start_time < end_time)
 

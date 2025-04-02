@@ -1,21 +1,93 @@
+from __future__ import annotations
+
 import base64
 import json
+from typing import TYPE_CHECKING, Any, Callable
 
 import requests
+
+from tts_wrapper.tts import AbstractTTS
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 audio_format = ("pcm_22050",)
 
 
-class ElevenLabsClient:
+class ElevenLabsClient(AbstractTTS):
     def __init__(self, credentials) -> None:
+        super().__init__()
         if not credentials:
             msg = "An API key for ElevenLabs must be provided"
             raise ValueError(msg)
         # Extract the API key from credentials tuple
         self.api_key = credentials[0] if isinstance(credentials, tuple) else credentials
         self.base_url = "https://api.elevenlabs.io"
+        self.audio_rate = 22050  # Default sample rate for ElevenLabs
+
+    def set_voice(self, voice_id: str, lang: str | None = None) -> None:
+        """Set the voice to use for synthesis.
+
+        Args:
+            voice_id: The voice ID to use
+            lang: Optional language code (not used in ElevenLabs)
+        """
+        self.voice_id = voice_id
+
+    def synth_to_bytes(self, text: Any, voice_id: str | None = None) -> bytes:
+        """Transform written text to audio bytes.
+
+        Args:
+            text: The text to synthesize
+            voice_id: Optional voice ID to use for this synthesis
+
+        Returns:
+            Raw audio bytes
+        """
+        # Use provided voice_id or the one set with set_voice
+        voice = voice_id if voice_id else getattr(self, "voice_id", None)
+
+        if not voice:
+            # Use a default voice if none is set
+            voices = self._get_voices()
+            if voices:
+                voice = voices[0]["id"]
+            else:
+                msg = "No voice ID provided and no default voice available"
+                raise ValueError(msg)
+
+        # Get audio data with word timings
+        audio_bytes, _ = self.synth_raw(str(text), voice)
+        return audio_bytes
 
     def synth(
+        self,
+        text: Any,
+        output_file: str | Path,
+        output_format: str = "wav",
+        voice_id: str | None = None,
+    ) -> None:
+        """Synthesize text to audio and save to a file.
+
+        Args:
+            text: The text to synthesize
+            output_file: Path to save the audio file
+            output_format: Format to save as (only "wav" is supported)
+            voice_id: Optional voice ID to use for this synthesis
+        """
+        # Check format
+        if output_format.lower() != "wav":
+            msg = f"Unsupported format: {output_format}. Only 'wav' is supported."
+            raise ValueError(msg)
+
+        # Get audio bytes
+        audio_bytes = self.synth_to_bytes(text, voice_id)
+
+        # Save to file
+        with open(output_file, "wb") as f:
+            f.write(audio_bytes)
+
+    def synth_raw(
         self,
         text: str,
         voice_id: str,
@@ -212,3 +284,107 @@ class ElevenLabsClient:
             return standardized_voices
         response.raise_for_status()
         return None
+
+    def _get_voices(self) -> list[dict[str, Any]]:
+        """Fetches available voices from ElevenLabs.
+
+        Returns:
+            List of voice dictionaries with raw language information
+        """
+        url = f"{self.base_url}/v1/voices"
+        headers = {"xi-api-key": self.api_key}
+        response = requests.get(url, headers=headers)
+
+        if response.status_code == 200:
+            voices_data = response.json()["voices"]
+            standardized_voices = []
+
+            for voice in voices_data:
+                standardized_voice = {
+                    "id": voice["voice_id"],
+                    "language_codes": ["en-US"],  # Default to English
+                    "name": voice["name"],
+                    "gender": "unknown",  # ElevenLabs doesn't provide gender info
+                }
+                standardized_voices.append(standardized_voice)
+
+            return standardized_voices
+        return []
+
+    def connect(self, event_name: str, callback: Callable[[], None]) -> None:
+        """Connect a callback to an event.
+
+        Args:
+            event_name: Name of the event to connect to (e.g., 'onStart', 'onEnd')
+            callback: Function to call when the event occurs
+        """
+        if not hasattr(self, "_callbacks"):
+            self._callbacks: dict[str, list[Callable[[], None]]] = {}
+        if event_name not in self._callbacks:
+            self._callbacks[event_name] = []
+        self._callbacks[event_name].append(callback)
+
+    def start_playback_with_callbacks(
+        self, text: str, callback: Callable | None = None, voice_id: str | None = None
+    ) -> None:
+        """Start playback with word timing callbacks.
+
+        Args:
+            text: The text to synthesize
+            callback: Function to call for each word timing
+            voice_id: Optional voice ID to use for this synthesis
+        """
+        # Trigger onStart callbacks
+        if hasattr(self, "_callbacks") and "onStart" in self._callbacks:
+            for cb in self._callbacks["onStart"]:
+                cb()
+
+        # Use provided voice_id or the one set with set_voice
+        voice = voice_id if voice_id else getattr(self, "voice_id", None)
+
+        if not voice:
+            # Use a default voice if none is set
+            voices = self._get_voices()
+            if voices:
+                voice = voices[0]["id"]
+            else:
+                msg = "No voice ID provided and no default voice available"
+                raise ValueError(msg)
+
+        # Synthesize with word timings
+        try:
+            audio_bytes, word_timings = self.synth_raw(str(text), voice)
+            self._audio_bytes = audio_bytes
+
+            # Call the callback for each word timing if provided
+            if callback is not None and word_timings:
+                for start_time, end_time, word in word_timings:
+                    callback(word, start_time, end_time)
+        except Exception:
+            # Fallback to regular synthesis without timings
+            self._audio_bytes = self.synth_to_bytes(text, voice)
+
+            # Estimate word timings based on text length
+            if callback is not None:
+                words = str(text).split()
+                total_duration = 0.0  # We don't know the duration
+
+                # Try to get duration from the audio bytes
+                try:
+                    # Estimate 10 words per second as a fallback
+                    total_duration = len(words) / 10.0
+                except Exception:
+                    pass
+
+                time_per_word = total_duration / len(words) if words else 0
+
+                current_time = 0.0
+                for word in words:
+                    end_time = current_time + time_per_word
+                    callback(word, current_time, end_time)
+                    current_time = end_time
+
+        # Trigger onEnd callbacks
+        if hasattr(self, "_callbacks") and "onEnd" in self._callbacks:
+            for cb in self._callbacks["onEnd"]:
+                cb()

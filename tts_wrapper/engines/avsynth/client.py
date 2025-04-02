@@ -1,22 +1,32 @@
+from __future__ import annotations
+
 import base64
 import json
 import logging
 import subprocess
-from collections.abc import Generator
 from importlib import resources
 from pathlib import Path
-from typing import IO, Any, Optional
+from typing import IO, TYPE_CHECKING, Any, Callable
+
+from tts_wrapper.engines.avsynth.ssml import AVSynthSSML
+from tts_wrapper.tts import AbstractTTS
+
+if TYPE_CHECKING:
+    from collections.abc import Generator
 
 
-class AVSynthClient:
+class AVSynthClient(AbstractTTS):
     """Client for macOS AVSpeechSynthesizer."""
 
     def __init__(self) -> None:
         """Initialize the AVSynth client."""
+        super().__init__()
         self._check_swift_bridge()
         self.bridge_path = self._get_bridge_path()
         if not self.bridge_path.exists():
             self._build_bridge()
+        self.ssml = AVSynthSSML()
+        self.audio_rate = 16000  # Default sample rate for AVSynth
 
     def _get_bridge_path(self) -> Path:
         """Get the path to the Swift bridge executable."""
@@ -57,8 +67,21 @@ class AVSynthClient:
             logging.error("Failed to build Swift bridge: %s", e.stderr)
             raise
 
-    def get_voices(self) -> list[dict[str, Any]]:
-        """Get available voices from AVSpeechSynthesizer."""
+    def set_voice(self, voice_id: str, lang: str | None = None) -> None:
+        """Set the voice to use for synthesis.
+
+        Args:
+            voice_id: The voice ID to use
+            lang: Optional language code (not used in AVSynth)
+        """
+        self.voice_id = voice_id
+
+    def _get_voices(self) -> list[dict[str, Any]]:
+        """Get available voices from AVSpeechSynthesizer.
+
+        Returns:
+            List of voice dictionaries with raw language information
+        """
         try:
             result = subprocess.run(
                 [str(self.bridge_path), "list-voices"],
@@ -123,7 +146,57 @@ class AVSynthClient:
                     return 1.0  # Default to medium pitch
         return float(value)
 
-    def synth(self, text: str, options: dict) -> tuple[bytes, list[dict]]:
+    def synth_to_bytes(self, text: Any, voice_id: str | None = None) -> bytes:
+        """Transform written text to audio bytes.
+
+        Args:
+            text: The text to synthesize
+            voice_id: Optional voice ID to use for this synthesis
+
+        Returns:
+            Raw audio bytes
+        """
+        # Create options dictionary
+        options = {}
+
+        # Use provided voice_id or the one set with set_voice
+        if voice_id:
+            options["voice"] = voice_id
+        elif hasattr(self, "voice_id") and self.voice_id:
+            options["voice"] = self.voice_id
+
+        # Get audio data with word timings
+        audio_bytes, _ = self.synth_raw(str(text), options)
+        return audio_bytes
+
+    def synth(
+        self,
+        text: Any,
+        output_file: str | Path,
+        output_format: str = "wav",
+        voice_id: str | None = None,
+    ) -> None:
+        """Synthesize text to audio and save to a file.
+
+        Args:
+            text: The text to synthesize
+            output_file: Path to save the audio file
+            output_format: Format to save as (only "wav" is supported)
+            voice_id: Optional voice ID to use for this synthesis
+        """
+        # Check format
+        if output_format.lower() != "wav":
+            msg = f"Unsupported format: {output_format}. Only 'wav' is supported."
+            raise ValueError(msg)
+
+        # Get audio bytes
+        audio_bytes = self.synth_to_bytes(text, voice_id)
+
+        # Save to file
+        with open(output_file, "wb") as f:
+            f.write(audio_bytes)
+
+    def synth_raw(self, text: str, options: dict) -> tuple[bytes, list[dict]]:
         """Synthesize text to speech using AVSpeechSynthesizer."""
         try:
             cmd = [str(self.bridge_path), "synth", text]
@@ -185,8 +258,78 @@ class AVSynthClient:
             logging.error("Failed to parse synthesis response: %s", e)
             raise
 
+    def connect(self, event_name: str, callback: Callable[[], None]) -> None:
+        """Connect a callback to an event.
+
+        Args:
+            event_name: Name of the event to connect to (e.g., 'onStart', 'onEnd')
+            callback: Function to call when the event occurs
+        """
+        if not hasattr(self, "_callbacks"):
+            self._callbacks: dict[str, list[Callable[[], None]]] = {}
+        if event_name not in self._callbacks:
+            self._callbacks[event_name] = []
+        self._callbacks[event_name].append(callback)
+
+    def start_playback_with_callbacks(
+        self, text: str, callback: Callable | None = None, voice_id: str | None = None
+    ) -> None:
+        """Start playback with word timing callbacks.
+
+        Args:
+            text: The text to synthesize
+            callback: Function to call for each word timing
+            voice_id: Optional voice ID to use for this synthesis
+        """
+        # Trigger onStart callbacks
+        if hasattr(self, "_callbacks") and "onStart" in self._callbacks:
+            for cb in self._callbacks["onStart"]:
+                cb()
+
+        # Create options dictionary
+        options = {}
+
+        # Use provided voice_id or the one set with set_voice
+        if voice_id:
+            options["voice"] = voice_id
+        elif hasattr(self, "voice_id") and self.voice_id:
+            options["voice"] = self.voice_id
+
+        # Synthesize with word timings
+        try:
+            audio_bytes, word_timings = self.synth_raw(str(text), options)
+
+            # Call the callback for each word timing if provided
+            if callback is not None and word_timings:
+                for timing in word_timings:
+                    if "start" in timing and "end" in timing and "word" in timing:
+                        # Convert start and end times to float if they're integers
+                        start_time = float(timing["start"])
+                        end_time = float(timing["end"])
+                        callback(timing["word"], start_time, end_time)
+        except Exception:
+            # Fallback to regular synthesis without timings
+            self.synth_to_bytes(text, voice_id)
+
+            # Estimate word timings based on text length
+            if callback is not None:
+                words = str(text).split()
+                total_duration = 2.0  # Estimate 2 seconds for the audio
+                time_per_word = total_duration / len(words) if words else 0
+
+                current_time = 0.0
+                for word in words:
+                    end_time = current_time + time_per_word
+                    callback(word, current_time, end_time)
+                    current_time = end_time
+
+        # Trigger onEnd callbacks
+        if hasattr(self, "_callbacks") and "onEnd" in self._callbacks:
+            for cb in self._callbacks["onEnd"]:
+                cb()
+
     def synth_streaming(
-        self, text: str, options: Optional[dict[str, Any]] = None
+        self, text: str, options: dict[str, Any] | None = None
     ) -> tuple[Generator[bytes, None, None], list[dict[str, Any]]]:
         """Stream synthesized speech and word timings."""
         if options is None:

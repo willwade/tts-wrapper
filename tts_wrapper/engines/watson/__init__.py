@@ -1,3 +1,5 @@
 from .client import WatsonClient
 from .ssml import WatsonSSML
-from .watson import WatsonTTS
+
+# For backward compatibility
+WatsonTTS = WatsonClient
