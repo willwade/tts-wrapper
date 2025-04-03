@@ -769,7 +769,7 @@ This will install Python dependencies and system dependencies required for this 
 
 3. Install Python dependencies:
    ```sh
-   uv sync
+   uv sync --all-extras
    ```
 
 4. Install system dependencies (Linux only):

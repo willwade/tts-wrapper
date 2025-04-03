@@ -55,25 +55,51 @@ class eSpeakClient(AbstractTTS):
             self._espeak.set_voice(self.voice_id)
 
         # Convert text to string safely
-        text_str = str(text)
+        try:
+            text_str = str(text)
+            logging.debug(
+                f"Text to synthesize: {text_str[:100]}{'...' if len(text_str) > 100 else ''}"
+            )
+        except Exception as e:
+            logging.error(f"Failed to convert text to string: {e}")
+            # Return empty audio as fallback
+            return b""
 
         # Check if the text is SSML
-        is_ssml = self._is_ssml(text_str)
+        try:
+            is_ssml = self._is_ssml(text_str)
+            logging.debug(f"Is SSML: {is_ssml}")
+        except Exception as e:
+            logging.error(f"Failed to check if text is SSML: {e}")
+            is_ssml = False
 
+        # Try synthesis with appropriate flags
         try:
             # Get audio data with word timings
+            logging.debug(f"Synthesizing with SSML={is_ssml}")
             audio_bytes, _ = self._espeak.synth(text_str, ssml=is_ssml)
+            logging.debug(f"Synthesis successful, audio size: {len(audio_bytes)} bytes")
             return audio_bytes
         except Exception as e:
+            logging.error(f"Synthesis failed: {e}")
             # If SSML processing fails, try again with plain text
             if is_ssml:
-                logging.warning(
-                    f"SSML processing failed, falling back to plain text: {e}"
-                )
-                audio_bytes, _ = self._espeak.synth(text_str, ssml=False)
-                return audio_bytes
-            # If it's not SSML, re-raise the exception
-            raise
+                try:
+                    logging.warning(
+                        "SSML processing failed, falling back to plain text"
+                    )
+                    audio_bytes, _ = self._espeak.synth(text_str, ssml=False)
+                    logging.debug(
+                        f"Plain text synthesis successful, audio size: {len(audio_bytes)} bytes"
+                    )
+                    return audio_bytes
+                except Exception as e2:
+                    logging.error(f"Plain text synthesis also failed: {e2}")
+                    # Return empty audio as fallback
+                    return b""
+            # If it's not SSML, return empty audio as fallback
+            logging.error("Returning empty audio due to synthesis failure")
+            return b""
 
     def synth(
         self,

@@ -312,17 +312,25 @@ class EspeakLib:
                         length = current_event.length
 
                         # Get the raw word segment from the input text
-                        raw_word_text = self.input_text[text_position:text_position + length]
+                        raw_word_text = self.input_text[
+                            text_position : text_position + length
+                        ]
 
                         # Find the complete word by expanding to word boundaries
                         # Look backward for the start of the word (whitespace or beginning of text)
                         start_pos = text_position
-                        while start_pos > 0 and not self.input_text[start_pos-1].isspace():
+                        while (
+                            start_pos > 0
+                            and not self.input_text[start_pos - 1].isspace()
+                        ):
                             start_pos -= 1
 
                         # Look forward for the end of the word (whitespace or end of text)
                         end_pos = text_position + length
-                        while end_pos < len(self.input_text) and not self.input_text[end_pos].isspace():
+                        while (
+                            end_pos < len(self.input_text)
+                            and not self.input_text[end_pos].isspace()
+                        ):
                             end_pos += 1
 
                         # Extract the complete word
@@ -333,7 +341,9 @@ class EspeakLib:
                         if len(words) > 1:
                             # Use only the word that contains the original position
                             for word in words:
-                                word_start = self.input_text.find(word, start_pos, end_pos)
+                                word_start = self.input_text.find(
+                                    word, start_pos, end_pos
+                                )
                                 word_end = word_start + len(word)
                                 if word_start <= text_position < word_end:
                                     word_text = word
@@ -402,32 +412,61 @@ class EspeakLib:
         :param ssml: If True, treat the text as SSML.
         :return: A tuple containing the audio bytestream and word timings.
         """
-        self._reset_buffers()
-        self.input_text = text
+        try:
+            # Safety check for empty text
+            if not text or not text.strip():
+                logging.warning(
+                    "Empty text provided for synthesis, returning empty audio"
+                )
+                return b"", []
 
-        # Set up the synthesis callback
-        callback_type = CFUNCTYPE(c_int, POINTER(c_short), c_int, POINTER(EspeakEvent))
-        self.synth_callback = callback_type(self._synth_callback)
-        self.dll.espeak_SetSynthCallback(self.synth_callback)
+            self._reset_buffers()
+            self.input_text = text
 
-        # Perform synthesis
-        flags = self.SSML_FLAG if ssml else self.CHARS_UTF8 | self.ENDPAUSE
-        self.dll.espeak_Synth(
-            c_char_p(text.encode("utf-8")),
-            len(text) * 2,
-            0,
-            None,
-            0,
-            flags,
-            None,
-            None,
-        )
-        self.dll.espeak_Synchronize()  # Wait for synthesis to complete
+            # Set up the synthesis callback
+            callback_type = CFUNCTYPE(
+                c_int, POINTER(c_short), c_int, POINTER(EspeakEvent)
+            )
+            self.synth_callback = callback_type(self._synth_callback)
+            self.dll.espeak_SetSynthCallback(self.synth_callback)
 
-        logging.debug(
-            f"Returning audio bytestream: size={len(self._local_audio_buffer)} bytes"
-        )
-        return bytes(self._local_audio_buffer), self.word_timings
+            # Perform synthesis
+            flags = self.SSML_FLAG if ssml else self.CHARS_UTF8 | self.ENDPAUSE
+            logging.debug(f"Synthesizing text with flags={flags}, ssml={ssml}")
+
+            # Encode text safely
+            try:
+                encoded_text = text.encode("utf-8")
+            except UnicodeEncodeError as e:
+                logging.error(f"Failed to encode text: {e}")
+                # Try to encode with errors='ignore'
+                encoded_text = text.encode("utf-8", errors="ignore")
+
+            result = self.dll.espeak_Synth(
+                c_char_p(encoded_text),
+                len(text) * 2,
+                0,
+                None,
+                0,
+                flags,
+                None,
+                None,
+            )
+
+            if result != 0:
+                logging.error(f"espeak_Synth returned error code: {result}")
+                return b"", []
+
+            self.dll.espeak_Synchronize()  # Wait for synthesis to complete
+
+            logging.debug(
+                f"Returning audio bytestream: size={len(self._local_audio_buffer)} bytes"
+            )
+            return bytes(self._local_audio_buffer), self.word_timings
+
+        except Exception as e:
+            logging.exception(f"Exception in synth: {e}")
+            return b"", []
 
     def synth_streaming(
         self, text: str, ssml: bool = False

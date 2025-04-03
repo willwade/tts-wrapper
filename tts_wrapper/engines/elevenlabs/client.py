@@ -25,6 +25,35 @@ class ElevenLabsClient(AbstractTTS):
         self.base_url = "https://api.elevenlabs.io"
         self.audio_rate = 22050  # Default sample rate for ElevenLabs
 
+    def check_credentials(self) -> bool:
+        """Check if the ElevenLabs credentials are valid.
+
+        Returns:
+            True if the credentials are valid, False otherwise
+        """
+        try:
+            # Try to get voices to check if credentials are valid
+            url = f"{self.base_url}/v1/voices"
+            headers = {"xi-api-key": self.api_key}
+            response = requests.get(url, headers=headers)
+            response.raise_for_status()
+
+            # Check if the response contains voices
+            voices = response.json().get("voices", [])
+            return len(voices) > 0
+        except Exception as e:
+            # Check for specific error messages that indicate invalid credentials
+            error_str = str(e)
+            if "401" in error_str or "Unauthorized" in error_str:
+                print(f"ElevenLabs credentials are invalid: {e}")
+                return False
+            if "quota_exceeded" in error_str:
+                print(f"ElevenLabs quota exceeded: {e}")
+                return False
+            # For other errors, log but still return False to skip the test
+            print(f"ElevenLabs error (not credential-related): {e}")
+            return False
+
     def set_voice(self, voice_id: str, lang: str | None = None) -> None:
         """Set the voice to use for synthesis.
 

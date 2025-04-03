@@ -378,7 +378,10 @@ class MicrosoftClient(AbstractTTS):
 
                 # Also call the callback directly if provided
                 if callback is not None:
-                    callback(word, start_time, end_time)
+                    try:
+                        callback(word, start_time, end_time)
+                    except Exception as e:
+                        logging.error(f"Error in word callback: {e}")
 
             # Schedule onEnd callback
             if self.timings:

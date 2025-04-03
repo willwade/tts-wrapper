@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 import struct
 from typing import TYPE_CHECKING, Any, Callable
 
@@ -31,6 +32,40 @@ class GoogleClient(AbstractTTS):
         self._voice = "en-US-Standard-C"  # Default voice
         self._lang = "en-US"  # Default language
         self.audio_rate = 24000  # Default sample rate for Google TTS
+
+    def check_credentials(self) -> bool:
+        """Check if the Google credentials are valid.
+
+        Returns:
+            True if the credentials are valid, False otherwise
+        """
+        try:
+            # Check if the credentials file exists
+            if isinstance(self._credentials, str):
+                # Try both the path as-is and as a relative path from the current directory
+                if not os.path.exists(self._credentials) and not os.path.exists(
+                    os.path.join(os.getcwd(), self._credentials)
+                ):
+                    print(
+                        f"Google credentials file does not exist: {self._credentials}"
+                    )
+                    return False
+
+                # If it's a relative path, convert it to an absolute path
+                if not os.path.isabs(self._credentials) and os.path.exists(
+                    os.path.join(os.getcwd(), self._credentials)
+                ):
+                    self._credentials = os.path.join(os.getcwd(), self._credentials)
+
+            # Try to initialize the client
+            self._initialize_client()
+
+            # Try to list voices to check if credentials are valid
+            self._client.list_voices()
+            return True
+        except Exception as e:
+            print(f"Google credentials are invalid: {e}")
+            return False
 
     def _initialize_client(self) -> None:
         self.texttospeech = texttospeech

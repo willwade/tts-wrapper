@@ -41,9 +41,17 @@ class WatsonClient(AbstractTTS):
         Returns:
             True if the credentials are valid, False otherwise
         """
+        # Check if credentials are provided
+        if not self.api_key or not self.region or not self.instance_id:
+            logging.warning("Watson credentials are missing")
+            return False
+
         try:
             # Try to get voices to check if credentials are valid
-            self.get_voices()
+            voices = self._client.list_voices().get_result()
+            if not voices or "voices" not in voices:
+                logging.warning("Watson returned empty voices list")
+                return False
             return True
         except Exception as e:
             # Check for specific error messages that indicate invalid credentials

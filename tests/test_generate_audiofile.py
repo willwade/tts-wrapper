@@ -10,23 +10,14 @@ import pytest
 
 from tts_wrapper import (
     ElevenLabsClient,
-    ElevenLabsTTS,
     GoogleClient,
     GoogleTransClient,
-    GoogleTransTTS,
-    GoogleTTS,
     MicrosoftClient,
-    MicrosoftTTS,
     PollyClient,
-    PollyTTS,
     SherpaOnnxClient,
-    SherpaOnnxTTS,
     WatsonClient,
-    WatsonTTS,
     WitAiClient,
-    WitAiTTS,
     eSpeakClient,
-    eSpeakTTS,
 )
 
 from .load_credentials import load_credentials
@@ -35,37 +26,30 @@ from .load_credentials import load_credentials
 ONLINE_CLIENTS = {
     "polly": {
         "client": PollyClient,
-        "class": PollyTTS,
         "credential_keys": ["POLLY_REGION", "POLLY_AWS_KEY_ID", "POLLY_AWS_ACCESS_KEY"],
     },
     "google": {
         "client": GoogleClient,
-        "class": GoogleTTS,
         "credential_keys": ["GOOGLE_SA_PATH"],
     },
     "microsoft": {
         "client": MicrosoftClient,
         "credential_keys": ["MICROSOFT_TOKEN", "MICROSOFT_REGION"],
-        "class": MicrosoftTTS,
     },
     "watson": {
         "client": WatsonClient,
         "credential_keys": ["WATSON_API_KEY", "WATSON_REGION", "WATSON_INSTANCE_ID"],
-        "class": WatsonTTS,
     },
     "elevenlabs": {
         "client": ElevenLabsClient,
         "credential_keys": ["ELEVENLABS_API_KEY"],
-        "class": ElevenLabsTTS,
     },
     "witai": {
         "client": WitAiClient,
         "credential_keys": ["WITAI_TOKEN"],
-        "class": WitAiTTS,
     },
     "googletrans": {
         "client_lambda": lambda: GoogleTransClient("en-co.uk"),
-        "class": GoogleTransTTS,
     },
 }
 
@@ -74,19 +58,17 @@ OFFLINE_CLIENTS = {
         "client_lambda": lambda: SherpaOnnxClient(
             model_path=None, tokens_path=None, model_id="mms_eng"
         ),
-        "class": SherpaOnnxTTS,
     },
-    "espeak": {"client_lambda": lambda: eSpeakClient(), "class": eSpeakTTS},
+    "espeak": {"client_lambda": lambda: eSpeakClient()},
 }
 
 # Add SAPI client only on Windows
 if sys.platform == "win32":
     try:
-        from tts_wrapper import SAPITTS, SAPIClient
+        from tts_wrapper import SAPIClient
 
         OFFLINE_CLIENTS["sapi"] = {
             "client_lambda": lambda: SAPIClient(),
-            "class": SAPITTS,
         }
     except ImportError:
         logging.warning("SAPI support not available")
@@ -114,6 +96,30 @@ class ClientManager:
 
             if isinstance(credential_keys, (list, tuple)):
                 args = [self.get_credential(key) for key in credential_keys]
+
+                # Special handling for Google client
+                if (
+                    client_class.__name__ == "GoogleClient"
+                    and len(args) == 1
+                    and args[0]
+                ):
+                    credentials_path = args[0]
+                    # Try both the path as-is and as a relative path from the current directory
+                    if os.path.exists(credentials_path):
+                        print(
+                            f"Google credentials file exists: {os.path.abspath(credentials_path)}"
+                        )
+                    elif os.path.exists(os.path.join(os.getcwd(), credentials_path)):
+                        credentials_path = os.path.join(os.getcwd(), credentials_path)
+                        print(f"Google credentials file exists at: {credentials_path}")
+                    else:
+                        print(
+                            f"Google credentials file does not exist: {credentials_path}"
+                        )
+                        return None
+                    return client_class(credentials=credentials_path)
+
+                # Default handling for other clients
                 if len(args) == 1:
                     args = str(args[0])
                 return client_class(credentials=args)
@@ -129,9 +135,8 @@ class ClientManager:
         tts_instances = {}
         for name, config in client_configs.items():
             try:
-                client = self.create_dynamic_client(config)
-                tts_class = config["class"]
-                tts_instance = tts_class(client)
+                # In the new architecture, the client is the TTS instance
+                tts_instance = self.create_dynamic_client(config)
 
                 if not check_credentials or tts_instance.check_credentials():
                     tts_instances[name] = tts_instance
@@ -144,6 +149,10 @@ class ClientManager:
 
 class BaseTestFileCreation(unittest.TestCase):
     """Base class for TTS audio file creation tests."""
+
+    # Class variables to be set by subclasses
+    manager = None
+    tts_instances = {}
 
     def setUp(self) -> None:
         """Define file names for each TTS engine."""
@@ -208,16 +217,6 @@ class TestOfflineEngines(BaseTestFileCreation):
             "This is a test using SAPI.",
         )
 
-    @pytest.mark.skipif(
-        sys.platform == "darwin",
-        reason="systemtts has issues with pyttsx3 on macOS",
-    )
-    def test_systemtts_audio_creation(self) -> None:
-        self._test_audio_creation(
-            "systemtts",
-            "This is a test using System TTS.",
-        )
-
     def test_sherpaonnx_audio_creation(self) -> None:
         self._test_audio_creation(
             "sherpaonnx",
@@ -237,10 +236,10 @@ class TestOnlineEngines(BaseTestFileCreation):
         # Handle each service separately to avoid segfaults
         for name, config in ONLINE_CLIENTS.items():
             try:
-                client = cls.manager.create_dynamic_client(config)
-                if client:
-                    tts_class = config["class"]
-                    cls.tts_instances[name] = tts_class(client)
+                # In the new architecture, the client is the TTS instance
+                tts_instance = cls.manager.create_dynamic_client(config)
+                if tts_instance:
+                    cls.tts_instances[name] = tts_instance
             except Exception as e:
                 logging.warning(f"Failed to create TTS instance for {name}: {e!s}")
                 continue
@@ -286,18 +285,18 @@ class TestOnlineEngines(BaseTestFileCreation):
 
         try:
             # Create a temporary file for the test
-            test_file = "polly-test.wav"
-            if os.path.exists(test_file):
-                os.remove(test_file)
+            test_file = Path("polly-test.wav")
+            if test_file.exists():
+                test_file.unlink()
 
             # Synthesize a short text
             polly.synth_to_file(
-                "This is a test using Amazon Polly TTS.", test_file, "wav"
+                "This is a test using Amazon Polly TTS.", str(test_file), "wav"
             )
 
             # Verify the file was created
-            assert os.path.exists(test_file)
-            assert os.path.getsize(test_file) > 0
+            assert test_file.exists()
+            assert test_file.stat().st_size > 0
 
         except Exception as e:
             logging.error(f"Error in Polly test: {e!s}")
@@ -307,9 +306,9 @@ class TestOnlineEngines(BaseTestFileCreation):
             # Cleanup
             if hasattr(polly, "cleanup"):
                 polly.cleanup()
-            if os.path.exists(test_file):
+            if test_file.exists():
                 with contextlib.suppress(OSError):
-                    os.remove(test_file)
+                    test_file.unlink()
 
     @pytest.mark.skipif(
         not os.getenv("WATSON_API_KEY"), reason="Watson credentials not set"

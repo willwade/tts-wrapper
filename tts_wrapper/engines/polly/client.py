@@ -26,6 +26,11 @@ class PollyClient(AbstractTTS):
     ) -> None:
         super().__init__()
         self.audio_rate = 16000  # Default sample rate for Polly
+
+        # Use Polly-specific SSML implementation
+        from .ssml import PollySSML
+
+        self.ssml = PollySSML()
         try:
             import boto3
         except ImportError:

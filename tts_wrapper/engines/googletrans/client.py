@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from io import BytesIO
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Callable
 
 import mp3
 
@@ -228,3 +228,59 @@ class GoogleTransClient(AbstractTTS):
                 )
 
         return voices
+
+    def start_playback_with_callbacks(
+        self, text: str, callback: Callable | None = None, voice_id: str | None = None
+    ) -> None:
+        """Start playback with word timing callbacks.
+
+        Args:
+            text: The text to synthesize
+            callback: Function to call for each word timing
+            voice_id: Optional voice ID to use for this synthesis
+        """
+        # Set voice if provided
+        if voice_id:
+            self.set_voice(voice_id)
+
+        # If text is SSML, extract plain text
+        plain_text = text
+        if hasattr(text, "__str__") and "<speak" in str(text):
+            # Very basic SSML stripping - just get the text content
+            import re
+
+            plain_text = re.sub(r"<[^>]+>", "", str(text))
+
+        # Trigger onStart callback
+        if (
+            hasattr(self, "callbacks")
+            and "onStart" in self.callbacks
+            and self.callbacks["onStart"]
+        ):
+            self.callbacks["onStart"]()
+
+        # Estimate word timings based on text length
+        words = str(plain_text).split()
+        total_duration = len(words) * 0.3  # Rough estimate: 0.3 seconds per word
+
+        # Call the callback for each word if provided
+        if callback is not None:
+            time_per_word = total_duration / len(words) if words else 0
+            current_time = 0.0
+            for word in words:
+                end_time = current_time + time_per_word
+                callback(word, current_time, end_time)
+                current_time = end_time
+
+        # Synthesize and play audio
+        audio_bytes = self.synth_to_bytes(plain_text, voice_id)
+        self.load_audio(audio_bytes)
+        self.play()
+
+        # Trigger onEnd callback
+        if (
+            hasattr(self, "callbacks")
+            and "onEnd" in self.callbacks
+            and self.callbacks["onEnd"]
+        ):
+            self.callbacks["onEnd"]()

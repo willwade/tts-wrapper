@@ -17,6 +17,7 @@ dependencies = [
     "soundfile>=0.12.1",
     "numpy>=1.24.3",
     "pymp3>=0.2.0",
+    "langcodes"
 ]
 
 [dependency-groups]

@@ -52,9 +52,16 @@ class AbstractTTS(ABC):
         self.lang = "en-US"  # Default language
 
         # Initialize SSML support
-        from .ssml.google import GoogleSSML
+        try:
+            # Try to import from the new location
+            from .engines.google.ssml import GoogleSSML
 
-        self.ssml = GoogleSSML()  # Default SSML implementation
+            self.ssml = GoogleSSML()  # Default SSML implementation
+        except ImportError:
+            # Fallback to a basic SSML implementation
+            from .ssml import BaseSSMLRoot
+
+            self.ssml = BaseSSMLRoot()
 
         self.stream = None
         self.audio_rate = 44100
