@@ -24,6 +24,10 @@ class eSpeakClient(AbstractTTS):
         self.ssml = eSpeakSSML()
         logging.debug("eSpeak client initialized")
 
+        # Set default voice
+        self.voice_id = "en"  # Default to English
+        self._espeak.set_voice(self.voice_id)
+
     def set_voice(self, voice_id: str, lang: str | None = None) -> None:
         """Set the voice to use for synthesis.
 
@@ -50,9 +54,26 @@ class eSpeakClient(AbstractTTS):
         elif hasattr(self, "voice_id") and self.voice_id:
             self._espeak.set_voice(self.voice_id)
 
-        # Get audio data with word timings
-        audio_bytes, _ = self._espeak.synth(str(text), ssml=False)
-        return audio_bytes
+        # Convert text to string safely
+        text_str = str(text)
+
+        # Check if the text is SSML
+        is_ssml = self._is_ssml(text_str)
+
+        try:
+            # Get audio data with word timings
+            audio_bytes, _ = self._espeak.synth(text_str, ssml=is_ssml)
+            return audio_bytes
+        except Exception as e:
+            # If SSML processing fails, try again with plain text
+            if is_ssml:
+                logging.warning(
+                    f"SSML processing failed, falling back to plain text: {e}"
+                )
+                audio_bytes, _ = self._espeak.synth(text_str, ssml=False)
+                return audio_bytes
+            # If it's not SSML, re-raise the exception
+            raise
 
     def synth(
         self,
@@ -91,6 +112,18 @@ class eSpeakClient(AbstractTTS):
         self._espeak.set_voice(voice)
         return self._espeak.synth_streaming(ssml, ssml=True)
 
+    def _is_ssml(self, text: str) -> bool:
+        """Check if the text is SSML.
+
+        Args:
+            text: The text to check
+
+        Returns:
+            True if the text is SSML, False otherwise
+        """
+        # Simple check for SSML tags
+        return text.strip().startswith("<speak") and text.strip().endswith("</speak>")
+
     def connect(self, event_name: str, callback: Callable[[], None]) -> None:
         """Connect a callback to an event.
 
@@ -125,9 +158,15 @@ class eSpeakClient(AbstractTTS):
         elif hasattr(self, "voice_id") and self.voice_id:
             self._espeak.set_voice(self.voice_id)
 
+        # Check if the text is SSML
+        is_ssml = self._is_ssml(str(text))
+
+        # Convert text to string safely
+        text_str = str(text)
+
         # Synthesize with word timings
         try:
-            audio_bytes, word_timings = self._espeak.synth(str(text), ssml=False)
+            audio_bytes, word_timings = self._espeak.synth(text_str, ssml=is_ssml)
             self._audio_bytes = audio_bytes
 
             # Call the callback for each word timing if provided
@@ -155,9 +194,23 @@ class eSpeakClient(AbstractTTS):
                         end_time = current_time + time_per_word
                         callback(word, current_time, end_time)
                         current_time = end_time
-        except Exception:
-            # Fallback to regular synthesis without timings
-            self._audio_bytes = self.synth_to_bytes(text, voice_id)
+        except Exception as e:
+            # If SSML processing fails, try again with plain text
+            if is_ssml:
+                logging.warning(
+                    f"SSML processing failed, falling back to plain text: {e}"
+                )
+                try:
+                    audio_bytes, word_timings = self._espeak.synth(text_str, ssml=False)
+                    self._audio_bytes = audio_bytes
+                except Exception as e2:
+                    logging.error(f"Plain text synthesis also failed: {e2}")
+                    # Fallback to regular synthesis without timings
+                    self._audio_bytes = self.synth_to_bytes(text_str, voice_id)
+            else:
+                logging.error(f"Synthesis failed: {e}")
+                # Fallback to regular synthesis without timings
+                self._audio_bytes = self.synth_to_bytes(text_str, voice_id)
 
             # Estimate word timings based on text length
             if callback is not None:

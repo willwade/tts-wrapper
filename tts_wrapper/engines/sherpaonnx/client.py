@@ -8,12 +8,15 @@ import os
 import queue
 import threading
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import numpy as np
 import requests
 
 from tts_wrapper.tts import AbstractTTS
+
+if TYPE_CHECKING:
+    from collections.abc import Generator
 
 
 class SherpaOnnxClient(AbstractTTS):
@@ -42,7 +45,32 @@ class SherpaOnnxClient(AbstractTTS):
         self._model_path = model_path
         self._tokens_path = tokens_path
         self._model_id = model_id
-        self._base_dir = Path(model_path) if model_path else Path.cwd()
+
+        # Use a dedicated models directory if model_path is not provided
+        if model_path:
+            self._base_dir = Path(model_path)
+        else:
+            # Create a models directory that works with PyInstaller too
+            try:
+                # First try to use the package directory approach
+                package_dir = Path(__file__).parent
+                models_dir = package_dir / "models"
+            except (AttributeError, NameError):
+                # If that fails (e.g., in PyInstaller), use a directory relative to the executable
+                import sys
+
+                if getattr(sys, "frozen", False):
+                    # Running in a PyInstaller bundle
+                    base_path = Path(sys.executable).parent
+                else:
+                    # Running in normal Python environment
+                    base_path = Path.cwd()
+                models_dir = base_path / "models"
+
+            # Create the models directory if it doesn't exist
+            models_dir.mkdir(exist_ok=True)
+            self._base_dir = models_dir
+            logging.info(f"Using default models directory: {models_dir}")
 
         # Initialize paths
         self.default_model_path = ""
@@ -163,9 +191,9 @@ class SherpaOnnxClient(AbstractTTS):
             Tuple of (model_path, tokens_path, lexicon_path, dict_dir)
         """
         # Create voice-specific directory
-        base_dir = Path(self._model_path or "")
-        voice_dir = base_dir / model_id
+        voice_dir = self._base_dir / model_id
         voice_dir.mkdir(exist_ok=True)
+        logging.info(f"Using voice directory: {voice_dir}")
 
         # Expected paths for this voice
         model_path = str(voice_dir / "model.onnx")
@@ -311,6 +339,9 @@ class SherpaOnnxClient(AbstractTTS):
         # Extract sid from the current model
         sid = 0  # Default speaker ID
 
+        # Store the text for word timing estimation
+        self._last_text = str(text)
+
         # Generate audio
         audio = self.tts.generate(str(text), sid=sid, speed=1.0)
         if len(audio.samples) == 0:
@@ -324,6 +355,130 @@ class SherpaOnnxClient(AbstractTTS):
         self.audio_rate = self.sample_rate
 
         return audio_bytes
+
+    def get_word_timings(self) -> list[tuple[float, float, str]]:
+        """Get word timings for the synthesized speech.
+
+        SherpaOnnx doesn't provide word timings, so we estimate them based on the text.
+
+        Returns:
+            List of word timing tuples (start_time, end_time, word)
+        """
+        # If we don't have any audio yet, return an empty list
+        if not hasattr(self, "_last_text") or not self._last_text:
+            return []
+
+        # Split the text into words
+        words = self._last_text.split()
+        if not words:
+            return []
+
+        # Get the audio duration if available, otherwise estimate it
+        try:
+            duration = self.get_audio_duration()
+        except (AttributeError, ValueError):
+            # Fallback: estimate duration based on word count (3 words per second)
+            duration = len(words) / 3.0
+
+        # Calculate word duration
+        word_duration = duration / len(words)
+
+        # Create evenly spaced word timings
+        word_timings = []
+        for i, word in enumerate(words):
+            start_time = i * word_duration
+            end_time = (i + 1) * word_duration if i < len(words) - 1 else duration
+            word_timings.append((start_time, end_time, word))
+
+        return word_timings
+
+    def start_playback_with_callbacks(
+        self, text: str, callback: callable | None = None, voice_id: str | None = None
+    ) -> None:
+        """Start playback with word timing callbacks.
+
+        Args:
+            text: The text to synthesize
+            callback: Callback function for word timing events
+            voice_id: Optional voice ID to use for this synthesis
+        """
+        # Trigger onStart callback
+        self._trigger_callback("onStart")
+
+        # Set the callback if provided
+        if callback is not None:
+            self.on_word_callback = callback
+
+        # Synthesize and play the audio
+        self.speak_streamed(text, voice_id, trigger_callbacks=False)
+
+        # Process word timings
+        if self.timings:
+            for start_time, end_time, word in self.timings:
+                # Schedule word callback
+                timer = threading.Timer(
+                    start_time,
+                    self._trigger_callback,
+                    args=["onWord", word, start_time],
+                )
+                timer.daemon = True
+                timer.start()
+                self.timers.append(timer)
+
+                # Also call the callback directly if provided
+                if callback is not None:
+                    callback(word, start_time, end_time)
+
+            # Schedule onEnd callback
+            if self.timings:
+                last_timing = self.timings[-1]
+                end_time = last_timing[1]  # End time of the last word
+                timer = threading.Timer(
+                    end_time, self._trigger_callback, args=["onEnd"]
+                )
+                timer.daemon = True
+                timer.start()
+                self.timers.append(timer)
+        else:
+            # If no timings, trigger onEnd after a short delay
+            timer = threading.Timer(0.5, self._trigger_callback, args=["onEnd"])
+            timer.daemon = True
+            timer.start()
+            self.timers.append(timer)
+
+    def synth_to_bytestream(
+        self, text: Any, voice_id: str | None = None, format: str = "wav"
+    ) -> Generator[bytes, None, None]:
+        """Synthesizes text to an in-memory bytestream and yields audio data chunks.
+
+        Args:
+            text: The text to synthesize
+            voice_id: Optional voice ID to use for this synthesis
+            format: The desired audio format (e.g., 'wav', 'mp3', 'flac')
+
+        Returns:
+            A generator yielding bytes objects containing audio data
+        """
+        import io
+
+        # Store the text for word timing estimation
+        self._last_text = str(text)
+
+        # Generate the full audio content
+        audio_content = self.synth_to_bytes(text, voice_id)
+
+        # Create a BytesIO object from the audio content
+        audio_stream = io.BytesIO(audio_content)
+
+        # Define chunk size (adjust as needed)
+        chunk_size = 4096  # 4KB chunks
+
+        # Yield chunks of audio data
+        while True:
+            chunk = audio_stream.read(chunk_size)
+            if not chunk:
+                break
+            yield chunk
 
     def synth(
         self,

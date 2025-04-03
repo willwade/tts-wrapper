@@ -1,3 +1,4 @@
+tts_wrapper/engines/sherpaonnx/models/*
 .build/*
 creds/*
 .envrc

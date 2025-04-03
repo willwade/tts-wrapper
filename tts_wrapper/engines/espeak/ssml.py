@@ -76,3 +76,16 @@ class eSpeakSSML(BaseSSMLRoot):
     def clear_ssml(self) -> None:
         """Clears all child nodes from the SSML root."""
         self._inner.clear_ssml()
+
+    def add_pause(self, duration_ms: int) -> str:
+        """Add a pause of the specified duration.
+
+        Args:
+            duration_ms: Duration of the pause in milliseconds
+
+        Returns:
+            The complete SSML string
+        """
+        break_tag = self.construct_break(time=str(duration_ms))
+        self._inner.add(SSMLNode("raw", children=[break_tag]))
+        return str(self)

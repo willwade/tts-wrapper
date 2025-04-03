@@ -50,6 +50,12 @@ class AbstractTTS(ABC):
         """Initialize the TTS engine with default values."""
         self.voice_id = None
         self.lang = "en-US"  # Default language
+
+        # Initialize SSML support
+        from .ssml.google import GoogleSSML
+
+        self.ssml = GoogleSSML()  # Default SSML implementation
+
         self.stream = None
         self.audio_rate = 44100
         self.audio_bytes = None
@@ -561,7 +567,12 @@ class AbstractTTS(ABC):
         """
         self.synth_to_file(text, output_file, output_format, voice_id)
 
-    def speak_streamed(self, text: str | SSML, voice_id: str | None = None) -> None:
+    def speak_streamed(
+        self,
+        text: str | SSML,
+        voice_id: str | None = None,
+        trigger_callbacks: bool = True,
+    ) -> None:
         """
         Synthesize text to speech and stream it for playback.
 
@@ -571,25 +582,48 @@ class AbstractTTS(ABC):
             The text to synthesize and stream.
         voice_id : str | None, optional
             The ID of the voice to use for synthesis. If None, uses the voice set by set_voice.
+        trigger_callbacks : bool, optional
+            Whether to trigger onStart and onEnd callbacks. Default is True.
         """
         try:
-            # Check if the engine supports streaming
-            if hasattr(self, "stream_synthesis") and callable(self.stream_synthesis):
+            # Check if the engine supports streaming via synth_to_bytestream
+            if hasattr(self, "synth_to_bytestream") and callable(
+                self.synth_to_bytestream
+            ):
+                # Trigger onStart callback if requested
+                if trigger_callbacks:
+                    self._trigger_callback("onStart")
+
                 # Get streaming generator
-                generator = self.stream_synthesis(text, voice_id)
+                generator = self.synth_to_bytestream(text, voice_id)
 
-                # Set up audio stream for playback
-                self._setup_audio_stream()
-
-                # Start streaming
+                # Collect all chunks for audio playback
+                audio_chunks = []
                 for chunk in generator:
-                    if self.stop_flag.is_set():
+                    # Check if we should stop playback
+                    if hasattr(self, "stop_flag") and self.stop_flag.is_set():
                         break
-                    self._stream_chunk(chunk)
+                    audio_chunks.append(chunk)
 
-                # Collect all chunks for word timing calculation
-                audio_data = b"".join(generator)
+                # Combine all chunks into a single audio buffer
+                audio_data = b"".join(audio_chunks)
+
+                # For streaming engines, get word timings if available
+                if hasattr(self, "get_word_timings") and callable(
+                    self.get_word_timings
+                ):
+                    word_timings = self.get_word_timings()
+                    if word_timings:
+                        self.set_timings(word_timings)
+
+                # Trigger onEnd callback after all chunks are processed if requested
+                if trigger_callbacks:
+                    self._trigger_callback("onEnd")
             else:
+                # Trigger onStart callback if requested
+                if trigger_callbacks:
+                    self._trigger_callback("onStart")
+
                 # Fall back to non-streaming synthesis
                 audio_data = self.synth_to_bytes(text, voice_id)
 
@@ -802,7 +836,8 @@ class AbstractTTS(ABC):
         if callback is None:
             callback = self.on_word_callback
 
-        self.speak_streamed(text, voice_id)
+        # Call speak_streamed with trigger_callbacks=False to avoid duplicate callbacks
+        self.speak_streamed(text, voice_id, trigger_callbacks=False)
         start_time = time.time()
 
         try:

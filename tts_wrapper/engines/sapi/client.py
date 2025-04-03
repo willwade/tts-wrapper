@@ -24,6 +24,7 @@ from tts_wrapper.tts import AbstractTTS
 from .ssml import SAPISSML
 
 if TYPE_CHECKING:
+    from collections.abc import Generator
     from pathlib import Path
 
 SAPI4_CLSID = "{179F3D56-1B0B-42B2-A962-59B7EF59FE1B}"
@@ -218,6 +219,19 @@ class SAPIClient(AbstractTTS):
         self._event_sink = None
         self._initialize_events()
 
+        # Set default voice
+        if self._sapi_version == 5:
+            try:
+                # Get the first available voice
+                voices = self._tts.GetVoices()
+                if voices and voices.Count > 0:
+                    self._tts.Voice = voices.Item(0)
+                    logging.info(
+                        f"Set default voice: {voices.Item(0).GetDescription()}"
+                    )
+            except Exception as e:
+                logging.warning(f"Failed to set default voice: {e}")
+
     def _initialize_events(self):
         """Bind events to the TTS engine for real-time updates."""
         if self._sapi_version == 5:
@@ -370,6 +384,37 @@ class SAPIClient(AbstractTTS):
         # Save to file
         with open(output_file, "wb") as f:
             f.write(audio_bytes)
+
+    def synth_to_bytestream(
+        self, text: Any, voice_id: str | None = None, format: str = "wav"
+    ) -> Generator[bytes, None, None]:
+        """Synthesizes text to an in-memory bytestream and yields audio data chunks.
+
+        Args:
+            text: The text to synthesize
+            voice_id: Optional voice ID to use for this synthesis
+            format: The desired audio format (e.g., 'wav', 'mp3', 'flac')
+
+        Returns:
+            A generator yielding bytes objects containing audio data
+        """
+        import io
+
+        # Generate the full audio content
+        audio_content = self.synth_to_bytes(text, voice_id)
+
+        # Create a BytesIO object from the audio content
+        audio_stream = io.BytesIO(audio_content)
+
+        # Define chunk size (adjust as needed)
+        chunk_size = 4096  # 4KB chunks
+
+        # Yield chunks of audio data
+        while True:
+            chunk = audio_stream.read(chunk_size)
+            if not chunk:
+                break
+            yield chunk
 
     def _is_ssml(self, text: str) -> bool:
         return bool(re.match(r"^\s*<speak>", text, re.IGNORECASE))

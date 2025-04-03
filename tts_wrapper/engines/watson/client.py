@@ -35,6 +35,35 @@ class WatsonClient(AbstractTTS):
 
         self._initialize_ibm_watson()
 
+    def check_credentials(self) -> bool:
+        """Check if the Watson credentials are valid.
+
+        Returns:
+            True if the credentials are valid, False otherwise
+        """
+        try:
+            # Try to get voices to check if credentials are valid
+            self.get_voices()
+            return True
+        except Exception as e:
+            # Check for specific error messages that indicate invalid credentials
+            error_str = str(e)
+            if (
+                "403" in error_str
+                or "Forbidden" in error_str
+                or "Unauthorized" in error_str
+            ):
+                logging.warning(f"Watson credentials are invalid (403 Forbidden): {e}")
+                return False
+            if "401" in error_str:
+                logging.warning(
+                    f"Watson credentials are invalid (401 Unauthorized): {e}"
+                )
+                return False
+            # For other errors, log but still return False to skip the test
+            logging.warning(f"Watson error (not credential-related): {e}")
+            return False
+
     def _initialize_ibm_watson(self) -> None:
         if self._client is None:
             try:

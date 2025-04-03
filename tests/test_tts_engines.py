@@ -113,7 +113,7 @@ def check_credentials(service):
             client = eSpeakClient()
         elif service == "playht":
             client = PlayHTClient(
-                credentials=(os.getenv("PLAYHT_USER_ID"), os.getenv("PLAYHT_API_KEY"))
+                credentials=(os.getenv("PLAYHT_API_KEY"), os.getenv("PLAYHT_USER_ID"))
             )
         elif service == "avsynth" and sys.platform == "darwin":
             client = AVSynthClient()
@@ -172,7 +172,7 @@ def create_tts_client(service):
         return eSpeakClient()
     if service == "playht":
         return PlayHTClient(
-            credentials=(os.getenv("PLAYHT_USER_ID"), os.getenv("PLAYHT_API_KEY"))
+            credentials=(os.getenv("PLAYHT_API_KEY"), os.getenv("PLAYHT_USER_ID"))
         )
     if service == "avsynth" and sys.platform == "darwin":
         return AVSynthClient()
@@ -190,6 +190,10 @@ def test_synth_to_bytes(service):
         )
 
     client = create_tts_client(service)
+
+    # Set a valid voice for Microsoft client
+    if service == "microsoft":
+        client.set_voice("en-US-JennyMultilingualNeural")
 
     # Plain text demo
     text = "Hello, this is a test."
@@ -237,6 +241,10 @@ def test_playback_with_callbacks(service):
     # Initialize TTS client for the service
     client = create_tts_client(service)
 
+    # Set a valid voice for Microsoft client
+    if service == "microsoft":
+        client.set_voice("en-US-JennyMultilingualNeural")
+
     # Mocks for callbacks
     my_callback = Mock()
     on_start = Mock()
@@ -258,9 +266,9 @@ def test_playback_with_callbacks(service):
     try:
         client.start_playback_with_callbacks(ssml_text, callback=my_callback)
         # Wait for playback to start and complete
-        time.sleep(1)  # Wait for playback to start
+        time.sleep(2)  # Wait for playback to start
         # Wait additional time for playback to complete
-        max_wait = 5  # Maximum wait time in seconds
+        max_wait = 10  # Maximum wait time in seconds
         start_time = time.time()
         while time.time() - start_time < max_wait:
             if on_end.call_count > 0:

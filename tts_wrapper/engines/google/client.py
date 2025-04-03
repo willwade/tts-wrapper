@@ -14,6 +14,7 @@ from tts_wrapper.exceptions import ModuleNotInstalled
 from tts_wrapper.tts import AbstractTTS
 
 if TYPE_CHECKING:
+    from collections.abc import Generator
     from pathlib import Path
 
 
@@ -27,8 +28,8 @@ class GoogleClient(AbstractTTS):
         super().__init__()
         self._credentials = credentials
         self._client = None
-        self._voice = None
-        self._lang = None
+        self._voice = "en-US-Standard-C"  # Default voice
+        self._lang = "en-US"  # Default language
         self.audio_rate = 24000  # Default sample rate for Google TTS
 
     def _initialize_client(self) -> None:
@@ -116,6 +117,37 @@ class GoogleClient(AbstractTTS):
         )
 
         return resp.audio_content
+
+    def synth_to_bytestream(
+        self, text: Any, voice_id: str | None = None, format: str = "wav"
+    ) -> Generator[bytes, None, None]:
+        """Synthesizes text to an in-memory bytestream and yields audio data chunks.
+
+        Args:
+            text: The text to synthesize
+            voice_id: Optional voice ID to use for this synthesis
+            format: The desired audio format (e.g., 'wav', 'mp3', 'flac')
+
+        Returns:
+            A generator yielding bytes objects containing audio data
+        """
+        import io
+
+        # Generate the full audio content
+        audio_content = self.synth_to_bytes(text, voice_id)
+
+        # Create a BytesIO object from the audio content
+        audio_stream = io.BytesIO(audio_content)
+
+        # Define chunk size (adjust as needed)
+        chunk_size = 4096  # 4KB chunks
+
+        # Yield chunks of audio data
+        while True:
+            chunk = audio_stream.read(chunk_size)
+            if not chunk:
+                break
+            yield chunk
 
     def synth(
         self,

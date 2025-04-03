@@ -86,7 +86,7 @@ class TestPlayHT(TestCase):
             msg = "Insufficient PlayHT credits"
             raise ValueError(msg)
 
-        cls.client = PlayHTClient(credentials=(user_id, api_key))
+        cls.client = PlayHTClient(credentials=(api_key, user_id))
 
     def test_credentials(self):
         """Test that credentials are valid."""

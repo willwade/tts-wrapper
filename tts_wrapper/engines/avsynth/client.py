@@ -28,6 +28,9 @@ class AVSynthClient(AbstractTTS):
         self.ssml = AVSynthSSML()
         self.audio_rate = 16000  # Default sample rate for AVSynth
 
+        # Set default voice
+        self.voice_id = "com.apple.speech.synthesis.voice.Alex"  # Default to Alex voice
+
     def _get_bridge_path(self) -> Path:
         """Get the path to the Swift bridge executable."""
         # First try the package resources
@@ -195,6 +198,37 @@ class AVSynthClient(AbstractTTS):
         # Save to file
         with open(output_file, "wb") as f:
             f.write(audio_bytes)
+
+    def synth_to_bytestream(
+        self, text: Any, voice_id: str | None = None, format: str = "wav"
+    ) -> Generator[bytes, None, None]:
+        """Synthesizes text to an in-memory bytestream and yields audio data chunks.
+
+        Args:
+            text: The text to synthesize
+            voice_id: Optional voice ID to use for this synthesis
+            format: The desired audio format (e.g., 'wav', 'mp3', 'flac')
+
+        Returns:
+            A generator yielding bytes objects containing audio data
+        """
+        import io
+
+        # Generate the full audio content
+        audio_content = self.synth_to_bytes(text, voice_id)
+
+        # Create a BytesIO object from the audio content
+        audio_stream = io.BytesIO(audio_content)
+
+        # Define chunk size (adjust as needed)
+        chunk_size = 4096  # 4KB chunks
+
+        # Yield chunks of audio data
+        while True:
+            chunk = audio_stream.read(chunk_size)
+            if not chunk:
+                break
+            yield chunk
 
     def synth_raw(self, text: str, options: dict) -> tuple[bytes, list[dict]]:
         """Synthesize text to speech using AVSpeechSynthesizer."""
