@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import base64
+import contextlib
 import json
 import logging
 import subprocess
@@ -41,7 +42,23 @@ class AVSynthClient(AbstractTTS):
                 return bridge_path
         except Exception:
             # Fall back to local build directory
-            return Path(__file__).parent / ".build/debug/SpeechBridge"
+            bridge_path = Path(__file__).parent / ".build/debug/SpeechBridge"
+            if bridge_path.exists():
+                return bridge_path
+
+            # If not found, try to find it in the system PATH
+            try:
+                # Check if SpeechBridge is in the PATH
+                result = subprocess.run(
+                    ["which", "SpeechBridge"],
+                    capture_output=True,
+                    text=True,
+                    check=True,
+                )
+                return Path(result.stdout.strip())
+            except subprocess.CalledProcessError:
+                # Not found in PATH, return the default path
+                return Path(__file__).parent / ".build/debug/SpeechBridge"
 
     def _check_swift_bridge(self) -> None:
         """Check if Swift is available and we're on macOS."""
@@ -60,12 +77,43 @@ class AVSynthClient(AbstractTTS):
     def _build_bridge(self) -> None:
         """Build the Swift bridge package."""
         try:
-            subprocess.run(
-                ["swift", "build"],
+            # Print the current directory for debugging
+            logging.debug("Building Swift bridge in: %s", Path(__file__).parent)
+
+            # Run swift build with verbose output
+            result = subprocess.run(
+                ["swift", "build", "-v"],
                 cwd=Path(__file__).parent,
                 check=True,
                 capture_output=True,
+                text=True,
             )
+
+            # Log the output for debugging
+            logging.debug("Swift build stdout: %s", result.stdout)
+
+            # Verify the binary was created
+            bridge_path = self._get_bridge_path()
+            if bridge_path.exists():
+                logging.debug("Successfully built Swift bridge at: %s", bridge_path)
+                # Make sure it's executable
+                bridge_path.chmod(0o755)
+            else:
+                logging.error(
+                    "Swift build succeeded but binary not found at: %s", bridge_path
+                )
+                # Try to find the binary elsewhere
+                possible_paths = list(Path(__file__).parent.glob("**/*SpeechBridge*"))
+                if possible_paths:
+                    logging.debug(
+                        "Found possible SpeechBridge binaries: %s", possible_paths
+                    )
+                    # Use the first one found
+                    self.bridge_path = possible_paths[0]
+                    self.bridge_path.chmod(0o755)
+                    logging.debug(
+                        "Using alternative SpeechBridge binary at: %s", self.bridge_path
+                    )
         except subprocess.CalledProcessError as e:
             logging.error("Failed to build Swift bridge: %s", e.stderr)
             raise
@@ -99,6 +147,31 @@ class AVSynthClient(AbstractTTS):
         except json.JSONDecodeError as e:
             logging.error("Failed to parse voices JSON: %s", e)
             return []
+
+    def get_voices(self, lang_format: str | None = None) -> list[dict[str, Any]]:
+        """Get available voices.
+
+        Args:
+            lang_format: Optional language format (not used in AVSynth)
+
+        Returns:
+            A list of voice dictionaries with id, name, language, and gender fields
+        """
+        voices = self._get_voices()
+
+        # Standardize voice format
+        standardized_voices = []
+        for voice in voices:
+            # Ensure all required fields are present
+            standardized_voice = {
+                "id": voice.get("id", ""),
+                "name": voice.get("name", ""),
+                "language": voice.get("language", ""),
+                "gender": voice.get("gender", ""),
+            }
+            standardized_voices.append(standardized_voice)
+
+        return standardized_voices
 
     def _convert_property_value(self, prop: str, value: Any) -> float:
         """Convert property values to the format expected by AVSpeechSynthesizer."""
@@ -196,7 +269,8 @@ class AVSynthClient(AbstractTTS):
         audio_bytes = self.synth_to_bytes(text, voice_id)
 
         # Save to file
-        with open(output_file, "wb") as f:
+        output_path = Path(output_file)
+        with output_path.open("wb") as f:
             f.write(audio_bytes)
 
     def synth_to_bytestream(
@@ -274,23 +348,50 @@ class AVSynthClient(AbstractTTS):
                 msg = "Speech synthesis timed out after 30 seconds"
                 raise RuntimeError(msg)
 
-            response = json.loads(result.stdout)
+            # Log the output for debugging
+            logging.debug("SpeechBridge stdout: %s", result.stdout)
+
+            try:
+                response = json.loads(result.stdout)
+            except json.JSONDecodeError as e:
+                logging.error("Failed to parse JSON response: %s", e)
+                logging.error("Raw response: %s", result.stdout)
+                # Return empty word timings if JSON parsing fails
+                return b"", []
 
             # Convert audio data from base64 if needed
-            audio_data = response["audio_data"]
+            audio_data = response.get("audio_data", b"")
             if isinstance(audio_data, str):
                 audio_data = base64.b64decode(audio_data)
             elif isinstance(audio_data, list):
                 audio_data = bytes(audio_data)
 
-            return audio_data, response["word_timings"]
+            # Extract word timings with better error handling
+            word_timings = response.get("word_timings", [])
+            if not word_timings:
+                logging.warning("No word timings received from SpeechBridge")
+                # Generate estimated word timings based on text length
+                words = text.split()
+                total_duration = 2.0  # Estimate 2 seconds for the audio
+                time_per_word = total_duration / len(words) if words else 0
+
+                current_time = 0.0
+                for word in words:
+                    end_time = current_time + time_per_word
+                    word_timings.append(
+                        {"word": word, "start": current_time, "end": end_time}
+                    )
+                    current_time = end_time
+
+            return audio_data, word_timings
 
         except subprocess.CalledProcessError as e:
             logging.error("Speech synthesis failed: %s", e.stderr)
             raise
-        except json.JSONDecodeError as e:
-            logging.error("Failed to parse synthesis response: %s", e)
-            raise
+        except Exception as e:
+            logging.error("Unexpected error in synth_raw: %s", e)
+            # Return empty audio and word timings on error
+            return b"", []
 
     def connect(self, event_name: str, callback: Callable[[], None]) -> None:
         """Connect a callback to an event.
@@ -333,17 +434,90 @@ class AVSynthClient(AbstractTTS):
         try:
             audio_bytes, word_timings = self.synth_raw(str(text), options)
 
+            # Play the audio
+            if audio_bytes:
+                # Create a temporary file for the audio
+                import tempfile
+
+                with tempfile.NamedTemporaryFile(
+                    suffix=".wav", delete=False
+                ) as temp_file:
+                    temp_path = temp_file.name
+                    temp_file.write(audio_bytes)
+
+                # Play the audio using system tools
+                try:
+                    logging.debug("Playing audio from %s", temp_path)
+                    # Try different audio players
+                    players = ["afplay", "mpg123", "aplay", "play"]
+                    for player in players:
+                        try:
+                            subprocess.run([player, temp_path], check=True)
+                            logging.debug("Successfully played audio with %s", player)
+                            break
+                        except (subprocess.SubprocessError, FileNotFoundError):
+                            continue
+                except Exception as e:
+                    logging.error("Failed to play audio: %s", e)
+                finally:
+                    # Clean up the temporary file
+                    with contextlib.suppress(Exception):
+                        Path(temp_path).unlink()
+
             # Call the callback for each word timing if provided
             if callback is not None and word_timings:
+                logging.debug("Word timings received: %s", word_timings)
                 for timing in word_timings:
                     if "start" in timing and "end" in timing and "word" in timing:
                         # Convert start and end times to float if they're integers
                         start_time = float(timing["start"])
                         end_time = float(timing["end"])
                         callback(timing["word"], start_time, end_time)
-        except Exception:
+                        logging.debug(
+                            "Word timing: '%s' (%.2f - %.2f)",
+                            timing["word"],
+                            start_time,
+                            end_time,
+                        )
+        except Exception as e:
+            logging.error("Error in start_playback_with_callbacks: %s", e)
             # Fallback to regular synthesis without timings
-            self.synth_to_bytes(text, voice_id)
+            try:
+                audio_bytes = self.synth_to_bytes(text, voice_id)
+
+                # Play the audio
+                if audio_bytes:
+                    # Create a temporary file for the audio
+                    import tempfile
+
+                    with tempfile.NamedTemporaryFile(
+                        suffix=".wav", delete=False
+                    ) as temp_file:
+                        temp_path = temp_file.name
+                        temp_file.write(audio_bytes)
+
+                    # Play the audio using system tools
+                    try:
+                        logging.debug("Playing fallback audio from %s", temp_path)
+                        # Try different audio players
+                        players = ["afplay", "mpg123", "aplay", "play"]
+                        for player in players:
+                            try:
+                                subprocess.run([player, temp_path], check=True)
+                                logging.debug(
+                                    "Successfully played fallback audio with %s", player
+                                )
+                                break
+                            except (subprocess.SubprocessError, FileNotFoundError):
+                                continue
+                    except Exception as e2:
+                        logging.error("Failed to play fallback audio: %s", e2)
+                    finally:
+                        # Clean up the temporary file
+                        with contextlib.suppress(Exception):
+                            Path(temp_path).unlink()
+            except Exception as e2:
+                logging.error("Fallback synthesis failed: %s", e2)
 
             # Estimate word timings based on text length
             if callback is not None:
@@ -355,6 +529,12 @@ class AVSynthClient(AbstractTTS):
                 for word in words:
                     end_time = current_time + time_per_word
                     callback(word, current_time, end_time)
+                    logging.debug(
+                        "Estimated word timing: '%s' (%.2f - %.2f)",
+                        word,
+                        current_time,
+                        end_time,
+                    )
                     current_time = end_time
 
         # Trigger onEnd callbacks

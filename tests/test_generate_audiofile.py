@@ -62,6 +62,17 @@ OFFLINE_CLIENTS = {
     "espeak": {"client_lambda": lambda: eSpeakClient()},
 }
 
+# Add AVSynth client only on macOS
+if sys.platform == "darwin":
+    try:
+        from tts_wrapper import AVSynthClient
+
+        OFFLINE_CLIENTS["avsynth"] = {
+            "client_lambda": lambda: AVSynthClient(),
+        }
+    except ImportError:
+        logging.warning("AVSynth support not available")
+
 # Add SAPI client only on Windows
 if sys.platform == "win32":
     try:
@@ -221,6 +232,16 @@ class TestOfflineEngines(BaseTestFileCreation):
         self._test_audio_creation(
             "sherpaonnx",
             "This is a test using SherpaONNX TTS.",
+        )
+
+    @pytest.mark.skipif(
+        sys.platform != "darwin",
+        reason="AVSynth only available on macOS",
+    )
+    def test_avsynth_audio_creation(self) -> None:
+        self._test_audio_creation(
+            "avsynth",
+            "This is a test using AVSynth TTS.",
         )
 
 

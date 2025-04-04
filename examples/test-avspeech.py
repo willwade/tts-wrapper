@@ -1,12 +1,11 @@
 import logging
-from tts_wrapper.engines.avsynth import AVSynthClient, AVSynthTTS
+from tts_wrapper import AVSynthClient
 import time
 
 logging.basicConfig(level=logging.DEBUG)
 
 # Initialize client
-client = AVSynthClient()
-tts = AVSynthTTS(client)
+tts = AVSynthClient()
 
 print("Testing AVSynth TTS Engine")
 print("=========================\n")
