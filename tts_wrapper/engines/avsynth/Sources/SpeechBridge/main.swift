@@ -139,6 +139,9 @@ struct Synthesize: ParsableCommand {
     @Option(name: .long, help: "Whether the text contains SSML markup")
     var isSSML: Bool = false
 
+    @Option(name: .long, help: "Play audio directly instead of returning data")
+    var play: Bool = false
+
     func run() throws {
         log("Starting synthesis")
 
@@ -168,6 +171,19 @@ struct Synthesize: ParsableCommand {
             utterance.rate = rate
             utterance.volume = volume
             utterance.pitchMultiplier = pitch
+        }
+
+        // If play flag is set, just play the audio directly
+        if play {
+            log("Playing audio directly")
+            synthesizer.speak(utterance)
+
+            // Wait for speech to complete
+            while synthesizer.isSpeaking {
+                Thread.sleep(forTimeInterval: 0.1)
+            }
+
+            return
         }
 
         var audioData = Data()
@@ -240,43 +256,14 @@ struct Synthesize: ParsableCommand {
                 throw NSError(domain: "SpeechBridge", code: -3, userInfo: [NSLocalizedDescriptionKey: "Synthesis incomplete"])
             }
 
-            // Add WAV header to the audio data
-            let sampleRate: UInt32 = 16000
-            let numChannels: UInt16 = 1
-            let bitsPerSample: UInt16 = 16
-            let byteRate = sampleRate * UInt32(numChannels * bitsPerSample / 8)
-            let blockAlign = numChannels * bitsPerSample / 8
-            let dataSize = UInt32(audioData.count)
-            let fileSize = 36 + dataSize
-
-            var wavHeader = Data()
-
-            // RIFF header
-            wavHeader.append(contentsOf: "RIFF".utf8)  // ChunkID
-            wavHeader.append(contentsOf: UInt32(fileSize).littleEndian.bytes)  // ChunkSize
-            wavHeader.append(contentsOf: "WAVE".utf8)  // Format
-
-            // fmt subchunk
-            wavHeader.append(contentsOf: "fmt ".utf8)  // Subchunk1ID
-            wavHeader.append(contentsOf: UInt32(16).littleEndian.bytes)  // Subchunk1Size (16 for PCM)
-            wavHeader.append(contentsOf: UInt16(1).littleEndian.bytes)  // AudioFormat (1 for PCM)
-            wavHeader.append(contentsOf: numChannels.littleEndian.bytes)  // NumChannels
-            wavHeader.append(contentsOf: sampleRate.littleEndian.bytes)  // SampleRate
-            wavHeader.append(contentsOf: byteRate.littleEndian.bytes)  // ByteRate
-            wavHeader.append(contentsOf: blockAlign.littleEndian.bytes)  // BlockAlign
-            wavHeader.append(contentsOf: bitsPerSample.littleEndian.bytes)  // BitsPerSample
-
-            // data subchunk
-            wavHeader.append(contentsOf: "data".utf8)  // Subchunk2ID
-            wavHeader.append(contentsOf: dataSize.littleEndian.bytes)  // Subchunk2Size
-
-            // Combine header and audio data
-            let wavData = wavHeader + audioData
-
-            // Create response
+            // Create response with raw PCM data (no WAV header)
+            // This is what AbstractTTS.load_audio expects
             let response: [String: Any] = [
-                "audio_data": [UInt8](wavData),
-                "word_timings": wordTimings
+                "audio_data": [UInt8](audioData),
+                "word_timings": wordTimings,
+                "sample_rate": 22050,  // AVSpeechSynthesizer uses 22050 Hz
+                "channels": 1,
+                "sample_width": 2  // 16-bit audio
             ]
 
             // Output JSON response

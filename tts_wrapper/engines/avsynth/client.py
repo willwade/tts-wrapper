@@ -10,7 +10,7 @@ from pathlib import Path
 from typing import IO, TYPE_CHECKING, Any, Callable
 
 from tts_wrapper.engines.avsynth.ssml import AVSynthSSML
-from tts_wrapper.tts import AbstractTTS
+from tts_wrapper.tts import AbstractTTS, SSML
 
 if TYPE_CHECKING:
     from collections.abc import Generator
@@ -27,7 +27,11 @@ class AVSynthClient(AbstractTTS):
         if not self.bridge_path.exists():
             self._build_bridge()
         self.ssml = AVSynthSSML()
-        self.audio_rate = 16000  # Default sample rate for AVSynth
+
+        # Set the audio rate to match AVSpeechSynthesizer's output
+        self.audio_rate = 22050  # AVSpeechSynthesizer uses 22050 Hz
+        self.channels = 1
+        self.sample_width = 2  # 16-bit audio
 
         # Set default voice
         self.voice_id = "com.apple.speech.synthesis.voice.Alex"  # Default to Alex voice
@@ -245,6 +249,17 @@ class AVSynthClient(AbstractTTS):
         audio_bytes, _ = self.synth_raw(str(text), options)
         return audio_bytes
 
+    def speak(self, text: Any, voice_id: str | None = None) -> None:
+        """Synthesize text and play it back using sounddevice.
+
+        Args:
+            text: The text to synthesize
+            voice_id: Optional voice ID to use for this synthesis
+        """
+        # Use the parent class implementation which calls synth_to_bytes and handles playback
+        logging.debug("Using AbstractTTS.speak() to play audio")
+        super().speak(text, voice_id)
+
     def synth(
         self,
         text: Any,
@@ -325,8 +340,12 @@ class AVSynthClient(AbstractTTS):
                     logging.debug("Setting voice: %s", options["voice"])
                     cmd.extend(["--voice", options["voice"]])
 
-                # Handle rate, volume, and pitch with shorter lines
-                for prop in ["rate", "volume", "pitch"]:
+                # Always set rate to 0.5 to make speech faster
+                cmd.extend(["--rate", "0.5"])
+                logging.debug("Setting rate: 0.5")
+
+                # Handle volume and pitch with shorter lines
+                for prop in ["volume", "pitch"]:
                     if prop in options:
                         val = str(self._convert_property_value(prop, options[prop]))
                         logging.debug("Setting %s: %s", prop, val)

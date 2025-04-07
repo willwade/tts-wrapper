@@ -393,6 +393,13 @@ class AbstractTTS(ABC):
             if self.stream_pyaudio and not self.stream_pyaudio.is_stopped():
                 self.stream_pyaudio.stop_stream()
                 self.stream_pyaudio.close()
+                self.stream_pyaudio = None
+
+            # Clean up PyAudio instance
+            if self.pyaudio:
+                self.pyaudio.terminate()
+                self.pyaudio = None
+
             self.isplaying = False
         except OSError:
             # Handle stream-related exceptions gracefully
@@ -417,6 +424,9 @@ class AbstractTTS(ABC):
                 False  # Reset the guard flag at the start of playback
             )
             self.playback_thread = threading.Thread(target=self._playback_loop)
+            self.playback_thread.daemon = (
+                True  # Make thread daemon so it doesn't block program exit
+            )
             self.playback_thread.start()
             time.sleep(float(duration or 0))
         elif self.paused:
