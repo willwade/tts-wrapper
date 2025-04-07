@@ -49,17 +49,13 @@ class OpenAIClient(AbstractTTS):
 
         if not OPENAI_AVAILABLE:
             msg = "OpenAI package is not installed. Please install it with: pip install py3-tts-wrapper[openai]"
-            raise ImportError(
-                msg
-            )
+            raise ImportError(msg)
 
         # Use provided API key or get from environment
         self.api_key = api_key or os.environ.get("OPENAI_API_KEY")
         if not self.api_key:
             msg = "OpenAI API key is required. Provide it as an argument or set the OPENAI_API_KEY environment variable."
-            raise ValueError(
-                msg
-            )
+            raise ValueError(msg)
 
         # Initialize the OpenAI client
         self.client = OpenAI(api_key=self.api_key)
@@ -232,9 +228,7 @@ class OpenAIClient(AbstractTTS):
         available_voices = [voice["id"] for voice in self._get_voices()]
         if voice_id not in available_voices:
             msg = f"Invalid voice ID: {voice_id}. Available voices: {', '.join(available_voices)}"
-            raise ValueError(
-                msg
-            )
+            raise ValueError(msg)
 
         self.voice_id = voice_id
         logging.debug(f"Set voice to {voice_id}")
@@ -289,6 +283,9 @@ class OpenAIClient(AbstractTTS):
             text_str = str(text)
 
         try:
+            # Update instructions from properties before synthesis
+            self._update_instructions_from_properties()
+
             # Create speech using the OpenAI API
             response = self.client.audio.speech.create(
                 model=self.model,
@@ -343,6 +340,9 @@ class OpenAIClient(AbstractTTS):
             text_str = str(text)
 
         try:
+            # Update instructions from properties before synthesis
+            self._update_instructions_from_properties()
+
             # Create streaming response
             with self.client.audio.speech.with_streaming_response.create(
                 model=self.model,
@@ -394,6 +394,81 @@ class OpenAIClient(AbstractTTS):
         else:
             logging.debug("No instructions set")
 
+    def _update_instructions_from_properties(self) -> None:
+        """
+        Update the instructions based on the current property values.
+
+        This method combines the base instructions with any rate, volume, and pitch
+        settings to create a comprehensive instruction for the OpenAI TTS model.
+        """
+        # Start with base instructions or empty string
+        base_instructions = self.instructions or ""
+
+        # Initialize a list to hold property-based instructions
+        property_instructions = []
+
+        # Add rate instruction if set
+        rate = self.get_property("rate")
+        if rate is not None:
+            if isinstance(rate, (int, float)):
+                # Convert numeric rate to descriptive term
+                if rate < 0.8:
+                    property_instructions.append("Speak very slowly.")
+                elif rate < 0.95:
+                    property_instructions.append("Speak slowly.")
+                elif rate > 1.2:
+                    property_instructions.append("Speak very quickly.")
+                elif rate > 1.05:
+                    property_instructions.append("Speak quickly.")
+            elif isinstance(rate, str):
+                # Use string rate directly
+                property_instructions.append(f"Speak at a {rate} pace.")
+
+        # Add volume instruction if set
+        volume = self.get_property("volume")
+        if volume is not None:
+            if isinstance(volume, (int, float)):
+                # Convert numeric volume to descriptive term
+                if volume < 0.5:
+                    property_instructions.append("Speak very quietly.")
+                elif volume < 0.8:
+                    property_instructions.append("Speak quietly.")
+                elif volume > 1.5:
+                    property_instructions.append("Speak very loudly.")
+                elif volume > 1.2:
+                    property_instructions.append("Speak loudly.")
+            elif isinstance(volume, str):
+                # Use string volume directly
+                property_instructions.append(f"Speak at a {volume} volume.")
+
+        # Add pitch instruction if set
+        pitch = self.get_property("pitch")
+        if pitch is not None:
+            if isinstance(pitch, (int, float)):
+                # Convert numeric pitch to descriptive term
+                if pitch < 0.8:
+                    property_instructions.append("Speak with a very low pitch.")
+                elif pitch < 0.95:
+                    property_instructions.append("Speak with a low pitch.")
+                elif pitch > 1.2:
+                    property_instructions.append("Speak with a very high pitch.")
+                elif pitch > 1.05:
+                    property_instructions.append("Speak with a high pitch.")
+            elif isinstance(pitch, str):
+                # Use string pitch directly
+                property_instructions.append(f"Speak with a {pitch} pitch.")
+
+        # Combine base instructions with property instructions
+        if property_instructions:
+            combined_instructions = base_instructions
+            if combined_instructions and not combined_instructions.endswith("."):
+                combined_instructions += ". "
+            elif combined_instructions:
+                combined_instructions += " "
+            combined_instructions += " ".join(property_instructions)
+            self.instructions = combined_instructions
+            logging.debug(f"Updated instructions from properties: {self.instructions}")
+
     def _set_model(self, model: str) -> None:
         """
         Set the model to use for synthesis (private method).
@@ -409,3 +484,46 @@ class OpenAIClient(AbstractTTS):
 
         self.model = model
         logging.debug(f"Set model to {model}")
+
+    def set_property(self, property_name: str, value: float | str) -> None:
+        """
+        Set a property for the TTS engine and update instructions accordingly.
+
+        This overrides the AbstractTTS set_property method to update the instructions
+        based on the property values, since OpenAI uses instructions to control speech.
+
+        Parameters
+        ----------
+        property_name : str
+            The name of the property to set ("rate", "volume", or "pitch").
+        value : float | str
+            The value to assign to the specified property.
+        """
+        # Call the parent method to set the property in the properties dictionary
+        super().set_property(property_name, value)
+
+        # Store the original instructions before updating
+        original_instructions = self.instructions
+
+        # Update instructions based on the new property values
+        self._update_instructions_from_properties()
+
+        # Log the change if instructions were updated
+        if original_instructions != self.instructions:
+            logging.debug(f"Updated instructions after setting {property_name}={value}")
+
+    def get_property(self, property_name: str) -> Any:
+        """
+        Get a property value from the TTS engine.
+
+        Parameters
+        ----------
+        property_name : str
+            The name of the property to retrieve ("rate", "volume", or "pitch").
+
+        Returns
+        -------
+        Any
+            The value of the property, or None if not set.
+        """
+        return super().get_property(property_name)
