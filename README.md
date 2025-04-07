@@ -25,6 +25,7 @@ _TTS-Wrapper_ simplifies using text-to-speech APIs by providing a unified interf
 - Wit.Ai
 - eSpeak-NG
 - Play.HT
+- OpenAI
 - AVSynth (macOS only)
 - SAPI (Windows only)
 - Sherpa-Onnx (NB: Means you can run any ONNX model you want - eg Piper or MMS models)
@@ -55,6 +56,7 @@ _TTS-Wrapper_ simplifies using text-to-speech APIs by providing a unified interf
 | Watson     | Linux/MacOS/Windows| Online            | Yes  | Yes            | Yes       | Yes              | Full      |
 | ElevenLabs | Linux/MacOS/Windows| Online            | No*  | Yes            | Yes       | Yes              | Full      |
 | Play.HT    | Linux/MacOS/Windows| Online            | No*  | No**           | Yes       | Yes              | Basic     |
+| OpenAI   | Linux/MacOS/Windows| Online            | No | No           | Yes       | Yes              | Basic     |
 | Wit.Ai     | Linux/MacOS/Windows| Online            | No*  | No**           | Yes       | Yes              | Basic     |
 | eSpeak     | Linux/MacOS        | Offline           | Yes  | No**           | Yes       | Yes              | Basic     |
 | AVSynth    | MacOS              | Offline           | No   | No**           | Yes       | Yes              | Basic     |

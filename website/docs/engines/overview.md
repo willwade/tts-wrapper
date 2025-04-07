@@ -14,6 +14,7 @@ TTS Wrapper supports multiple text-to-speech engines, each with its own features
 | Google Cloud | ✅ Full | ✅ | ✅ | Cloud | Commercial |
 | Microsoft Azure | ✅ Full | ✅ | ✅ | Cloud | Commercial |
 | IBM Watson | ✅ Full | ✅ | ✅ | Cloud | Commercial |
+| OpenAI | ❌ | ✅ | ❌ | Cloud | Commercial |
 | ElevenLabs | ❌ | ✅ | ❌ | Cloud | Commercial |
 | Play.HT | ❌ | ✅ | ❌ | Cloud | Commercial |
 | Wit.ai | ❌ | ❌ | ❌ | Cloud | Commercial |
@@ -55,4 +56,4 @@ Each engine's documentation page includes:
 - Known limitations
 - Best practices
 
-Select an engine from the sidebar to view its detailed documentation. 
+Select an engine from the sidebar to view its detailed documentation.

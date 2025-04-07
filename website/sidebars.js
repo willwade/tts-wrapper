@@ -26,6 +26,7 @@ const sidebars = {
         'engines/google-cloud',
         'engines/microsoft-azure',
         'engines/ibm-watson',
+        'engines/openai',
         'engines/elevenlabs',
         'engines/playht',
         'engines/witai',
@@ -49,4 +50,4 @@ const sidebars = {
   ],
 };
 
-module.exports = sidebars; 
+module.exports = sidebars;
