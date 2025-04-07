@@ -4,13 +4,11 @@ import json
 import logging
 import struct
 import threading
-from typing import TYPE_CHECKING, Any, Callable
+from pathlib import Path
+from typing import Any, Callable
 
 from tts_wrapper.exceptions import ModuleNotInstalled
 from tts_wrapper.tts import AbstractTTS
-
-if TYPE_CHECKING:
-    from pathlib import Path
 
 Credentials = tuple[str, str, str]  # api_key, region, instance_id
 
@@ -61,15 +59,15 @@ class WatsonClient(AbstractTTS):
                 or "Forbidden" in error_str
                 or "Unauthorized" in error_str
             ):
-                logging.warning(f"Watson credentials are invalid (403 Forbidden): {e}")
+                logging.warning("Watson credentials are invalid (403 Forbidden): %s", e)
                 return False
             if "401" in error_str:
                 logging.warning(
-                    f"Watson credentials are invalid (401 Unauthorized): {e}"
+                    "Watson credentials are invalid (401 Unauthorized): %s", e
                 )
                 return False
             # For other errors, log but still return False to skip the test
-            logging.warning(f"Watson error (not credential-related): {e}")
+            logging.warning("Watson error (not credential-related): %s", e)
             return False
 
     def _initialize_ibm_watson(self) -> None:
@@ -77,9 +75,9 @@ class WatsonClient(AbstractTTS):
             try:
                 import requests
                 from ibm_cloud_sdk_core.authenticators import (
-                    IAMAuthenticator,  # type: ignore
+                    IAMAuthenticator,  # type: ignore[import]
                 )
-                from ibm_watson import TextToSpeechV1  # type: ignore
+                from ibm_watson import TextToSpeechV1  # type: ignore[import]
 
                 self.IAMAuthenticator = IAMAuthenticator
                 self.TextToSpeechV1 = TextToSpeechV1
@@ -139,10 +137,9 @@ class WatsonClient(AbstractTTS):
         if not voice:
             # Use a default voice if none is set
             voices = self._get_voices()
-            if voices:
-                voice = voices[0]["id"]
-            else:
-                voice = "en-US_AllisonV3Voice"  # Default voice
+            voice = (
+                voices[0]["id"] if voices else "en-US_AllisonV3Voice"
+            )  # Default voice
 
         return (
             self._client.synthesize(text=str(text), voice=voice, accept="audio/wav")
@@ -174,7 +171,8 @@ class WatsonClient(AbstractTTS):
         audio_bytes = self.synth_to_bytes(text, voice_id)
 
         # Save to file
-        with open(output_file, "wb") as f:
+        output_path = Path(output_file) if isinstance(output_file, str) else output_file
+        with output_path.open("wb") as f:
             f.write(audio_bytes)
 
     def synth_raw(self, ssml: str, voice: str) -> bytes:
@@ -218,7 +216,7 @@ class WatsonClient(AbstractTTS):
 
         def on_close(ws, status_code, reason) -> None:
             logging.info(
-                f"WebSocket closed with status code: {status_code}, reason: {reason}",
+                "WebSocket closed with status code: %s, reason: %s", status_code, reason
             )
 
         import websocket
@@ -264,14 +262,20 @@ class WatsonClient(AbstractTTS):
         Returns:
             Duration in seconds
         """
+        # Constants for WAV header parsing
+        RIFF_MAGIC = b"RIFF"
+        WAVE_MAGIC = b"WAVE"
+        FMT_MAGIC = b"fmt "
+        DATA_MAGIC = b"data"
+
         # Parse WAV header to get sample rate and number of samples
         riff, size, fformat = struct.unpack("<4sI4s", audio_content[:12])
-        if riff != b"RIFF" or fformat != b"WAVE":
+        if riff != RIFF_MAGIC or fformat != WAVE_MAGIC:
             msg = "Not a WAV file"
             raise ValueError(msg)
 
         subchunk1, subchunk1_size = struct.unpack("<4sI", audio_content[12:20])
-        if subchunk1 != b"fmt ":
+        if subchunk1 != FMT_MAGIC:
             msg = "Not a valid WAV file"
             raise ValueError(msg)
 
@@ -280,7 +284,7 @@ class WatsonClient(AbstractTTS):
         )
 
         subchunk2, subchunk2_size = struct.unpack("<4sI", audio_content[36:44])
-        if subchunk2 != b"data":
+        if subchunk2 != DATA_MAGIC:
             msg = "Not a valid WAV file"
             raise ValueError(msg)
 
@@ -300,6 +304,69 @@ class WatsonClient(AbstractTTS):
             self._callbacks[event_name] = []
         self._callbacks[event_name].append(callback)
 
+    def _trigger_callbacks(self, event_name: str) -> None:
+        """Trigger callbacks for a specific event.
+
+        Args:
+            event_name: Name of the event to trigger callbacks for
+        """
+        if hasattr(self, "_callbacks") and event_name in self._callbacks:
+            for cb in self._callbacks[event_name]:
+                cb()
+
+    def _get_voice_for_synthesis(self, voice_id: str | None) -> str:
+        """Get the voice to use for synthesis.
+
+        Args:
+            voice_id: Optional voice ID to use
+
+        Returns:
+            Voice ID to use for synthesis
+        """
+        # Use provided voice_id or the one set with set_voice
+        voice = voice_id if voice_id else getattr(self, "voice_id", None)
+
+        if not voice:
+            # Use a default voice if none is set
+            voices = self._get_voices()
+            voice = (
+                voices[0]["id"] if voices else "en-US_AllisonV3Voice"
+            )  # Default voice
+
+        return voice
+
+    def _process_word_timings(self, callback: Callable | None, text: str) -> None:
+        """Process word timings and call the callback for each word.
+
+        Args:
+            callback: Function to call for each word timing
+            text: The text that was synthesized
+        """
+        if callback is None:
+            return
+
+        if self.word_timings:
+            # Use actual word timings if available
+            for timing in self.word_timings:
+                if isinstance(timing, tuple) and len(timing) == 2:
+                    start_time, word = timing
+                    # Estimate end time as start time + 0.3 seconds
+                    callback(word, start_time, start_time + 0.3)
+        else:
+            # Estimate word timings based on text length
+            words = str(text).split()
+            if not words:
+                return
+
+            total_duration = self._get_audio_duration(self._audio_bytes)
+            time_per_word = total_duration / len(words)
+
+            current_time = 0.0
+            for word in words:
+                end_time = current_time + time_per_word
+                callback(word, current_time, end_time)
+                current_time = end_time
+
     def start_playback_with_callbacks(
         self, text: str, callback: Callable | None = None, voice_id: str | None = None
     ) -> None:
@@ -311,52 +378,22 @@ class WatsonClient(AbstractTTS):
             voice_id: Optional voice ID to use for this synthesis
         """
         # Trigger onStart callbacks
-        if hasattr(self, "_callbacks") and "onStart" in self._callbacks:
-            for cb in self._callbacks["onStart"]:
-                cb()
+        self._trigger_callbacks("onStart")
 
-        # Use provided voice_id or the one set with set_voice
-        voice = voice_id if voice_id else getattr(self, "voice_id", None)
-
-        if not voice:
-            # Use a default voice if none is set
-            voices = self._get_voices()
-            if voices:
-                voice = voices[0]["id"]
-            else:
-                voice = "en-US_AllisonV3Voice"  # Default voice
+        # Get the voice to use
+        voice = self._get_voice_for_synthesis(voice_id)
 
         # Synthesize with word timings
         try:
             self._audio_bytes = self.synth_with_timings(str(text), voice)
-
-            # Call the callback for each word timing if provided
-            if callback is not None and self.word_timings:
-                for timing in self.word_timings:
-                    if isinstance(timing, tuple) and len(timing) == 2:
-                        start_time, word = timing
-                        # Estimate end time as start time + 0.3 seconds
-                        callback(word, start_time, start_time + 0.3)
+            self._process_word_timings(callback, text)
         except Exception:
             # Fallback to regular synthesis without timings
             self._audio_bytes = self.synth_to_bytes(text, voice)
-
-            # Estimate word timings based on text length
-            if callback is not None:
-                words = str(text).split()
-                total_duration = self._get_audio_duration(self._audio_bytes)
-                time_per_word = total_duration / len(words) if words else 0
-
-                current_time = 0.0
-                for word in words:
-                    end_time = current_time + time_per_word
-                    callback(word, current_time, end_time)
-                    current_time = end_time
+            self._process_word_timings(callback, text)
 
         # Trigger onEnd callbacks
-        if hasattr(self, "_callbacks") and "onEnd" in self._callbacks:
-            for cb in self._callbacks["onEnd"]:
-                cb()
+        self._trigger_callbacks("onEnd")
 
     def _get_voices(self) -> list[dict[str, Any]]:
         """Fetches available voices from Watson.

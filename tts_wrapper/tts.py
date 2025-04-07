@@ -109,7 +109,8 @@ class AbstractTTS(ABC):
             langcodes: Format of language codes to return. Options:
                 - "bcp47": BCP-47 format (e.g., "en-US", "fr-FR")
                 - "iso639_3": ISO 639-3 format (e.g., "eng", "fra")
-                - "display": Human-readable display names (e.g., "English (United States)", "French (France)")
+                - "display": Human-readable display names
+                  (e.g., "English (United States)", "French (France)")
                 - "all": Return all formats as a dictionary
 
         Returns:
@@ -538,7 +539,7 @@ class AbstractTTS(ABC):
         # Create parent directories if they don't exist
         output_file.parent.mkdir(parents=True, exist_ok=True)
 
-        with open(output_file, "wb") as f:
+        with output_file.open("wb") as f:
             f.write(audio_bytes)
 
     def speak(self, text: str | SSML, voice_id: str | None = None) -> None:
@@ -584,6 +585,83 @@ class AbstractTTS(ABC):
         """
         self.synth_to_file(text, output_file, output_format, voice_id)
 
+    def _process_streaming_synthesis(
+        self, text: str | SSML, voice_id: str | None, trigger_callbacks: bool
+    ) -> bytes:
+        """Process streaming synthesis for engines that support it."""
+        # Trigger onStart callback if requested
+        if trigger_callbacks:
+            self._trigger_callback("onStart")
+
+        # Get streaming generator
+        generator = self.synth_to_bytestream(text, voice_id)
+
+        # Collect all chunks for audio playback
+        audio_chunks = []
+        for chunk in generator:
+            # Check if we should stop playback
+            if hasattr(self, "stop_flag") and self.stop_flag.is_set():
+                break
+            audio_chunks.append(chunk)
+
+        # Combine all chunks into a single audio buffer
+        audio_data = b"".join(audio_chunks)
+
+        # For streaming engines, get word timings if available
+        if hasattr(self, "get_word_timings") and callable(self.get_word_timings):
+            word_timings = self.get_word_timings()
+            if word_timings:
+                self.set_timings(word_timings)
+
+        # Trigger onEnd callback after all chunks are processed if requested
+        if trigger_callbacks:
+            self._trigger_callback("onEnd")
+
+        return audio_data
+
+    def _process_non_streaming_synthesis(
+        self, text: str | SSML, voice_id: str | None, trigger_callbacks: bool
+    ) -> bytes:
+        """Process non-streaming synthesis for engines that don't support streaming."""
+        # Trigger onStart callback if requested
+        if trigger_callbacks:
+            self._trigger_callback("onStart")
+
+        # Fall back to non-streaming synthesis
+        audio_data = self.synth_to_bytes(text, voice_id)
+
+        # For non-streaming engines, create simple word timings
+        self._create_estimated_word_timings(text)
+
+        # Play the audio
+        self.load_audio(audio_data)
+        self.play()
+
+        return audio_data
+
+    def _create_estimated_word_timings(self, text: str | SSML) -> None:
+        """Create estimated word timings for non-streaming engines."""
+        # Extract plain text from SSML if needed
+        plain_text = (
+            re.sub(r"<[^>]+>", "", str(text)) if self._is_ssml(str(text)) else str(text)
+        )
+
+        words = plain_text.split()
+        if not words:
+            return
+
+        # Calculate approximate duration
+        duration = self.get_audio_duration()
+        word_duration = duration / len(words)
+
+        # Create simple evenly-spaced word timings
+        word_timings = []
+        for i, word in enumerate(words):
+            start_time = i * word_duration
+            end_time = (i + 1) * word_duration if i < len(words) - 1 else duration
+            word_timings.append((start_time, end_time, word))
+        self.set_timings(word_timings)
+
     def speak_streamed(
         self,
         text: str | SSML,
@@ -607,70 +685,9 @@ class AbstractTTS(ABC):
             if hasattr(self, "synth_to_bytestream") and callable(
                 self.synth_to_bytestream
             ):
-                # Trigger onStart callback if requested
-                if trigger_callbacks:
-                    self._trigger_callback("onStart")
-
-                # Get streaming generator
-                generator = self.synth_to_bytestream(text, voice_id)
-
-                # Collect all chunks for audio playback
-                audio_chunks = []
-                for chunk in generator:
-                    # Check if we should stop playback
-                    if hasattr(self, "stop_flag") and self.stop_flag.is_set():
-                        break
-                    audio_chunks.append(chunk)
-
-                # Combine all chunks into a single audio buffer
-                audio_data = b"".join(audio_chunks)
-
-                # For streaming engines, get word timings if available
-                if hasattr(self, "get_word_timings") and callable(
-                    self.get_word_timings
-                ):
-                    word_timings = self.get_word_timings()
-                    if word_timings:
-                        self.set_timings(word_timings)
-
-                # Trigger onEnd callback after all chunks are processed if requested
-                if trigger_callbacks:
-                    self._trigger_callback("onEnd")
+                self._process_streaming_synthesis(text, voice_id, trigger_callbacks)
             else:
-                # Trigger onStart callback if requested
-                if trigger_callbacks:
-                    self._trigger_callback("onStart")
-
-                # Fall back to non-streaming synthesis
-                audio_data = self.synth_to_bytes(text, voice_id)
-
-                # For non-streaming engines, create simple word timings
-                # Extract plain text from SSML if needed
-                if self._is_ssml(str(text)):
-                    # Very basic SSML stripping - just get the text content
-                    plain_text = re.sub(r"<[^>]+>", "", str(text))
-                else:
-                    plain_text = str(text)
-
-                words = plain_text.split()
-                if words:
-                    # Calculate approximate duration
-                    duration = self.get_audio_duration()
-                    word_duration = duration / len(words)
-
-                    # Create simple evenly-spaced word timings
-                    word_timings = []
-                    for i, word in enumerate(words):
-                        start_time = i * word_duration
-                        end_time = (
-                            (i + 1) * word_duration if i < len(words) - 1 else duration
-                        )
-                        word_timings.append((start_time, end_time, word))
-                    self.set_timings(word_timings)
-
-                # Play the audio
-                self.load_audio(audio_data)
-                self.play()
+                self._process_non_streaming_synthesis(text, voice_id, trigger_callbacks)
         except Exception:
             logging.exception("Error in streaming synthesis")
 

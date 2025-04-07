@@ -1,6 +1,8 @@
+from __future__ import annotations
+
 from abc import ABC, abstractmethod
 from collections.abc import Mapping
-from typing import Any, Optional
+from typing import Any
 
 Child = Any
 Attr = Mapping[str, Any]
@@ -13,7 +15,7 @@ class AbstractSSMLNode(ABC):
     """
 
     @abstractmethod
-    def add(self, child: Child) -> "AbstractSSMLNode":
+    def add(self, child: Child) -> AbstractSSMLNode:
         """Adds a new node to SSML tree.
 
         @param child: Child node to be added in the tree.
@@ -45,8 +47,8 @@ class SSMLNode(AbstractSSMLNode):
     def __init__(
         self,
         tag: str,
-        attrs: Optional[Attr] = None,
-        children: Optional[list[Child]] = None,
+        attrs: Attr | None = None,
+        children: list[Child] | None = None,
     ) -> None:
         self._tag = tag
         self._attrs = attrs or {}
@@ -58,7 +60,7 @@ class SSMLNode(AbstractSSMLNode):
         rendered_children = "".join(str(c) for c in self._children)
         return f"<{self._tag}{(' ' if attrs else '')}{attrs}>{rendered_children}</{self._tag}>"
 
-    def add(self, child: Child) -> "SSMLNode":
+    def add(self, child: Child) -> SSMLNode:
         """Adds a child with Any type to the children list property.
 
         @param child: child with Any type to be added to the children list

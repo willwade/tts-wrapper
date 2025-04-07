@@ -1,5 +1,4 @@
 import json
-import os
 import re
 import tarfile
 from io import BytesIO
@@ -100,7 +99,8 @@ def get_language_data(lang_code: str, region: str):
 
 
 def save_models(merged_models, filepath="merged_models.json") -> None:
-    with open(filepath, "w") as f:
+    filepath_path = Path(filepath)
+    with filepath_path.open("w") as f:
         json.dump(merged_models, f, indent=4)
 
 
@@ -111,8 +111,9 @@ def merge_models(
     force=False,
 ):
     # Load existing models if file exists and force flag is not set
-    if os.path.exists(output_file) and not force:
-        with open(output_file) as f:
+    output_path = Path(output_file)
+    if output_path.exists() and not force:
+        with output_path.open() as f:
             merged_models = json.load(f)
     else:
         merged_models = {}
@@ -152,10 +153,11 @@ def merge_models(
         }
 
         # Save every 50 models or at the very end
-        if (index + 1) % 50 == 0 or (index + 1) == len(mms_models):
-            if last_saved_index < index + 1:
-                save_models(merged_models, output_file)
-                last_saved_index = index + 1  # Update last saved index
+        if (
+            (index + 1) % 50 == 0 or (index + 1) == len(mms_models)
+        ) and last_saved_index < index + 1:
+            save_models(merged_models, output_file)
+            last_saved_index = index + 1  # Update last saved index
 
         # Print progress percentage
         ((index + 1) / total_models) * 100
@@ -474,7 +476,8 @@ def get_github_release_assets(repo, tag, merged_models, output_file):
         for lang_code, region in lang_codes_and_regions:
             lang_info = get_language_data(lang_code, region)
             print(
-                f"  → Language: {lang_info['language_name']} ({lang_info['lang_code']}, {lang_info['country']})"
+                f"  → Language: {lang_info['language_name']} "
+                f"({lang_info['lang_code']}, {lang_info['country']})"
             )
 
         name = parts[3] if len(parts) > 3 else "unknown"
@@ -556,8 +559,9 @@ def main() -> None:
     output_file = "merged_models.json"
 
     # Step 1: Load existing models or start fresh
+    output_path = Path(output_file)
     try:
-        with open(output_file) as f:
+        with output_path.open() as f:
             merged_models = json.load(f)
     except FileNotFoundError:
         merged_models = {}
@@ -570,7 +574,7 @@ def main() -> None:
 
     if merged_models_path.exists():
         print("merged models already exist, getting supported languages")
-        with open(merged_models_path) as file:
+        with merged_models_path.open() as file:
             json.load(file)
     else:
         merged_models = get_github_release_assets(repo, tag, merged_models, output_file)

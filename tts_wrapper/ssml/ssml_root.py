@@ -1,4 +1,6 @@
-from . import AbstractSSMLNode, Child, SSMLNode
+from __future__ import annotations
+
+from .ssml_node import AbstractSSMLNode, Child, SSMLNode
 
 
 class BaseSSMLRoot(AbstractSSMLNode):
@@ -9,7 +11,7 @@ class BaseSSMLRoot(AbstractSSMLNode):
     def __str__(self) -> str:
         return str(self._root)
 
-    def add(self, child: Child) -> "AbstractSSMLNode":
+    def add(self, child: Child) -> AbstractSSMLNode:
         self._inner.add(child)
         return self
 

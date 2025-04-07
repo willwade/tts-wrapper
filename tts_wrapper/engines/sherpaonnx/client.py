@@ -8,7 +8,7 @@ import os
 import queue
 import threading
 from pathlib import Path
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Callable
 
 import numpy as np
 import requests
@@ -70,7 +70,7 @@ class SherpaOnnxClient(AbstractTTS):
             # Create the models directory if it doesn't exist
             models_dir.mkdir(exist_ok=True)
             self._base_dir = models_dir
-            logging.info(f"Using default models directory: {models_dir}")
+            logging.info("Using default models directory: %s", models_dir)
 
         # Initialize paths
         self.default_model_path = ""
@@ -193,7 +193,7 @@ class SherpaOnnxClient(AbstractTTS):
         # Create voice-specific directory
         voice_dir = self._base_dir / model_id
         voice_dir.mkdir(exist_ok=True)
-        logging.info(f"Using voice directory: {voice_dir}")
+        logging.info("Using voice directory: %s", voice_dir)
 
         # Expected paths for this voice
         model_path = str(voice_dir / "model.onnx")
@@ -202,7 +202,8 @@ class SherpaOnnxClient(AbstractTTS):
         # Check if files exist in voice directory
         if not self._check_files_exist(model_path, tokens_path, model_id):
             logging.info(
-                f"Downloading model and tokens languages for {model_id} because we can't find it"
+                "Downloading model and tokens languages for %s because we can't find it",
+                model_id,
             )
 
             # Download to voice-specific directory
@@ -393,7 +394,7 @@ class SherpaOnnxClient(AbstractTTS):
         return word_timings
 
     def start_playback_with_callbacks(
-        self, text: str, callback: callable | None = None, voice_id: str | None = None
+        self, text: str, callback: Callable | None = None, voice_id: str | None = None
     ) -> None:
         """Start playback with word timing callbacks.
 
@@ -531,20 +532,16 @@ class SherpaOnnxClient(AbstractTTS):
         Returns:
             List of voice dictionaries with raw language information
         """
-        voices = []
-
-        for voice in self.json_models.values():
-            if voice["id"].startswith("mms_"):
-                voices.append(
-                    {
-                        "id": voice["id"],
-                        "name": voice["language"][0]["Language Name"],
-                        "language_codes": [voice["language"][0]["Iso Code"]],
-                        "gender": "N",
-                    }
-                )
-
-        return voices
+        return [
+            {
+                "id": voice["id"],
+                "name": voice["language"][0]["Language Name"],
+                "language_codes": [voice["language"][0]["Iso Code"]],
+                "gender": "N",
+            }
+            for voice in self.json_models.values()
+            if voice["id"].startswith("mms_")
+        ]
 
     def set_voice(
         self, voice_id: str | None = None, lang_id: str | None = None
@@ -555,9 +552,11 @@ class SherpaOnnxClient(AbstractTTS):
         Parameters
         ----------
         voice_id : str | None, optional
-            The ID of the voice to use. If provided, this overrides the model_id set during initialization.
+            The ID of the voice to use. If provided, this overrides the model_id set during
+            initialization.
         lang_id : str | None, optional
-            The language ID. Currently not used by SherpaOnnx but included for interface compatibility.
+            The language ID. Currently not used by SherpaOnnx but included for interface
+            compatibility.
         """
         # If voice_id is provided, use it instead of the model_id set during initialization
         model_id_to_use = voice_id or self._model_id
