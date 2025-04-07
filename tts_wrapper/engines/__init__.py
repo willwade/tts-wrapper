@@ -6,6 +6,7 @@ from .espeak import *
 from .google import *
 from .googletrans import *
 from .microsoft import *
+from .openai import *
 from .pico import *
 from .playht import *
 from .polly import *
