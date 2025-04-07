@@ -218,4 +218,4 @@ tts.synth("Hello world", "output.flac", "flac")
 
 - Explore [streaming capabilities](../guides/streaming)
 - Check out [audio control features](../guides/audio-control)
-- Learn about [multilingual support](../guides/multilingual)
+- Learn about [voice selection and languages](../guides/voices)
