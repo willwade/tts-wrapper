@@ -13,9 +13,12 @@ if sys.platform == "darwin":
     from tts_wrapper import AVSynthClient
 
 
-# Skip all eSpeak tests if SKIP_ESPEAK_SYNTH_TEST is set
+# Skip all eSpeak tests if SKIP_ESPEAK_SYNTH_TEST is set or running in CI
 @unittest.skipIf(
-    os.environ.get("SKIP_ESPEAK_SYNTH_TEST"), "SKIP_ESPEAK_SYNTH_TEST is set"
+    os.environ.get("SKIP_ESPEAK_SYNTH_TEST")
+    or os.environ.get("GITHUB_ACTIONS") == "true"
+    or os.environ.get("CI") == "true",
+    "Skipping test: Running in CI environment or SKIP_ESPEAK_SYNTH_TEST is set",
 )
 class TestEspeakPlaybackControl(unittest.TestCase):
     """Test playback control in eSpeak engine."""

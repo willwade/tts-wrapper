@@ -2,12 +2,11 @@ import os
 import time
 import logging
 from pathlib import Path
-from tts_wrapper import eSpeakClient, eSpeakTTS
+from tts_wrapper import eSpeakClient
 
 logging.basicConfig(level=logging.DEBUG)
 
-client = eSpeakClient()
-tts = eSpeakTTS(client)
+tts = eSpeakClient()
 
 
 # Methods for specific tests
@@ -15,22 +14,13 @@ def test_pausing_and_resuming():
     """Test pausing, resuming, and stopping audio."""
     try:
         tts.set_output_device(2)
-        ssml_text = tts.ssml.construct_prosody(
-            "This is me speaking with espeak.",
-            rate="fast",
-            volume="medium",
-            pitch="high",
-            range="x-high",
-        )
-        tts.speak_streamed(ssml_text)
+        # Use a simple text without SSML
+        text = "This is a simple test of eSpeak."
+        print(f"Speaking: {text}")
+        # Use the speak method directly
+        tts.speak(text)
+        print("Audio playback completed")
 
-        # Pause and resume
-        time.sleep(0.3)
-        tts.pause_audio()
-        time.sleep(0.5)
-        tts.resume_audio()
-        time.sleep(1)
-        tts.stop_audio()
     except Exception as e:
         print(f"Error in pausing/resuming test: {e}")
 
@@ -41,6 +31,7 @@ def test_saving_audio():
         ssml_text = tts.ssml.add(
             "A second sentence to save to an audio file", clear=True
         )
+        print(f"SSML text: {ssml_text}")
         output_file = Path(f"output_google.mp3")
         tts.synth(ssml_text, str(output_file), format="mp3")
         print(f"Audio content saved to {output_file}")
@@ -132,7 +123,7 @@ def test_volume_control():
 if __name__ == "__main__":
     # Uncomment any line below to test the corresponding functionality
     # test_pausing_and_resuming()
-    # test_saving_audio()
-    test_changing_voices()
+    test_saving_audio()
+    # test_changing_voices()
     # test_callbacks()
     # test_volume_control()

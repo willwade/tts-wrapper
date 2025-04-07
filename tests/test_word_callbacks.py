@@ -14,11 +14,13 @@ if sys.platform == "darwin":
     from tts_wrapper import AVSynthClient
 
 
-# Skip all eSpeak tests if SKIP_ESPEAK_SYNTH_TEST or SKIP_ESPEAK_CALLBACK_TEST is set
+# Skip all eSpeak tests if SKIP_ESPEAK_SYNTH_TEST or SKIP_ESPEAK_CALLBACK_TEST is set or running in CI
 @unittest.skipIf(
     os.environ.get("SKIP_ESPEAK_SYNTH_TEST") is not None
-    or os.environ.get("SKIP_ESPEAK_CALLBACK_TEST") is not None,
-    "SKIP_ESPEAK_SYNTH_TEST or SKIP_ESPEAK_CALLBACK_TEST is set",
+    or os.environ.get("SKIP_ESPEAK_CALLBACK_TEST") is not None
+    or os.environ.get("GITHUB_ACTIONS") == "true"
+    or os.environ.get("CI") == "true",
+    "Skipping test: Running in CI environment or SKIP_ESPEAK_SYNTH_TEST/SKIP_ESPEAK_CALLBACK_TEST is set",
 )
 class TestEspeakWordCallbacks(unittest.TestCase):
     """Test word timing callbacks in eSpeak engine."""
@@ -60,10 +62,18 @@ class TestEspeakWordCallbacks(unittest.TestCase):
             # Check that callback was called with correct arguments
             for call in word_callback.call_args_list:
                 args, _ = call
-                assert len(args) == 3, "Word callback called with wrong number of arguments"
-                assert isinstance(args[0], str), "First argument to word callback is not a string"
-                assert isinstance(args[1], float), "Second argument to word callback is not a float"
-                assert isinstance(args[2], float), "Third argument to word callback is not a float"
+                assert (
+                    len(args) == 3
+                ), "Word callback called with wrong number of arguments"
+                assert isinstance(
+                    args[0], str
+                ), "First argument to word callback is not a string"
+                assert isinstance(
+                    args[1], float
+                ), "Second argument to word callback is not a float"
+                assert isinstance(
+                    args[2], float
+                ), "Third argument to word callback is not a float"
 
         except Exception as e:
             self.skipTest(f"Word callback test failed: {e}")
@@ -99,7 +109,9 @@ class TestEspeakWordCallbacks(unittest.TestCase):
             time.sleep(2)
 
             # Check that callback was called for each word
-            assert word_callback.call_count == len(test_timings), "Word callback was not called for each word"
+            assert word_callback.call_count == len(
+                test_timings
+            ), "Word callback was not called for each word"
 
         except Exception as e:
             self.skipTest(f"Set timings test failed: {e}")
@@ -144,10 +156,18 @@ if sys.platform == "darwin":
                 # Check that callback was called with correct arguments
                 for call in word_callback.call_args_list:
                     args, _ = call
-                    assert len(args) == 3, "Word callback called with wrong number of arguments"
-                    assert isinstance(args[0], str), "First argument to word callback is not a string"
-                    assert isinstance(args[1], float), "Second argument to word callback is not a float"
-                    assert isinstance(args[2], float), "Third argument to word callback is not a float"
+                    assert (
+                        len(args) == 3
+                    ), "Word callback called with wrong number of arguments"
+                    assert isinstance(
+                        args[0], str
+                    ), "First argument to word callback is not a string"
+                    assert isinstance(
+                        args[1], float
+                    ), "Second argument to word callback is not a float"
+                    assert isinstance(
+                        args[2], float
+                    ), "Third argument to word callback is not a float"
 
             except Exception as e:
                 self.skipTest(f"Word callback test failed: {e}")

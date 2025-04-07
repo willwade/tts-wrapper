@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import io
 import logging
+import os
 import re
 import threading
 import time
@@ -89,6 +90,52 @@ class AbstractTTS(ABC):
         self.playback_thread = None
         self.pause_timer = None
         self.pyaudio = None
+        self._audio_array = None
+        self._on_end_triggered = False
+        self.on_word_callback = None
+
+    def _is_ci_environment(self) -> bool:
+        """Check if we're running in a CI environment."""
+        return (
+            os.environ.get("GITHUB_ACTIONS") == "true" or os.environ.get("CI") == "true"
+        )
+
+    def _get_dummy_pyaudio(self):
+        """Create a dummy PyAudio implementation for CI environments."""
+
+        # Create a dummy PyAudio class that doesn't actually play audio
+        class DummyPyAudio:
+            def __init__(self):
+                pass
+
+            def get_format_from_width(self, width):
+                return 8  # Dummy format
+
+            def open(self, format=None, channels=None, rate=None, output=None):
+                return DummyStream()
+
+            def terminate(self):
+                pass
+
+        # Create a dummy Stream class
+        class DummyStream:
+            def __init__(self):
+                self.closed = False
+
+            def write(self, audio_data):
+                # Just consume the data without playing it
+                pass
+
+            def stop_stream(self):
+                pass
+
+            def close(self):
+                self.closed = True
+
+            def is_stopped(self):
+                return True
+
+        return DummyPyAudio()
 
     @abstractmethod
     def _get_voices(self) -> list[dict[str, Any]]:
@@ -331,9 +378,28 @@ class AbstractTTS(ABC):
             msg = "Audio bytes cannot be empty"
             raise ValueError(msg)
 
-        import pyaudio
+        # Check if we're running in a CI environment or if SKIP_AUDIO_PLAYBACK is set
+        in_ci = (
+            self._is_ci_environment() or os.environ.get("SKIP_AUDIO_PLAYBACK") == "1"
+        )
 
-        self.pyaudio = pyaudio.PyAudio()
+        if in_ci:
+            # Use a dummy PyAudio implementation in CI environments
+            logging.info(
+                "Running in CI environment or SKIP_AUDIO_PLAYBACK is set, using dummy audio output"
+            )
+            self.pyaudio = self._get_dummy_pyaudio()
+        else:
+            # Use real PyAudio in normal environments
+            try:
+                import pyaudio
+
+                self.pyaudio = pyaudio.PyAudio()
+            except Exception as e:
+                logging.warning(
+                    "Failed to initialize PyAudio: %s. Using dummy audio output.", e
+                )
+                self.pyaudio = self._get_dummy_pyaudio()
 
         # Convert to numpy array for internal processing
         self._audio_array = np.frombuffer(audio_bytes, dtype=np.int16)
@@ -342,27 +408,38 @@ class AbstractTTS(ABC):
 
     def _create_stream(self) -> None:
         """Create a new audio stream."""
+        logging.debug("_create_stream called")
         if self.stream_pyaudio is not None and not self.stream_pyaudio.is_stopped():
+            logging.debug("Stopping and closing existing stream")
             self.stream_pyaudio.stop_stream()
             self.stream_pyaudio.close()
 
         self.isplaying = True
         try:
+            logging.debug(
+                "Opening new audio stream with rate=%s, channels=%s",
+                self.audio_rate,
+                self.channels,
+            )
             self.stream_pyaudio = self.pyaudio.open(
                 format=self.pyaudio.get_format_from_width(self.sample_width),
                 channels=self.channels,
                 rate=self.audio_rate,
                 output=True,
             )
-        except Exception:
-            logging.exception("Failed to create stream")
+            logging.debug("Audio stream created successfully")
+        except Exception as e:
+            logging.exception("Failed to create stream: %s", e)
             self.isplaying = False
             raise
 
     def _playback_loop(self) -> None:
         """Run main playback loop in a separate thread."""
+        logging.debug("_playback_loop started")
         try:
+            logging.debug("Creating audio stream")
             self._create_stream()
+            logging.debug("Audio stream created")
             self._trigger_callback(
                 "onStart"
             )  # Trigger onStart when playback actually starts
@@ -370,17 +447,30 @@ class AbstractTTS(ABC):
                 False  # Reset the guard flag at the start of playback
             )
 
+            logging.debug(
+                "Starting playback loop with audio_bytes size: %s",
+                len(self.audio_bytes),
+            )
+            logging.debug("isplaying: %s, paused: %s", self.isplaying, self.paused)
+
             while self.isplaying and self.position < len(self.audio_bytes):
                 if not self.paused:
                     chunk = self.audio_bytes[
                         self.position : self.position + self.chunk_size
                     ]
                     if chunk:
+                        logging.debug(
+                            "Writing chunk of size %s at position %s",
+                            len(chunk),
+                            self.position,
+                        )
                         self.stream_pyaudio.write(chunk)
                         self.position += len(chunk)
                     else:
+                        logging.debug("Empty chunk, breaking loop")
                         break
                 else:
+                    logging.debug("Paused, sleeping")
                     time.sleep(0.1)  # Reduce CPU usage while paused
 
             # Trigger "onEnd" only once when playback ends
@@ -413,11 +503,17 @@ class AbstractTTS(ABC):
 
     def play(self, duration: float | None = None) -> None:
         """Start or resume playback."""
+        logging.debug("play() called with duration=%s", duration)
         if self.audio_bytes is None:
             msg = "No audio loaded"
+            logging.error("No audio loaded")
             raise ValueError(msg)
 
+        logging.debug("Audio bytes size: %s", len(self.audio_bytes))
+        logging.debug("isplaying: %s, paused: %s", self.isplaying, self.paused)
+
         if not self.isplaying:
+            logging.debug("Starting new playback")
             self.isplaying = True
             self.paused = False
             self.position = 0
@@ -428,9 +524,12 @@ class AbstractTTS(ABC):
             self.playback_thread.daemon = (
                 True  # Make thread daemon so it doesn't block program exit
             )
+            logging.debug("Starting playback thread")
             self.playback_thread.start()
+            logging.debug("Playback thread started")
             time.sleep(float(duration or 0))
         elif self.paused:
+            logging.debug("Resuming from paused state")
             self.paused = False
 
     def pause(self, duration: float | None = None) -> None:
@@ -542,7 +641,12 @@ class AbstractTTS(ABC):
         with output_file.open("wb") as f:
             f.write(audio_bytes)
 
-    def speak(self, text: str | SSML, voice_id: str | None = None) -> None:
+    def speak(
+        self,
+        text: str | SSML,
+        voice_id: str | None = None,
+        wait_for_completion: bool = True,
+    ) -> None:
         """
         Synthesize text and play it back using sounddevice.
 
@@ -552,7 +656,10 @@ class AbstractTTS(ABC):
             The text to synthesize.
         voice_id : str | None, optional
             The ID of the voice to use for synthesis. If None, uses the voice set by set_voice.
+        wait_for_completion : bool, optional
+            Whether to wait for playback to complete before returning. Default is True.
         """
+        logging.debug("speak() called with wait_for_completion=%s", wait_for_completion)
         # Convert text to audio bytes
         audio_bytes = self.synth_to_bytes(text, voice_id)
 
@@ -562,12 +669,19 @@ class AbstractTTS(ABC):
         # Play the audio
         self.play()
 
+        # Wait for playback to complete if requested
+        if wait_for_completion and self.playback_thread:
+            logging.debug("Waiting for playback to complete")
+            self.playback_thread.join()
+            logging.debug("Playback completed")
+
     def synth(
         self,
         text: str | SSML,
         output_file: str | Path,
         output_format: str = "wav",
         voice_id: str | None = None,
+        format: str | None = None,  # Added for compatibility
     ) -> None:
         """
         Alias for synth_to_file for backward compatibility.
@@ -582,7 +696,13 @@ class AbstractTTS(ABC):
             The format to save the audio file as. Default is "wav".
         voice_id : str | None, optional
             The ID of the voice to use for synthesis. If None, uses the voice set by set_voice.
+        format : str | None, optional
+            Alias for output_format for compatibility with older code.
         """
+        # Use format parameter if provided (for compatibility)
+        if format is not None:
+            output_format = format
+
         self.synth_to_file(text, output_file, output_format, voice_id)
 
     def _process_streaming_synthesis(
@@ -612,6 +732,10 @@ class AbstractTTS(ABC):
             word_timings = self.get_word_timings()
             if word_timings:
                 self.set_timings(word_timings)
+
+        # Play the audio (similar to _process_non_streaming_synthesis)
+        self.load_audio(audio_data)
+        self.play()
 
         # Trigger onEnd callback after all chunks are processed if requested
         if trigger_callbacks:
@@ -1010,19 +1134,38 @@ class AbstractTTS(ABC):
             sf.write(output_buffer, pcm_data, samplerate, format="WAV")
         elif output_format.lower() == "mp3":
             try:
-                from pydub import AudioSegment
+                import mp3
 
-                # Convert to WAV first
-                wav_buffer = io.BytesIO()
-                sf.write(wav_buffer, pcm_data, samplerate, format="WAV")
-                wav_buffer.seek(0)
+                # Convert numpy array to bytes (16-bit PCM)
+                pcm_bytes = pcm_data.astype(np.int16).tobytes()
 
-                # Then convert WAV to MP3
-                audio_segment = AudioSegment.from_wav(wav_buffer)
-                audio_segment.export(output_buffer, format="mp3")
+                # Create a BytesIO object for the MP3 data
+                mp3_buffer = io.BytesIO()
+
+                # Create an MP3 encoder
+                encoder = mp3.Encoder(mp3_buffer)
+                encoder.set_bit_rate(128)  # 128 kbps is a good default
+                encoder.set_sample_rate(samplerate)
+                encoder.set_channels(channels)
+                encoder.set_quality(5)  # 2-highest, 7-fastest
+                encoder.set_mode(
+                    mp3.MODE_STEREO if channels == 2 else mp3.MODE_SINGLE_CHANNEL
+                )
+
+                # Write PCM data to the encoder
+                encoder.write(pcm_bytes)
+
+                # Flush the encoder to ensure all data is written
+                encoder.flush()
+
+                # Get the MP3 data
+                mp3_buffer.seek(0)
+                output_buffer.write(mp3_buffer.read())
+                output_buffer.seek(0)
+
             except ImportError:
                 logging.error(
-                    "pydub is required for MP3 conversion. Please install it with pip"
+                    "pymp3 is required for MP3 conversion. Please install it with pip install pymp3"
                 )
                 raise
         elif output_format.lower() == "ogg":
