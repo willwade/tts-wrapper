@@ -33,3 +33,9 @@ examples/*.wav
 examples/*.mp3
 tts_wrapper/engines/sherpaonnx/testjson.py
 /tts_wrapper/engines/avsynth/.build
+
+
+# Docusaurus
+website/.docusaurus
+website/build
+website/node_modules
