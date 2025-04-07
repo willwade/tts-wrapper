@@ -21,9 +21,15 @@ class OpenAISSML(BaseSSMLRoot):
         super().__init__()
         logging.debug("Initialized OpenAI SSML handler")
 
-    def add(self, node: AbstractSSMLNode) -> AbstractSSMLNode:
+    def add(self, node: AbstractSSMLNode | str) -> AbstractSSMLNode:
         """Add a node to the SSML tree."""
+        # We can add strings directly to the SSML tree
         return super().add(node)
+
+    def add_text(self, text: str) -> AbstractSSMLNode:
+        """Add a text node to the SSML tree."""
+        # Add the text directly as a string
+        return self.add(text)
 
     def to_string(self) -> str:
         """
@@ -41,7 +47,7 @@ class OpenAISSML(BaseSSMLRoot):
         This method is required for compatibility with other SSML implementations.
         """
         # Reset the children list
-        self.children = []
+        self.children: list[AbstractSSMLNode] = []
 
     def construct_prosody(
         self,
@@ -68,4 +74,6 @@ class OpenAISSML(BaseSSMLRoot):
         Returns:
             Plain text without SSML tags
         """
+        # Acknowledge parameters to satisfy linters
+        _ = rate, volume, pitch, range
         return text

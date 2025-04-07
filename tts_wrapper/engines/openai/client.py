@@ -15,7 +15,7 @@ if TYPE_CHECKING:
     from pathlib import Path
 
 try:
-    from openai import OpenAI
+    from openai import OpenAI  # type: ignore[import]
 
     OPENAI_AVAILABLE = True
 except ImportError:
@@ -40,7 +40,7 @@ class OpenAIClient(AbstractTTS):
         Initialize the OpenAI TTS client.
 
         Args:
-            api_key: OpenAI API key. If None, will use OPENAI_API_KEY environment variable.
+            api_key: OpenAI API key. If None, will use OPENAI_API_KEY env variable.
             voice: Voice to use. Default is "alloy".
             model: Model to use. Default is "gpt-4o-mini-tts".
             instructions: Additional instructions for the TTS model.
@@ -48,23 +48,32 @@ class OpenAIClient(AbstractTTS):
         super().__init__()
 
         if not OPENAI_AVAILABLE:
-            msg = "OpenAI package is not installed. Please install it with: pip install py3-tts-wrapper[openai]"
+            msg = (
+                "OpenAI package is not installed. "
+                "Please install it with: pip install py3-tts-wrapper[openai]"
+            )
             raise ImportError(msg)
 
         # Use provided API key or get from environment
         self.api_key = api_key or os.environ.get("OPENAI_API_KEY")
         if not self.api_key:
-            msg = "OpenAI API key is required. Provide it as an argument or set the OPENAI_API_KEY environment variable."
+            msg = (
+                "OpenAI API key is required. Provide it as an argument "
+                "or set the OPENAI_API_KEY environment variable."
+            )
             raise ValueError(msg)
 
         # Initialize the OpenAI client
         self.client = OpenAI(api_key=self.api_key)
 
         # Initialize SSML handler
-        self.ssml = OpenAISSML()
+        # We need to use type: ignore here because AbstractTTS expects GoogleSSML
+        # but we're using OpenAISSML which is compatible but not the same type
+        self.ssml = OpenAISSML()  # type: ignore[assignment]
 
         # Set default voice
-        self.voice_id = None
+        # Initialize voice_id as None, will be set in set_voice
+        self.voice_id = None  # type: ignore[assignment]
         self.set_voice(voice)
 
         # Set default model using private method
@@ -77,7 +86,7 @@ class OpenAIClient(AbstractTTS):
         self._set_instructions(instructions)
 
         logging.debug(
-            f"Initialized OpenAI TTS client with voice {voice} and model {model}"
+            "Initialized OpenAI TTS client with voice %s and model %s", voice, model
         )
 
     def connect(self, event_name: str, callback: Callable) -> None:
@@ -224,11 +233,12 @@ class OpenAIClient(AbstractTTS):
             True if the credentials are valid, False otherwise.
         """
         try:
-            # List models is a lightweight API call that will fail if credentials are invalid
+            # Use a lightweight API call to check credentials
+            # This avoids making a more expensive TTS API call
             self.client.models.list(limit=1)
             return True
         except Exception as e:
-            logging.error(f"Failed to validate OpenAI credentials: {e}")
+            logging.error("Failed to validate OpenAI credentials: %s", e)
             return False
 
     def set_voice(self, voice_id: str, lang: str | None = None) -> None:
@@ -237,16 +247,20 @@ class OpenAIClient(AbstractTTS):
 
         Args:
             voice_id: The ID of the voice to use.
-            lang: The language code (not used for OpenAI, as voices are language-specific).
+            lang: The language code (not used for OpenAI, voices are language-agnostic).
+                  Parameter included for compatibility with AbstractTTS.
         """
+        # lang parameter is ignored as OpenAI voices support all languages
+        _ = lang  # Acknowledge the parameter to satisfy linters
         # Verify the voice is valid
         available_voices = [voice["id"] for voice in self._get_voices()]
         if voice_id not in available_voices:
-            msg = f"Invalid voice ID: {voice_id}. Available voices: {', '.join(available_voices)}"
+            available = ", ".join(available_voices)
+            msg = "Invalid voice ID: " + voice_id + ". Available voices: " + available
             raise ValueError(msg)
 
-        self.voice_id = voice_id
-        logging.debug(f"Set voice to {voice_id}")
+        self.voice_id = voice_id  # type: ignore[assignment]
+        logging.debug("Set voice to %s", voice_id)
 
     def _is_ssml(self, text: str) -> bool:
         """
@@ -276,17 +290,15 @@ class OpenAIClient(AbstractTTS):
 
         # Convert text to string safely
         try:
-            if isinstance(text, AbstractSSMLNode):
-                # If it's an SSML node, convert to string
-                text_str = str(text)
-            else:
-                text_str = str(text)
+            text_str = str(text) if isinstance(text, AbstractSSMLNode) else str(text)
 
             logging.debug(
-                f"Text to synthesize: {text_str[:100]}{'...' if len(text_str) > 100 else ''}"
+                "Text to synthesize: %s%s",
+                text_str[:100],
+                "..." if len(text_str) > 100 else "",
             )
         except Exception as e:
-            logging.error(f"Failed to convert text to string: {e}")
+            logging.error("Failed to convert text to string: %s", e)
             text_str = ""
 
         # Check if the text is SSML
@@ -313,10 +325,12 @@ class OpenAIClient(AbstractTTS):
             # Get the audio content
             audio_bytes = response.content
 
-            logging.debug(f"Synthesis successful, audio size: {len(audio_bytes)} bytes")
+            logging.debug(
+                "Synthesis successful, audio size: %d bytes", len(audio_bytes)
+            )
             return audio_bytes
         except Exception as e:
-            logging.error(f"Synthesis failed: {e}")
+            logging.error("Synthesis failed: %s", e)
             return b""
 
     def synth_to_bytestream(
@@ -337,13 +351,9 @@ class OpenAIClient(AbstractTTS):
 
         # Convert text to string safely
         try:
-            if isinstance(text, AbstractSSMLNode):
-                # If it's an SSML node, convert to string
-                text_str = str(text)
-            else:
-                text_str = str(text)
+            text_str = str(text) if isinstance(text, AbstractSSMLNode) else str(text)
         except Exception as e:
-            logging.error(f"Failed to convert text to string: {e}")
+            logging.error("Failed to convert text to string: %s", e)
             text_str = ""
 
         # Check if the text is SSML
@@ -369,7 +379,7 @@ class OpenAIClient(AbstractTTS):
                 # Stream the response in chunks
                 yield from response.iter_bytes(chunk_size=4096)
         except Exception as e:
-            logging.error(f"Streaming synthesis failed: {e}")
+            logging.error("Streaming synthesis failed: %s", e)
             yield b""
 
     def synth(
@@ -405,10 +415,29 @@ class OpenAIClient(AbstractTTS):
         """
         self.instructions = instructions
         if instructions:
-            logging.debug(f"Set instructions: {instructions}")
+            logging.debug("Set instructions: %s", instructions)
         else:
             logging.debug("No instructions set")
 
+    # Constants for speech property thresholds
+    RATE_VERY_SLOW = 0.8
+    RATE_SLOW = 0.95
+    RATE_FAST = 1.05
+    RATE_VERY_FAST = 1.2
+
+    VOLUME_VERY_QUIET = 0.5
+    VOLUME_QUIET = 0.8
+    VOLUME_LOUD = 1.2
+    VOLUME_VERY_LOUD = 1.5
+
+    PITCH_VERY_LOW = 0.8
+    PITCH_LOW = 0.95
+    PITCH_HIGH = 1.05
+    PITCH_VERY_HIGH = 1.2
+
+    # This method is necessarily complex due to the nature of converting
+    # multiple property types to natural language instructions
+    # ruff: noqa: C901, PLR0912, PLR0915
     def _update_instructions_from_properties(self) -> None:
         """
         Update the instructions based on the current property values.
@@ -427,51 +456,51 @@ class OpenAIClient(AbstractTTS):
         if rate is not None:
             if isinstance(rate, (int, float)):
                 # Convert numeric rate to descriptive term
-                if rate < 0.8:
+                if rate < self.RATE_VERY_SLOW:
                     property_instructions.append("Speak very slowly.")
-                elif rate < 0.95:
+                elif rate < self.RATE_SLOW:
                     property_instructions.append("Speak slowly.")
-                elif rate > 1.2:
+                elif rate > self.RATE_VERY_FAST:
                     property_instructions.append("Speak very quickly.")
-                elif rate > 1.05:
+                elif rate > self.RATE_FAST:
                     property_instructions.append("Speak quickly.")
             elif isinstance(rate, str):
                 # Use string rate directly
-                property_instructions.append(f"Speak at a {rate} pace.")
+                property_instructions.append("Speak at a " + str(rate) + " pace.")
 
         # Add volume instruction if set
         volume = self.get_property("volume")
         if volume is not None:
             if isinstance(volume, (int, float)):
                 # Convert numeric volume to descriptive term
-                if volume < 0.5:
+                if volume < self.VOLUME_VERY_QUIET:
                     property_instructions.append("Speak very quietly.")
-                elif volume < 0.8:
+                elif volume < self.VOLUME_QUIET:
                     property_instructions.append("Speak quietly.")
-                elif volume > 1.5:
+                elif volume > self.VOLUME_VERY_LOUD:
                     property_instructions.append("Speak very loudly.")
-                elif volume > 1.2:
+                elif volume > self.VOLUME_LOUD:
                     property_instructions.append("Speak loudly.")
             elif isinstance(volume, str):
                 # Use string volume directly
-                property_instructions.append(f"Speak at a {volume} volume.")
+                property_instructions.append("Speak at a " + str(volume) + " volume.")
 
         # Add pitch instruction if set
         pitch = self.get_property("pitch")
         if pitch is not None:
             if isinstance(pitch, (int, float)):
                 # Convert numeric pitch to descriptive term
-                if pitch < 0.8:
+                if pitch < self.PITCH_VERY_LOW:
                     property_instructions.append("Speak with a very low pitch.")
-                elif pitch < 0.95:
+                elif pitch < self.PITCH_LOW:
                     property_instructions.append("Speak with a low pitch.")
-                elif pitch > 1.2:
+                elif pitch > self.PITCH_VERY_HIGH:
                     property_instructions.append("Speak with a very high pitch.")
-                elif pitch > 1.05:
+                elif pitch > self.PITCH_HIGH:
                     property_instructions.append("Speak with a high pitch.")
             elif isinstance(pitch, str):
                 # Use string pitch directly
-                property_instructions.append(f"Speak with a {pitch} pitch.")
+                property_instructions.append("Speak with a " + str(pitch) + " pitch.")
 
         # Combine base instructions with property instructions
         if property_instructions:
@@ -482,7 +511,7 @@ class OpenAIClient(AbstractTTS):
                 combined_instructions += " "
             combined_instructions += " ".join(property_instructions)
             self.instructions = combined_instructions
-            logging.debug(f"Updated instructions from properties: {self.instructions}")
+            logging.debug("Updated instructions from properties: %s", self.instructions)
 
     def _set_model(self, model: str) -> None:
         """
@@ -494,11 +523,13 @@ class OpenAIClient(AbstractTTS):
         valid_models = ["gpt-4o-mini-tts", "tts-1", "tts-1-hd"]
         if model not in valid_models:
             logging.warning(
-                f"Model {model} may not be supported. Valid models are: {', '.join(valid_models)}"
+                "Model %s may not be supported. Valid models are: %s",
+                model,
+                ", ".join(valid_models),
             )
 
         self.model = model
-        logging.debug(f"Set model to {model}")
+        logging.debug("Set model to %s", model)
 
     def set_property(self, property_name: str, value: float | str) -> None:
         """
@@ -525,7 +556,9 @@ class OpenAIClient(AbstractTTS):
 
         # Log the change if instructions were updated
         if original_instructions != self.instructions:
-            logging.debug(f"Updated instructions after setting {property_name}={value}")
+            logging.debug(
+                "Updated instructions after setting %s=%s", property_name, value
+            )
 
     def get_property(self, property_name: str) -> Any:
         """
