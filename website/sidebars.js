@@ -11,6 +11,7 @@ const sidebars = {
       label: 'Guides',
       items: [
         'guides/basic-usage',
+        'guides/voices',
         'guides/ssml',
         'guides/audio-control',
         'guides/streaming',
