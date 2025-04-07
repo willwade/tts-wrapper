@@ -212,6 +212,10 @@ class TestOfflineEngines(BaseTestFileCreation):
             OFFLINE_CLIENTS, check_credentials=False
         )
 
+    @pytest.mark.skipif(
+        os.environ.get("SKIP_ESPEAK_SYNTH_TEST") is not None,
+        reason="SKIP_ESPEAK_SYNTH_TEST is set",
+    )
     def test_espeak_audio_creation(self) -> None:
         self._test_audio_creation(
             "espeak",

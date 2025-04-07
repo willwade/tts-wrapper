@@ -24,8 +24,6 @@ var/
 *.egg
 .vscode
 node_modules
-.coverage
-cov.xml
 
 # Secrets
 .secrets/

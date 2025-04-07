@@ -1,13 +1,12 @@
 import logging
 from pathlib import Path
 
-from tts_wrapper import SherpaOnnxClient, SherpaOnnxTTS
+from tts_wrapper import SherpaOnnxClient
 
-client = SherpaOnnxClient(model_path=None, tokens_path=None, model_id=None)
+tts = SherpaOnnxClient(model_path=None, tokens_path=None, model_id=None)
 
 # Initialize the SherpaOnnxTTS engine with the client
-tts = SherpaOnnxTTS(client=client)
-
+tts = SherpaOnnxClient()
 tts.set_output_device(2)
 
 # Retrieve and display available voices
