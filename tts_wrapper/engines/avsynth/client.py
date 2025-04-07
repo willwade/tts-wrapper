@@ -10,7 +10,7 @@ from pathlib import Path
 from typing import IO, TYPE_CHECKING, Any, Callable
 
 from tts_wrapper.engines.avsynth.ssml import AVSynthSSML
-from tts_wrapper.tts import AbstractTTS, SSML
+from tts_wrapper.tts import AbstractTTS
 
 if TYPE_CHECKING:
     from collections.abc import Generator
@@ -152,31 +152,6 @@ class AVSynthClient(AbstractTTS):
             logging.error("Failed to parse voices JSON: %s", e)
             return []
 
-    def get_voices(self, lang_format: str | None = None) -> list[dict[str, Any]]:
-        """Get available voices.
-
-        Args:
-            lang_format: Optional language format (not used in AVSynth)
-
-        Returns:
-            A list of voice dictionaries with id, name, language, and gender fields
-        """
-        voices = self._get_voices()
-
-        # Standardize voice format
-        standardized_voices = []
-        for voice in voices:
-            # Ensure all required fields are present
-            standardized_voice = {
-                "id": voice.get("id", ""),
-                "name": voice.get("name", ""),
-                "language": voice.get("language", ""),
-                "gender": voice.get("gender", ""),
-            }
-            standardized_voices.append(standardized_voice)
-
-        return standardized_voices
-
     def _convert_property_value(self, prop: str, value: Any) -> float:
         """Convert property values to the format expected by AVSpeechSynthesizer."""
         if value is None:
@@ -248,17 +223,6 @@ class AVSynthClient(AbstractTTS):
         # Get audio data with word timings
         audio_bytes, _ = self.synth_raw(str(text), options)
         return audio_bytes
-
-    def speak(self, text: Any, voice_id: str | None = None) -> None:
-        """Synthesize text and play it back using sounddevice.
-
-        Args:
-            text: The text to synthesize
-            voice_id: Optional voice ID to use for this synthesis
-        """
-        # Use the parent class implementation which calls synth_to_bytes and handles playback
-        logging.debug("Using AbstractTTS.speak() to play audio")
-        super().speak(text, voice_id)
 
     def synth(
         self,
