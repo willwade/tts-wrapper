@@ -15,6 +15,12 @@ from tts_wrapper import OpenAIClient
 
 # Create the client with your API key
 tts = OpenAIClient(api_key='your_api_key')
+
+# Verify credentials are valid
+if tts.check_credentials():
+    print("OpenAI credentials are valid")
+else:
+    print("Invalid OpenAI credentials")
 ```
 
 :::tip
@@ -125,6 +131,12 @@ tts.synth("Hello world", "output.wav", "wav")
 
 3. **Error Handling**
    ```python
+   # Validate credentials before attempting synthesis
+   if not tts.check_credentials():
+       print("Invalid OpenAI API key. Please check your credentials.")
+       exit(1)
+
+   # Handle synthesis errors
    try:
        tts.speak("Hello, world!")
    except Exception as e:

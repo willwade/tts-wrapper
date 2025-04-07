@@ -15,6 +15,7 @@ from tts_wrapper import (
     ElevenLabsClient,
     GoogleClient,
     MicrosoftClient,
+    OpenAIClient,
     PollyClient,
     SherpaOnnxClient,
     WatsonClient,
@@ -64,6 +65,9 @@ def create_tts_client(service):
         client = eSpeakClient()
     elif service == "avsynth":
         client = AVSynthClient()
+    elif service == "openai":
+        api_key = os.getenv("OPENAI_API_KEY")
+        client = OpenAIClient(api_key=api_key)
     else:
         msg = "Unsupported TTS service"
         raise ValueError(msg)
@@ -149,6 +153,7 @@ def main() -> None:
             "elevenlabs",
             "google",
             "microsoft",
+            "openai",
             "polly",
             "watson",
             "witai",

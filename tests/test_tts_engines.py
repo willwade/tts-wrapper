@@ -11,6 +11,7 @@ from tts_wrapper import (
     GoogleClient,
     GoogleTransClient,
     MicrosoftClient,
+    OpenAIClient,
     PlayHTClient,
     PollyClient,
     SherpaOnnxClient,
@@ -35,6 +36,7 @@ TTS_CLIENTS = {
     "sherpaonnx": SherpaOnnxClient,
     "espeak": eSpeakClient,
     "playht": PlayHTClient,
+    "openai": OpenAIClient,
 }
 
 # Add AVSynth only on macOS
@@ -138,6 +140,8 @@ def check_credentials(service):
             )
         elif service == "avsynth" and sys.platform == "darwin":
             client = AVSynthClient()
+        elif service == "openai":
+            client = OpenAIClient(api_key=os.getenv("OPENAI_API_KEY"))
         else:
             # Unknown service or not available on this platform
             VALID_CREDENTIALS[service] = False
@@ -197,6 +201,8 @@ def create_tts_client(service):
         )
     if service == "avsynth" and sys.platform == "darwin":
         return AVSynthClient()
+    if service == "openai":
+        return OpenAIClient(api_key=os.getenv("OPENAI_API_KEY"))
     msg = f"Unknown service or not available on this platform: {service}"
     raise ValueError(msg)
 

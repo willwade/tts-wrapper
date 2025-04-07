@@ -34,8 +34,22 @@ class OpenAISSML(BaseSSMLRoot):
         # Use the __str__ method of AbstractSSMLNode to get plain text
         return str(self)
 
+    def clear_ssml(self) -> None:
+        """
+        Clear all SSML nodes.
+
+        This method is required for compatibility with other SSML implementations.
+        """
+        # Reset the children list
+        self.children = []
+
     def construct_prosody(
-        self, text: str, rate: Any = None, volume: Any = None, pitch: Any = None, range: Any = None
+        self,
+        text: str,
+        rate: Any = None,
+        volume: Any = None,
+        pitch: Any = None,
+        range: Any = None,
     ) -> str:
         """
         Construct a prosody element.

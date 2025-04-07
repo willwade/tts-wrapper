@@ -216,6 +216,21 @@ class OpenAIClient(AbstractTTS):
             },
         ]
 
+    def check_credentials(self) -> bool:
+        """
+        Check if the provided credentials are valid.
+
+        Returns:
+            True if the credentials are valid, False otherwise.
+        """
+        try:
+            # List models is a lightweight API call that will fail if credentials are invalid
+            self.client.models.list(limit=1)
+            return True
+        except Exception as e:
+            logging.error(f"Failed to validate OpenAI credentials: {e}")
+            return False
+
     def set_voice(self, voice_id: str, lang: str | None = None) -> None:
         """
         Set the voice to use for synthesis.
