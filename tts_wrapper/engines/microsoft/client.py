@@ -35,7 +35,12 @@ class MicrosoftClient(AbstractTTS):
             try:
                 import azure.cognitiveservices.speech as speechsdk_module
                 speechsdk = speechsdk_module
-            except ImportError:
+            except (ImportError, OSError, FileNotFoundError, Exception) as e:
+                # Catch various errors that can occur when Speech SDK DLL is missing or incompatible:
+                # - ImportError: Module not found
+                # - OSError/FileNotFoundError: DLL loading issues
+                # - Exception: Other runtime errors during import
+                logging.debug(f"Azure Speech SDK not available: {e}")
                 speechsdk = False  # Mark as unavailable
         return speechsdk if speechsdk is not False else None
 
@@ -46,9 +51,27 @@ class MicrosoftClient(AbstractTTS):
         """Initialize the client with credentials.
 
         Args:
-            credentials: Tuple of (subscription_key, region)
+            credentials: Tuple of (subscription_key, region) OR another MicrosoftClient for backward compatibility
         """
         super().__init__()
+
+        # Handle backward compatibility: if credentials is actually another MicrosoftClient,
+        # copy its configuration
+        if isinstance(credentials, MicrosoftClient):
+            # Copy configuration from the existing client
+            self._subscription_key = credentials._subscription_key
+            self._subscription_region = credentials._subscription_region
+            self._use_speech_sdk = credentials._use_speech_sdk
+
+            if self._use_speech_sdk and hasattr(credentials, 'speech_config'):
+                self.speech_config = credentials.speech_config
+            else:
+                self._voice_name = getattr(credentials, '_voice_name', "en-US-JennyMultilingualNeural")
+
+            # Copy other attributes
+            self.audio_rate = getattr(credentials, 'audio_rate', 16000)
+            self._word_timings = []
+            return
 
         if not credentials or not credentials[0]:
             msg = "subscription_key is required"
@@ -62,12 +85,19 @@ class MicrosoftClient(AbstractTTS):
         self._use_speech_sdk = speechsdk_module is not None
 
         if self._use_speech_sdk:
-            self.speech_config = speechsdk_module.SpeechConfig(
-                subscription=self._subscription_key,
-                region=self._subscription_region,
-            )
-            # Set default voice
-            self.speech_config.speech_synthesis_voice_name = "en-US-JennyMultilingualNeural"
+            try:
+                self.speech_config = speechsdk_module.SpeechConfig(
+                    subscription=self._subscription_key,
+                    region=self._subscription_region,
+                )
+                # Set default voice
+                self.speech_config.speech_synthesis_voice_name = "en-US-JennyMultilingualNeural"
+            except Exception as e:
+                # If SpeechConfig creation fails (e.g., due to DLL issues), fall back to REST API
+                logging.debug(f"Failed to create SpeechConfig, falling back to REST API: {e}")
+                self._use_speech_sdk = False
+                self._voice_name = "en-US-JennyMultilingualNeural"
+                logging.info("Azure Speech SDK configuration failed, using REST API fallback")
         else:
             # For REST API mode, we'll store voice settings separately
             self._voice_name = "en-US-JennyMultilingualNeural"
