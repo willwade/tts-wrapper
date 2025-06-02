@@ -16,10 +16,8 @@ try:
 except ImportError:
     requests = None  # type: ignore
 
-try:
-    import azure.cognitiveservices.speech as speechsdk
-except ImportError:
-    speechsdk = None  # type: ignore
+# Don't import speechsdk at module level - use lazy import instead
+speechsdk = None
 
 
 Credentials = tuple[str, Optional[str]]
@@ -29,6 +27,17 @@ FORMATS = {"wav": "Riff24Khz16BitMonoPcm"}
 
 class MicrosoftClient(AbstractTTS):
     """Client for Microsoft Azure TTS service."""
+
+    def _try_import_speechsdk(self):
+        """Lazily import the Speech SDK and return it, or None if not available."""
+        global speechsdk
+        if speechsdk is None:
+            try:
+                import azure.cognitiveservices.speech as speechsdk_module
+                speechsdk = speechsdk_module
+            except ImportError:
+                speechsdk = False  # Mark as unavailable
+        return speechsdk if speechsdk is not False else None
 
     def __init__(
         self,
@@ -41,10 +50,6 @@ class MicrosoftClient(AbstractTTS):
         """
         super().__init__()
 
-        if speechsdk is None:
-            msg = "speechsdk"
-            raise ModuleNotInstalled(msg)
-
         if not credentials or not credentials[0]:
             msg = "subscription_key is required"
             raise ValueError(msg)
@@ -52,10 +57,21 @@ class MicrosoftClient(AbstractTTS):
         self._subscription_key = credentials[0]
         self._subscription_region = credentials[1] or "eastus"
 
-        self.speech_config = speechsdk.SpeechConfig(
-            subscription=self._subscription_key,
-            region=self._subscription_region,
-        )
+        # Try to import and use Speech SDK, fall back to REST API if not available
+        speechsdk_module = self._try_import_speechsdk()
+        self._use_speech_sdk = speechsdk_module is not None
+
+        if self._use_speech_sdk:
+            self.speech_config = speechsdk_module.SpeechConfig(
+                subscription=self._subscription_key,
+                region=self._subscription_region,
+            )
+            # Set default voice
+            self.speech_config.speech_synthesis_voice_name = "en-US-JennyMultilingualNeural"
+        else:
+            # For REST API mode, we'll store voice settings separately
+            self._voice_name = "en-US-JennyMultilingualNeural"
+            logging.info("Azure Speech SDK not available, using REST API fallback")
 
         # Default audio rate for playback
         self.audio_rate = 16000
@@ -63,20 +79,26 @@ class MicrosoftClient(AbstractTTS):
         # Initialize word timings list
         self._word_timings: list[tuple[float, float, str]] = []
 
-        # Set default voice
-        self.speech_config.speech_synthesis_voice_name = "en-US-JennyMultilingualNeural"
-
     def check_credentials(self) -> bool:
-        """Verifies that the provided credentials are valid by initializing SpeechConfig."""
-        try:
-            # Attempt to create a synthesizer using the speech config
-            # This checks if the subscription key and region are accepted without any API call.
-            speechsdk.SpeechSynthesizer(
-                speech_config=self.speech_config,
-            )
-            return True
-        except Exception:
-            return False
+        """Verifies that the provided credentials are valid."""
+        if self._use_speech_sdk:
+            try:
+                # Attempt to create a synthesizer using the speech config
+                # This checks if the subscription key and region are accepted without any API call.
+                speechsdk_module = self._try_import_speechsdk()
+                speechsdk_module.SpeechSynthesizer(
+                    speech_config=self.speech_config,
+                )
+                return True
+            except Exception:
+                return False
+        else:
+            # For REST API, try to fetch voices to validate credentials
+            try:
+                self._get_voices()
+                return True
+            except Exception:
+                return False
 
     def _get_voices(self) -> list[dict[str, Any]]:
         """Fetches available voices from Microsoft Azure TTS service.
@@ -88,9 +110,13 @@ class MicrosoftClient(AbstractTTS):
             msg = "requests module is required to fetch voices"
             raise ModuleNotInstalled(msg)
 
-        # Extract the subscription key and region from the speech_config
-        subscription_key = self.speech_config.subscription_key
-        region = self.speech_config.region
+        # Extract the subscription key and region
+        if self._use_speech_sdk:
+            subscription_key = self.speech_config.subscription_key
+            region = self.speech_config.region
+        else:
+            subscription_key = self._subscription_key
+            region = self._subscription_region
 
         url = f"https://{region}.tts.speech.microsoft.com/cognitiveservices/voices/list"
         headers = {"Ocp-Apim-Subscription-Key": subscription_key}
@@ -127,7 +153,10 @@ class MicrosoftClient(AbstractTTS):
             voice_id: The voice ID to use (e.g., "en-US-AriaNeural")
             lang: Optional language code (not used in Microsoft)
         """
-        self.speech_config.speech_synthesis_voice_name = voice_id
+        if self._use_speech_sdk:
+            self.speech_config.speech_synthesis_voice_name = voice_id
+        else:
+            self._voice_name = voice_id
 
     def _convert_to_seconds(self, time_value) -> float:
         """Convert a time value to seconds.
@@ -176,6 +205,65 @@ class MicrosoftClient(AbstractTTS):
         attr_str = " ".join(f'{k}="{v}"' for k, v in attrs.items())
         return f"<prosody {attr_str}>{text}</prosody>"
 
+    def _synth_to_bytes_rest_api(self, text: str, voice_id: str | None = None) -> bytes:
+        """Synthesize text using REST API.
+
+        Args:
+            text: The text to synthesize
+            voice_id: Optional voice ID to use for this synthesis
+
+        Returns:
+            Raw audio bytes in WAV format
+        """
+        if requests is None:
+            msg = "requests module is required for REST API synthesis"
+            raise ModuleNotInstalled(msg)
+
+        # Use provided voice_id or default
+        voice_name = voice_id or self._voice_name
+
+        # Prepare SSML
+        if not self._is_ssml(text):
+            # Check for prosody properties
+            has_properties = any(
+                self.get_property(prop) != ""
+                for prop in ["rate", "volume", "pitch"]
+            )
+
+            inner_text = text
+            if has_properties:
+                # Wrap text in prosody tag with properties
+                inner_text = self.construct_prosody_tag(text)
+
+            # Always wrap in speak and voice tags
+            text = (
+                '<speak xmlns="http://www.w3.org/2001/10/synthesis" '
+                'version="1.0" xml:lang="en-US">'
+                f'<voice name="{voice_name}">'
+                f"{inner_text}"
+                "</voice>"
+                "</speak>"
+            )
+
+        # REST API endpoint
+        url = f"https://{self._subscription_region}.tts.speech.microsoft.com/cognitiveservices/v1"
+
+        headers = {
+            "Ocp-Apim-Subscription-Key": self._subscription_key,
+            "Content-Type": "application/ssml+xml",
+            "X-Microsoft-OutputFormat": "riff-24khz-16bit-mono-pcm",
+            "User-Agent": "tts-wrapper"
+        }
+
+        try:
+            response = requests.post(url, headers=headers, data=text.encode('utf-8'))
+            response.raise_for_status()
+            return response.content
+        except requests.exceptions.RequestException as e:
+            logging.exception("Error in REST API synthesis: %s", e)
+            msg = f"Failed to synthesize speech via REST API; error details: {e}"
+            raise Exception(msg)
+
     def synth_to_bytes(self, text: Any, voice_id: str | None = None) -> bytes:
         """Transform written text to audio bytes.
 
@@ -187,6 +275,16 @@ class MicrosoftClient(AbstractTTS):
             Raw audio bytes in WAV format
         """
         text = str(text)
+
+        # If Speech SDK is not available, use REST API
+        if not self._use_speech_sdk:
+            logging.debug("Using REST API for synthesis")
+            return self._synth_to_bytes_rest_api(text, voice_id)
+
+        # Speech SDK path
+        logging.debug("Using Speech SDK for synthesis")
+        speechsdk_module = self._try_import_speechsdk()
+
         # Initialize a list to store word timings
         self._word_timings = []
         logging.debug("Initialized word_timings: %s", self._word_timings)
@@ -236,7 +334,7 @@ class MicrosoftClient(AbstractTTS):
 
         try:
             # Create a synthesizer
-            synthesizer = speechsdk.SpeechSynthesizer(speech_config=self.speech_config)
+            synthesizer = speechsdk_module.SpeechSynthesizer(speech_config=self.speech_config)
 
             # Connect word boundary callback
             synthesizer.synthesis_word_boundary.connect(handle_word_boundary)
@@ -301,7 +399,7 @@ class MicrosoftClient(AbstractTTS):
                 # Use speak_ssml for SSML text
                 result = synthesizer.speak_ssml(text)
 
-            if result.reason == speechsdk.ResultReason.SynthesizingAudioCompleted:
+            if result.reason == speechsdk_module.ResultReason.SynthesizingAudioCompleted:
                 audio_data = result.audio_data
 
                 # Set word timings for callbacks
@@ -318,10 +416,10 @@ class MicrosoftClient(AbstractTTS):
 
                 return audio_data
 
-            if result.reason == speechsdk.ResultReason.Canceled:
+            if result.reason == speechsdk_module.ResultReason.Canceled:
                 cancellation_details = result.cancellation_details
                 msg = f"Speech synthesis canceled: {cancellation_details.reason}"
-                if cancellation_details.reason == speechsdk.CancellationReason.Error:
+                if cancellation_details.reason == speechsdk_module.CancellationReason.Error:
                     msg = f"Error details: {cancellation_details.error_details}"
                 raise RuntimeError(msg)
 
@@ -353,6 +451,10 @@ class MicrosoftClient(AbstractTTS):
             voice_id: Optional voice ID to use for this synthesis
             callback: Callback function for word timing events
         """
+        # Word timing callbacks are only available with Speech SDK
+        if not self._use_speech_sdk:
+            logging.warning("Word timing callbacks are not available when using REST API fallback")
+
         # Trigger onStart callback
         self._trigger_callback("onStart")
 
@@ -363,8 +465,8 @@ class MicrosoftClient(AbstractTTS):
         # Synthesize and play the audio
         self.speak_streamed(text, voice_id, trigger_callbacks=False)
 
-        # Process word timings
-        if self.timings:
+        # Process word timings (only available with Speech SDK)
+        if self._use_speech_sdk and self.timings:
             for start_time, end_time, word in self.timings:
                 # Schedule word callback
                 timer = threading.Timer(
@@ -394,7 +496,7 @@ class MicrosoftClient(AbstractTTS):
                 timer.start()
                 self.timers.append(timer)
         else:
-            # If no timings, trigger onEnd after a short delay
+            # If no timings or using REST API, trigger onEnd after a short delay
             timer = threading.Timer(0.5, self._trigger_callback, args=["onEnd"])
             timer.daemon = True
             timer.start()
