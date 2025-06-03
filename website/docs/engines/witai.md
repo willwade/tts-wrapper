@@ -11,10 +11,9 @@ Wit.ai provides text-to-speech capabilities as part of Facebook's AI services. I
 Wit.ai requires an API token for authentication:
 
 ```python
-from tts_wrapper import WitAiClient, WitAiTTS
+from tts_wrapper import WitAiClient
 
-client = WitAiClient(credentials='your_wit_ai_token')
-tts = WitAiTTS(client)
+tts = WitAiClient(credentials='your_wit_ai_token')
 ```
 
 :::tip
@@ -22,8 +21,12 @@ Use environment variables for secure credential management:
 ```python
 import os
 
-client = WitAiClient(credentials=os.getenv('WITAI_TOKEN'))
+tts = WitAiClient(credentials=os.getenv('WITAI_TOKEN'))
 ```
+:::
+
+:::note
+`WitAiClient` can be used directly as it implements the TTS interface. The legacy pattern with separate `WitAiTTS` class is still supported for backward compatibility.
 :::
 
 ## Features

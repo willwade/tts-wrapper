@@ -48,8 +48,15 @@ class SSMLBuilder:
 
 ### 1. Engine Initialization
 
-All TTS engines follow this initialization pattern:
+TTS engines can be initialized in two ways:
 
+**Recommended Pattern (Direct TTS Initialization):**
+```python
+# Direct initialization - recommended for new code
+tts = EngineTTS(credentials=(...))
+```
+
+**Legacy Pattern (Client + TTS):**
 ```python
 # Create client with credentials
 client = EngineClient(credentials=(...))
@@ -57,6 +64,10 @@ client = EngineClient(credentials=(...))
 # Create TTS instance with client
 tts = EngineTTS(client)
 ```
+
+:::note
+For most engines, `EngineTTS` is an alias for `EngineClient` that provides the same functionality. The direct initialization pattern is simpler and recommended for new code.
+:::
 
 ### 2. Voice Management
 
@@ -108,6 +119,21 @@ While the base API is consistent, some engines offer additional features:
 - Custom voice training
 - Multiple voice styles
 - Role-play voices
+
+**Example:**
+```python
+from tts_wrapper import MicrosoftTTS
+
+# Direct initialization (recommended)
+tts = MicrosoftTTS(credentials=('subscription_key', 'region'))
+tts.set_voice('en-US-JennyNeural')
+tts.speak("Hello from Azure TTS!")
+
+# Legacy pattern (still supported)
+from tts_wrapper import MicrosoftClient
+client = MicrosoftClient(credentials=('subscription_key', 'region'))
+tts = MicrosoftTTS(client)
+```
 
 ### IBM Watson
 - Custom dictionary

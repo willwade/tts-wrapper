@@ -3,17 +3,16 @@ import os
 import time
 
 from load_credentials import load_credentials
-from tts_wrapper import MicrosoftClient, MicrosoftTTS
+from tts_wrapper import MicrosoftTTS
 
 # Set up logging
 logging.basicConfig(level=logging.DEBUG)
 
 # Load credentials
 load_credentials("credentials.json")
-client = MicrosoftClient(
+tts = MicrosoftTTS(
     credentials=(os.getenv("MICROSOFT_TOKEN"), os.getenv("MICROSOFT_REGION"))
 )
-tts = MicrosoftTTS(client)
 
 
 # def test_speech(text: str, description: str = "") -> None:

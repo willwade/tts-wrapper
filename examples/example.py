@@ -14,7 +14,7 @@ from tts_wrapper import (
     AVSynthClient,
     ElevenLabsClient,
     GoogleClient,
-    MicrosoftClient,
+    MicrosoftTTS,
     OpenAIClient,
     PollyClient,
     SherpaOnnxClient,
@@ -44,7 +44,7 @@ def create_tts_client(service):
     elif service == "microsoft":
         token = os.getenv("MICROSOFT_TOKEN")
         region = os.getenv("MICROSOFT_REGION")
-        client = MicrosoftClient(credentials=(token, region))
+        client = MicrosoftTTS(credentials=(token, region))
     elif service == "watson":
         api_key = os.getenv("WATSON_API_KEY")
         region = os.getenv("WATSON_REGION")

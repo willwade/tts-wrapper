@@ -11,14 +11,12 @@ Microsoft Azure Cognitive Services Text-to-Speech provides high-quality voice sy
 Azure TTS requires a subscription key and region:
 
 ```python
-from tts_wrapper import MicrosoftTTS, MicrosoftClient
+from tts_wrapper import MicrosoftTTS
 
-client = MicrosoftClient(credentials=(
+tts = MicrosoftTTS(credentials=(
     'subscription_key',  # Your Azure subscription key
     'region'            # e.g., 'eastus', 'westeurope'
 ))
-
-tts = MicrosoftTTS(client)
 ```
 
 :::tip
@@ -26,11 +24,15 @@ Use environment variables for secure credential management:
 ```python
 import os
 
-client = MicrosoftClient(credentials=(
+tts = MicrosoftTTS(credentials=(
     os.getenv('MICROSOFT_TOKEN'),
     os.getenv('MICROSOFT_REGION')
 ))
 ```
+:::
+
+:::note
+`MicrosoftTTS` is an alias for `MicrosoftClient` that provides the same functionality with a more intuitive name. Both can be used interchangeably, but `MicrosoftTTS` is recommended for new code.
 :::
 
 ## Features

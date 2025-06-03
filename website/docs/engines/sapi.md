@@ -11,12 +11,15 @@ SAPI (Microsoft Speech API) provides native text-to-speech capabilities on Windo
 SAPI is only available on Windows systems:
 
 ```python
-from tts_wrapper import SAPIClient, SAPITTS
+from tts_wrapper import SAPIClient
 
-# Initialize client and TTS
-client = SAPIClient()  # No credentials needed
-tts = SAPITTS(client)
+# Initialize TTS (no credentials needed)
+tts = SAPIClient()
 ```
+
+:::note
+`SAPIClient` can be used directly as it implements the TTS interface. The legacy pattern with separate `SAPITTS` class is still supported for backward compatibility.
+:::
 
 ## Features
 

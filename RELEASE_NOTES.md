@@ -85,10 +85,11 @@ tts.set_voice("en-US-JennyMultilingualNeural")
 
 **Now:**
 ```python
-# Option 1: Set during initialization
-tts = MicrosoftClient(credentials=(token, region), voice_id="en-US-JennyMultilingualNeural")
+# Recommended: Direct initialization
+tts = MicrosoftTTS(credentials=(token, region))
+tts.set_voice("en-US-JennyMultilingualNeural")
 
-# Option 2: Set after initialization (still supported)
+# Alternative: Still supported for backward compatibility
 tts = MicrosoftClient(credentials=(token, region))
 tts.set_voice("en-US-JennyMultilingualNeural")
 ```
