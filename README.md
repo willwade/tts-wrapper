@@ -208,8 +208,9 @@ client = GoogleClient(credentials=credentials_dict)
 #### Microsoft
 
 ```python
-from tts_wrapper import MicrosoftClient
-client = MicrosoftClient(credentials=('subscription_key','subscription_region'))
+from tts_wrapper import MicrosoftTTS
+tts = MicrosoftTTS(credentials=('subscription_key', 'subscription_region'))
+tts.set_voice('voice_id')
 ```
 
 #### Watson
@@ -350,10 +351,10 @@ client.speak(ssml_text)
 This will check if the credentials are valid:
 
 ```python
-client = MicrosoftClient(
+tts = MicrosoftTTS(
     credentials=(os.getenv("MICROSOFT_TOKEN"), os.getenv("MICROSOFT_REGION"))
 )
-if client.check_credentials():
+if tts.check_credentials():
     print("Credentials are valid.")
 else:
     print("Credentials are invalid.")
