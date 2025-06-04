@@ -280,7 +280,7 @@ class SAPIClient(AbstractTTS):
         msg = f"Voice with ID {voice_id} not found."
         raise ValueError(msg)
 
-    def set_property(self, name: str, value: str | int | float) -> None:
+    def set_property(self, name: str, value: str | float) -> None:
         print("property set")
         """
         Set a property for the TTS engine.

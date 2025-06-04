@@ -69,7 +69,7 @@ class MicrosoftClient(AbstractTTS):
                 self._voice_name = getattr(credentials, '_voice_name', "en-US-JennyMultilingualNeural")
 
             # Copy other attributes
-            self.audio_rate = getattr(credentials, 'audio_rate', 16000)
+            self.audio_rate = getattr(credentials, 'audio_rate', 24000)
             self._word_timings = []
             return
 
@@ -82,13 +82,18 @@ class MicrosoftClient(AbstractTTS):
 
         # Try to import and use Speech SDK, fall back to REST API if not available
         speechsdk_module = self._try_import_speechsdk()
-        self._use_speech_sdk = speechsdk_module is not None
+        # For now, prefer REST API to avoid Speech SDK audio config issues
+        self._use_speech_sdk = False  # speechsdk_module is not None
 
         if self._use_speech_sdk:
             try:
                 self.speech_config = speechsdk_module.SpeechConfig(
                     subscription=self._subscription_key,
                     region=self._subscription_region,
+                )
+                # Set audio output format to match REST API (24kHz, 16-bit, mono)
+                self.speech_config.set_speech_synthesis_output_format(
+                    speechsdk_module.SpeechSynthesisOutputFormat.Riff24Khz16BitMonoPcm
                 )
                 # Set default voice
                 self.speech_config.speech_synthesis_voice_name = "en-US-JennyMultilingualNeural"
@@ -103,8 +108,8 @@ class MicrosoftClient(AbstractTTS):
             self._voice_name = "en-US-JennyMultilingualNeural"
             logging.info("Azure Speech SDK not available, using REST API fallback")
 
-        # Default audio rate for playback
-        self.audio_rate = 16000
+        # Default audio rate for playback - match the REST API format
+        self.audio_rate = 24000
 
         # Initialize word timings list
         self._word_timings: list[tuple[float, float, str]] = []
@@ -288,7 +293,15 @@ class MicrosoftClient(AbstractTTS):
         try:
             response = requests.post(url, headers=headers, data=text.encode('utf-8'))
             response.raise_for_status()
-            return response.content
+            audio_data = response.content
+
+            # Strip WAV header if present to return raw PCM data
+            # REST API returns RIFF/WAV format, but tts-wrapper expects raw PCM
+            if audio_data[:4] == b"RIFF":
+                logging.debug("Stripping WAV header from REST API audio data")
+                audio_data = self._strip_wav_header(audio_data)
+
+            return audio_data
         except requests.exceptions.RequestException as e:
             logging.exception("Error in REST API synthesis: %s", e)
             msg = f"Failed to synthesize speech via REST API; error details: {e}"
@@ -363,7 +376,9 @@ class MicrosoftClient(AbstractTTS):
                 logging.debug("Current word_timings length: %d", len(word_timings))
 
         try:
-            # Create a synthesizer
+            # Create a synthesizer - using async methods to avoid direct audio playback
+            # This fixes the double audio playback issue where Azure SDK plays audio
+            # directly AND returns audio data that gets played again by tts-wrapper
             synthesizer = speechsdk_module.SpeechSynthesizer(speech_config=self.speech_config)
 
             # Connect word boundary callback
@@ -400,9 +415,9 @@ class MicrosoftClient(AbstractTTS):
                             '<speak xmlns="http://www.w3.org/2001/10/synthesis" '
                             'version="1.0" xml:lang="en-US">',
                         )
-                # Use speak_ssml for SSML text
+                # Use speak_ssml_async to avoid direct audio playback
                 logging.debug("Using SSML: %s", text)
-                result = synthesizer.speak_ssml(text)
+                result = synthesizer.speak_ssml_async(text).get()
             else:
                 # Check for prosody properties
                 has_properties = any(
@@ -426,8 +441,8 @@ class MicrosoftClient(AbstractTTS):
                     "</speak>"
                 )
                 logging.debug("Final SSML: %s", text)
-                # Use speak_ssml for SSML text
-                result = synthesizer.speak_ssml(text)
+                # Use speak_ssml_async to avoid direct audio playback
+                result = synthesizer.speak_ssml_async(text).get()
 
             if result.reason == speechsdk_module.ResultReason.SynthesizingAudioCompleted:
                 audio_data = result.audio_data
@@ -443,6 +458,12 @@ class MicrosoftClient(AbstractTTS):
                     logging.debug("Directly set self.timings: %s", self.timings)
                 else:
                     logging.debug("No word timings collected, self.timings not set")
+
+                # Strip WAV header if present to return raw PCM data
+                # Azure returns RIFF/WAV format, but tts-wrapper expects raw PCM
+                if audio_data[:4] == b"RIFF":
+                    logging.debug("Stripping WAV header from Speech SDK audio data")
+                    audio_data = self._strip_wav_header(audio_data)
 
                 return audio_data
 

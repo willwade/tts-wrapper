@@ -32,6 +32,7 @@ dev = [
     "types-requests>=2.27.31",
     "mypy>=0.971",
     "pytest-cov>=3.0.0",
+    "ruff>=0.11.12",
 ]
 
 [project.optional-dependencies]

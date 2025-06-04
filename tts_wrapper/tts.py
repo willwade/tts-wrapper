@@ -791,6 +791,8 @@ class AbstractTTS(ABC):
         text: str | SSML,
         voice_id: str | None = None,
         trigger_callbacks: bool = True,
+        save_to_file_path: str | None = None,
+        audio_format: str = "wav",
     ) -> None:
         """
         Synthesize text to speech and stream it for playback.
@@ -803,15 +805,26 @@ class AbstractTTS(ABC):
             The ID of the voice to use for synthesis. If None, uses the voice set by set_voice.
         trigger_callbacks : bool, optional
             Whether to trigger onStart and onEnd callbacks. Default is True.
+        save_to_file_path : str | None, optional
+            Optional path to save the audio to a file while streaming.
+        audio_format : str, optional
+            Audio format for file saving. Default is "wav".
         """
         try:
             # Check if the engine supports streaming via synth_to_bytestream
             if hasattr(self, "synth_to_bytestream") and callable(
                 self.synth_to_bytestream
             ):
-                self._process_streaming_synthesis(text, voice_id, trigger_callbacks)
+                audio_data = self._process_streaming_synthesis(text, voice_id, trigger_callbacks)
             else:
-                self._process_non_streaming_synthesis(text, voice_id, trigger_callbacks)
+                audio_data = self._process_non_streaming_synthesis(text, voice_id, trigger_callbacks)
+
+            # Save to file if requested
+            if save_to_file_path and audio_data:
+                with open(save_to_file_path, "wb") as f:
+                    f.write(audio_data)
+                logging.debug(f"Audio saved to {save_to_file_path}")
+
         except Exception:
             logging.exception("Error in streaming synthesis")
 

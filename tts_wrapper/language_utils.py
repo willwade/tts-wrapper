@@ -34,8 +34,7 @@ class LanguageNormalizer:
         """
         try:
             # Handle MMS prefix if present
-            if lang_code.startswith("mms_"):
-                lang_code = lang_code[4:]
+            lang_code = lang_code.removeprefix("mms_")
 
             # Parse the input language code
             lang = langcodes.get(lang_code)
