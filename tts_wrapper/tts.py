@@ -793,6 +793,7 @@ class AbstractTTS(ABC):
         trigger_callbacks: bool = True,
         save_to_file_path: str | None = None,
         audio_format: str = "wav",
+        wait_for_completion: bool = True,
     ) -> None:
         """
         Synthesize text to speech and stream it for playback.
@@ -809,6 +810,8 @@ class AbstractTTS(ABC):
             Optional path to save the audio to a file while streaming.
         audio_format : str, optional
             Audio format for file saving. Default is "wav".
+        wait_for_completion : bool, optional
+            Whether to wait for playback to complete before returning. Default is True.
         """
         try:
             # Check if the engine supports streaming via synth_to_bytestream
@@ -824,6 +827,12 @@ class AbstractTTS(ABC):
                 with open(save_to_file_path, "wb") as f:
                     f.write(audio_data)
                 logging.debug(f"Audio saved to {save_to_file_path}")
+
+            # Wait for playback to complete if requested
+            if wait_for_completion and self.playback_thread:
+                logging.debug("Waiting for playback to complete")
+                self.playback_thread.join()
+                logging.debug("Playback completed")
 
         except Exception:
             logging.exception("Error in streaming synthesis")
@@ -1008,7 +1017,8 @@ class AbstractTTS(ABC):
             callback = self.on_word_callback
 
         # Call speak_streamed with trigger_callbacks=False to avoid duplicate callbacks
-        self.speak_streamed(text, voice_id, trigger_callbacks=False)
+        # and wait_for_completion=False so we can set up word timing callbacks while audio plays
+        self.speak_streamed(text, voice_id, trigger_callbacks=False, wait_for_completion=False)
         start_time = time.time()
 
         try:

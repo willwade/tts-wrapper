@@ -380,10 +380,10 @@ class MicrosoftClient(AbstractTTS):
                 logging.debug("Current word_timings length: %d", len(word_timings))
 
         try:
-            # Create a synthesizer - using async methods to avoid direct audio playback
-            # This fixes the double audio playback issue where Azure SDK plays audio
-            # directly AND returns audio data that gets played again by tts-wrapper
-            synthesizer = speechsdk_module.SpeechSynthesizer(speech_config=self.speech_config)
+            # Create a synthesizer with audio_config=None to prevent Azure SDK from playing audio
+            # This completely eliminates the double audio playback issue by ensuring Azure SDK
+            # only synthesizes audio bytes without any audio output, letting tts-wrapper handle playback
+            synthesizer = speechsdk_module.SpeechSynthesizer(speech_config=self.speech_config, audio_config=None)
 
             # Connect word boundary callback
             synthesizer.synthesis_word_boundary.connect(handle_word_boundary)
