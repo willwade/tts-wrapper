@@ -82,8 +82,8 @@ class MicrosoftClient(AbstractTTS):
 
         # Try to import and use Speech SDK, fall back to REST API if not available
         speechsdk_module = self._try_import_speechsdk()
-        # For now, prefer REST API to avoid Speech SDK audio config issues
-        self._use_speech_sdk = False  # speechsdk_module is not None
+        # Use Speech SDK if available, otherwise fall back to REST API
+        self._use_speech_sdk = speechsdk_module is not None
 
         if self._use_speech_sdk:
             try:
@@ -97,6 +97,7 @@ class MicrosoftClient(AbstractTTS):
                 )
                 # Set default voice
                 self.speech_config.speech_synthesis_voice_name = "en-US-JennyMultilingualNeural"
+                logging.debug("Azure Speech SDK initialized successfully")
             except Exception as e:
                 # If SpeechConfig creation fails (e.g., due to DLL issues), fall back to REST API
                 logging.debug(f"Failed to create SpeechConfig, falling back to REST API: {e}")
@@ -106,7 +107,10 @@ class MicrosoftClient(AbstractTTS):
         else:
             # For REST API mode, we'll store voice settings separately
             self._voice_name = "en-US-JennyMultilingualNeural"
-            logging.info("Azure Speech SDK not available, using REST API fallback")
+            if speechsdk_module is None:
+                logging.info("Azure Speech SDK not available, using REST API fallback")
+            else:
+                logging.debug("Using REST API mode")
 
         # Default audio rate for playback - match the REST API format
         self.audio_rate = 24000
