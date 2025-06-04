@@ -3,6 +3,7 @@
 # python examples/example.py
 import contextlib
 import os
+import platform
 import signal
 import sys
 import time
@@ -11,7 +12,6 @@ from pathlib import Path
 from load_credentials import load_credentials
 
 from tts_wrapper import (
-    AVSynthClient,
     ElevenLabsClient,
     GoogleClient,
     MicrosoftTTS,
@@ -22,6 +22,12 @@ from tts_wrapper import (
     WitAiClient,
     eSpeakClient,
 )
+
+# Platform-specific imports
+if platform.system() == "Darwin":  # macOS
+    from tts_wrapper import AVSynthClient
+if platform.system() == "Windows":
+    from tts_wrapper import SAPIClient
 
 
 def signal_handler(sig, frame) -> None:
@@ -64,7 +70,15 @@ def create_tts_client(service):
     elif service == "espeak":
         client = eSpeakClient()
     elif service == "avsynth":
-        client = AVSynthClient()
+        if platform.system() == "Darwin":
+            client = AVSynthClient()
+        else:
+            raise ValueError("AVSynth is only available on macOS")
+    elif service == "sapi":
+        if platform.system() == "Windows":
+            client = SAPIClient()
+        else:
+            raise ValueError("SAPI is only available on Windows")
     elif service == "openai":
         api_key = os.getenv("OPENAI_API_KEY")
         client = OpenAIClient(api_key=api_key)
@@ -148,22 +162,26 @@ def main() -> None:
         load_credentials("credentials-private.json")
     except FileNotFoundError:
         print("Credentials file not found. Using environment variables if available.")
-    services = (
-        [
-            "elevenlabs",
-            "google",
-            "microsoft",
-            "openai",
-            "polly",
-            "watson",
-            "witai",
-            "espeak",
-            "avsynth",
-            "sherpaonnx",
-        ]
-        if service == "all"
-        else [service]
-    )
+    # Build platform-appropriate services list
+    base_services = [
+        "elevenlabs",
+        "google",
+        "microsoft",
+        "openai",
+        "polly",
+        "watson",
+        "witai",
+        "espeak",
+        "sherpaonnx",
+    ]
+
+    # Add platform-specific services
+    if platform.system() == "Darwin":  # macOS
+        base_services.append("avsynth")
+    elif platform.system() == "Windows":
+        base_services.append("sapi")
+
+    services = base_services if service == "all" else [service]
     for svc in services:
         client = create_tts_client(svc)
         # microsoft test with absolute value
