@@ -1,16 +1,78 @@
 import json
+import logging
 import re
 import tarfile
 from io import BytesIO
 from pathlib import Path
+from typing import Any
 
 import langcodes  # For enriching language data
 import requests
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
 
 # Regex to validate ISO language codes (1-8 alphanumeric characters)
 iso_code_pattern = re.compile(r"^[a-zA-Z0-9]{1,8}$")
 lang_code_pattern = re.compile(r"-(?P<lang>[a-z]{2})([_-][A-Z]{2})?")
 result_json = {}
+
+
+def validate_url(url: str, timeout: int = 10) -> bool:
+    """Validate if a URL is accessible and returns a valid response.
+
+    Args:
+        url: The URL to validate
+        timeout: Request timeout in seconds
+
+    Returns:
+        True if URL is accessible, False otherwise
+    """
+    try:
+        response = requests.head(url, timeout=timeout, allow_redirects=True)
+        # Accept 200 (OK) and 302 (Found/Redirect) as valid responses
+        return response.status_code in [200, 302]
+    except requests.RequestException as e:
+        logger.warning(f"URL validation failed for {url}: {e}")
+        return False
+
+
+def test_model_generation(model_data: dict[str, Any], test_text: str = "Hello world") -> bool:
+    """Test if a model can generate audio bytes.
+
+    Args:
+        model_data: Model configuration dictionary
+        test_text: Text to synthesize for testing
+
+    Returns:
+        True if model generates audio successfully, False otherwise
+    """
+    try:
+        # Import here to avoid circular imports and handle missing dependencies
+        from tts_wrapper.engines.sherpaonnx.client import SherpaOnnxClient
+
+        logger.info(f"Testing model: {model_data['id']}")
+
+        # Create a temporary client with the model
+        client = SherpaOnnxClient(model_id=model_data['id'], no_default_download=False)
+
+        # Try to generate audio bytes
+        audio_bytes = client.synth_to_bytes(test_text)
+
+        # Check if we got valid audio data
+        if audio_bytes and len(audio_bytes) > 0:
+            logger.info(f"✓ Model {model_data['id']} generated {len(audio_bytes)} bytes of audio")
+            return True
+        logger.warning(f"✗ Model {model_data['id']} generated empty audio")
+        return False
+
+    except Exception as e:
+        logger.error(f"✗ Model {model_data['id']} failed to generate audio: {e}")
+        return False
 
 
 def handle_special_cases(developer, name, quality, url):
@@ -226,6 +288,27 @@ def extract_language_code_vits(url, developer_type, developer, config_data=None)
                 pass
             return [(lang_code, "Unknown")]
 
+    # Handle Kokoro models (e.g., kokoro-en-v0_19, kokoro-multi-lang-v1_0)
+    if developer == "kokoro":
+        # Handle multi-language models
+        if "multi-lang" in filename:
+            # Kokoro multi-lang supports Chinese and English
+            return [("zh", "CN"), ("en", "US")]
+
+        # Handle single language models
+        lang_match = re.search(r"kokoro-(\w+)-", filename)
+        if lang_match:
+            lang_code = lang_match.group(1).lower()
+            try:
+                # Get the proper region from langcodes
+                language = langcodes.get(lang_code)
+                region = language.maximize().region
+                if region:
+                    return [(lang_code, region)]
+            except LookupError:
+                pass
+            return [(lang_code, "Unknown")]
+
     # Fallback to extracting from config if available
     if config_data and isinstance(config_data, dict):
         lang_code = config_data.get("language", "").lower()
@@ -342,6 +425,7 @@ def get_supported_languages() -> dict:
         iso_code = model["Iso Code"]
         response_json[index]["Iso Code"] = "mms_" + iso_code
 
+        # Fix the URL to point to the base directory for MMS models
         url = model["ONNX Model URL"]
         new_url = url.replace("api/models/", "", 1).replace("/tree/", "/resolve/")
         model["ONNX Model URL"] = new_url
@@ -429,96 +513,144 @@ def fetch_data_from_url(url: str) -> dict:
 def get_github_release_assets(repo, tag, merged_models, output_file):
     headers = {"Accept": "application/vnd.github.v3+json"}
     releases_url = f"https://api.github.com/repos/{repo}/releases/tags/{tag}"
-    print("\nFetching models from GitHub...")
-    response = requests.get(releases_url, headers=headers)
+    logger.info("Fetching models from GitHub...")
 
-    if response.status_code != 200:
-        msg = f"Failed to fetch release info for tag: {tag}"
+    try:
+        response = requests.get(releases_url, headers=headers, timeout=30)
+        response.raise_for_status()
+    except requests.RequestException as e:
+        msg = f"Failed to fetch release info for tag {tag}: {e}"
+        logger.error(msg)
         raise Exception(msg)
 
     release_info = response.json()
     assets = release_info.get("assets", [])
     total_assets = len(assets)
-    print(f"\nProcessing {total_assets} models...")
+    logger.info(f"Found {total_assets} assets in release")
 
-    for idx, asset in enumerate(assets, 1):
+    # Filter assets to only process model files
+    model_assets = []
+    for asset in assets:
+        filename = asset["name"]
+        # Skip executables, checksums, and non-model files
+        if (filename.endswith(".exe") or
+            filename == "checksum.txt" or
+            filename.startswith("espeak-") or
+            "-mms-" in filename):
+            continue
+        model_assets.append(asset)
+
+    logger.info(f"Processing {len(model_assets)} model files...")
+
+    processed_count = 0
+    skipped_count = 0
+    error_count = 0
+
+    for idx, asset in enumerate(model_assets, 1):
         filename = asset["name"]
         asset_url = asset["browser_download_url"]
-
-        # Skip executables and models from the "mms" developer
-        if filename.endswith(".exe") or "-mms-" in filename:
-            continue
 
         filename_no_ext = re.sub(r"\.tar\.bz2|\.tar\.gz|\.zip", "", filename)
         parts = filename_no_ext.split("-")
 
-        model_type = parts[0] if parts[0] == "vits" else "unknown"
+        # Determine model type - support more than just vits
+        model_type = parts[0] if parts[0] in ["vits", "matcha", "kokoro"] else "unknown"
         if model_type == "unknown":
+            logger.debug(f"Skipping unknown model type: {filename}")
             continue
 
-        developer = parts[1] if len(parts) > 1 else "unknown"
-        print(f"\n[{idx}/{total_assets}] Processing {filename}")
+        # For Kokoro models, the developer is "kokoro", not the second part
+        if model_type == "kokoro":
+            developer = "kokoro"
+        else:
+            developer = parts[1] if len(parts) > 1 else "unknown"
+        logger.info(f"[{idx}/{len(model_assets)}] Processing {filename} ({developer})")
 
         # Check if the model has already been processed and saved
         if filename_no_ext in merged_models:
-            print("  → Skipping (already processed)")
+            logger.debug("  → Skipping (already processed)")
+            skipped_count += 1
             continue
 
-        # Extract language code, prioritizing config.json, fallback to URL
-        lang_codes_and_regions = extract_language_code_vits(
-            asset_url,
-            parts[0],
-            developer,
-            None,  # Skip config data for faster processing
-        )
-
-        # Print language information
-        for lang_code, region in lang_codes_and_regions:
-            lang_info = get_language_data(lang_code, region)
-            print(
-                f"  → Language: {lang_info['language_name']} "
-                f"({lang_info['lang_code']}, {lang_info['country']})"
+        try:
+            # Extract language code, prioritizing config.json, fallback to URL
+            lang_codes_and_regions = extract_language_code_vits(
+                asset_url,
+                parts[0],
+                developer,
+                None,  # Skip config data for faster processing
             )
 
-        name = parts[3] if len(parts) > 3 else "unknown"
-        quality = parts[4] if len(parts) > 4 else "unknown"
+            # Log language information
+            for lang_code, region in lang_codes_and_regions:
+                lang_info = get_language_data(lang_code, region)
+                logger.debug(
+                    f"  → Language: {lang_info['language_name']} "
+                    f"({lang_info['lang_code']}, {lang_info['country']})"
+                )
 
-        # Handle special edge cases for developer-specific naming/quality issues
-        name, quality = handle_special_cases(developer, name, quality, asset_url)
+            # Handle name and quality parsing based on model type
+            if model_type == "kokoro":
+                # For Kokoro: kokoro-en-v0_19 -> name="en", quality="v0_19"
+                name = parts[1] if len(parts) > 1 else "unknown"
+                quality = parts[2] if len(parts) > 2 else "unknown"
+            else:
+                # For other models: vits-piper-en_GB-alan-low -> name="alan", quality="low"
+                name = parts[3] if len(parts) > 3 else "unknown"
+                quality = parts[4] if len(parts) > 4 else "unknown"
 
-        # Get detailed language information
-        lang_details = [
-            get_language_data(code, region) for code, region in lang_codes_and_regions
-        ]
+            # Handle special edge cases for developer-specific naming/quality issues
+            name, quality = handle_special_cases(developer, name, quality, asset_url)
 
-        id = generate_model_id(
-            developer,
-            [code for code, _ in lang_codes_and_regions],
-            name,
-            quality,
-        )
+            # Get detailed language information
+            lang_details = [
+                get_language_data(code, region) for code, region in lang_codes_and_regions
+            ]
 
-        model_data = {
-            "id": id,
-            "model_type": model_type,
-            "developer": developer,
-            "name": name,
-            "language": lang_details,
-            "quality": quality,
-            "sample_rate": (
-                22050 if developer == "piper" else 16000
-            ),  # Default sample rates
-            "num_speakers": 1,
-            "url": asset_url,
-            "compression": True,
-            "filesize_mb": round(asset["size"] / (1024 * 1024), 2),
-        }
+            id = generate_model_id(
+                developer,
+                [code for code, _ in lang_codes_and_regions],
+                name,
+                quality,
+            )
 
-        # Add to merged models
-        merged_models[id] = model_data
-        print(f"  → Added model: {id}")
+            # Determine sample rate based on model type and developer
+            if developer == "piper":
+                sample_rate = 22050
+            elif model_type == "kokoro":
+                sample_rate = 24000
+            else:
+                sample_rate = 16000
 
-    print(f"\nProcessed {total_assets} models successfully!")
+            model_data = {
+                "id": id,
+                "model_type": model_type,
+                "developer": developer,
+                "name": name,
+                "language": lang_details,
+                "quality": quality,
+                "sample_rate": sample_rate,
+                "num_speakers": 1,
+                "url": asset_url,
+                "compression": True,
+                "filesize_mb": round(asset["size"] / (1024 * 1024), 2),
+            }
+
+            # Add to merged models
+            merged_models[id] = model_data
+            logger.info(f"  → Added model: {id}")
+            processed_count += 1
+
+        except Exception as e:
+            logger.error(f"  → Error processing {filename}: {e}")
+            error_count += 1
+            continue
+
+    logger.info("GitHub asset processing complete:")
+    logger.info(f"  - Processed: {processed_count}")
+    logger.info(f"  - Skipped: {skipped_count}")
+    logger.info(f"  - Errors: {error_count}")
+
     return merged_models
 
 
@@ -555,38 +687,169 @@ known_lang_codes = {
 
 
 # Main entry point
-def main() -> None:
+def main(
+    force_refresh: bool = False,
+    validate_urls: bool = True,
+    test_models: bool = False,
+    test_sample_size: int = 5
+) -> None:
+    """Main function to build and validate the merged_models.json file.
+
+    Args:
+        force_refresh: If True, rebuild the entire models file from scratch
+        validate_urls: If True, validate that model URLs are accessible
+        test_models: If True, test a sample of models to ensure they generate audio
+        test_sample_size: Number of models to test from each developer type
+    """
     output_file = "merged_models.json"
+    logger.info("Starting model index creation/update process")
 
     # Step 1: Load existing models or start fresh
     output_path = Path(output_file)
-    try:
-        with output_path.open() as f:
-            merged_models = json.load(f)
-    except FileNotFoundError:
+    if force_refresh or not output_path.exists():
+        logger.info("Starting fresh model index")
         merged_models = {}
+    else:
+        try:
+            with output_path.open() as f:
+                merged_models = json.load(f)
+            logger.info(f"Loaded {len(merged_models)} existing models")
+        except FileNotFoundError:
+            logger.info("No existing models file found, starting fresh")
+            merged_models = {}
 
     # Step 2: Fetch GitHub models (VITS, Piper, etc.)
     repo = "k2-fsa/sherpa-onnx"
     tag = "tts-models"
-    print("Build merged_models.json file\n")
-    merged_models_path = Path(output_file)
+    logger.info("Fetching models from GitHub releases")
 
-    if merged_models_path.exists():
-        print("merged models already exist, getting supported languages")
-        with merged_models_path.open() as file:
-            json.load(file)
+    if not force_refresh and merged_models:
+        logger.info("Using existing GitHub models, add --force to refresh")
     else:
         merged_models = get_github_release_assets(repo, tag, merged_models, output_file)
 
-    # add languages json to merged_models.json
-    print("Get suppported languages\n")
+    # Step 3: Add MMS languages
+    logger.info("Fetching supported MMS languages")
     languages_json = get_supported_languages()
-
     models_languages = combine_json_parts(merged_models, languages_json)
-    print(models_languages)
+
+    # Step 4: Validate URLs if requested
+    if validate_urls:
+        logger.info("Validating model URLs...")
+        validate_model_urls(models_languages)
+
+    # Step 5: Test models if requested
+    if test_models:
+        logger.info(f"Testing sample of models (max {test_sample_size} per type)...")
+        test_model_samples(models_languages, test_sample_size)
+
+    # Step 6: Save final results
     save_models(models_languages, output_file)
+    logger.info(f"Model index saved to {output_file} with {len(models_languages)} models")
+
+
+def validate_model_urls(models: dict[str, Any]) -> None:
+    """Validate URLs for all models and mark invalid ones.
+
+    Args:
+        models: Dictionary of model configurations
+    """
+    logger.info("Starting URL validation...")
+    invalid_models = []
+
+    for model_id, model_data in models.items():
+        if 'url' not in model_data:
+            continue
+
+        url = model_data['url']
+        logger.info(f"Validating {model_id}: {url}")
+
+        # For MMS models, validate the individual file URLs instead of directory
+        if model_id.startswith('mms_'):
+            # Check if model.onnx exists in the directory
+            model_url = f"{url}/model.onnx"
+            tokens_url = f"{url}/tokens.txt"
+
+            model_valid = validate_url(model_url)
+            tokens_valid = validate_url(tokens_url)
+
+            if model_valid and tokens_valid:
+                logger.info(f"✓ {model_id} MMS model files are valid")
+            else:
+                logger.warning(f"✗ {model_id} MMS model files are invalid: model.onnx={model_valid}, tokens.txt={tokens_valid}")
+                invalid_models.append(model_id)
+                model_data['url_valid'] = False
+        # For other models, validate the URL directly
+        elif validate_url(url):
+            logger.info(f"✓ {model_id} URL is valid")
+        else:
+            logger.warning(f"✗ {model_id} URL is invalid: {url}")
+            invalid_models.append(model_id)
+            # Mark as invalid but don't remove
+            model_data['url_valid'] = False
+
+    if invalid_models:
+        logger.warning(f"Found {len(invalid_models)} models with invalid URLs:")
+        for model_id in invalid_models:
+            logger.warning(f"  - {model_id}")
+    else:
+        logger.info("All model URLs are valid!")
+
+
+def test_model_samples(models: dict[str, Any], sample_size: int = 5) -> None:
+    """Test a sample of models from each developer type.
+
+    Args:
+        models: Dictionary of model configurations
+        sample_size: Maximum number of models to test per developer
+    """
+    logger.info("Starting model testing...")
+
+    # Group models by developer
+    developers = {}
+    for model_id, model_data in models.items():
+        if 'developer' not in model_data:
+            continue
+        developer = model_data['developer']
+        if developer not in developers:
+            developers[developer] = []
+        developers[developer].append((model_id, model_data))
+
+    # Test samples from each developer
+    total_tested = 0
+    total_passed = 0
+
+    for developer, model_list in developers.items():
+        logger.info(f"Testing {developer} models (max {sample_size})...")
+
+        # Take a sample
+        sample = model_list[:sample_size]
+
+        for model_id, model_data in sample:
+            total_tested += 1
+            if test_model_generation(model_data):
+                total_passed += 1
+                model_data['test_passed'] = True
+            else:
+                model_data['test_passed'] = False
+
+    logger.info(f"Model testing complete: {total_passed}/{total_tested} models passed")
 
 
 if __name__ == "__main__":
-    main()
+    import argparse
+
+    parser = argparse.ArgumentParser(description="Create and validate SherpaOnnx model index")
+    parser.add_argument("--force", action="store_true", help="Force refresh of all models")
+    parser.add_argument("--no-validate", action="store_true", help="Skip URL validation")
+    parser.add_argument("--test", action="store_true", help="Test model generation")
+    parser.add_argument("--test-size", type=int, default=5, help="Number of models to test per type")
+
+    args = parser.parse_args()
+
+    main(
+        force_refresh=args.force,
+        validate_urls=not args.no_validate,
+        test_models=args.test,
+        test_sample_size=args.test_size
+    )

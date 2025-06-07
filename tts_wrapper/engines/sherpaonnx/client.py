@@ -6,7 +6,9 @@ import json
 import logging
 import os
 import queue
+import tarfile
 import threading
+from io import BytesIO
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Callable
 
@@ -98,9 +100,70 @@ class SherpaOnnxClient(AbstractTTS):
 
     def _download_file(self, url: str, destination: Path) -> None:
         """Download a file from a URL to a destination path."""
-        response = requests.get(url, stream=True)
+        response = requests.get(url, stream=True, timeout=30)
         response.raise_for_status()
         destination.write_bytes(response.content)
+
+    def _download_and_extract_archive(self, archive_url: str, destination_dir: Path) -> None:
+        """Download and extract a tar.bz2 archive to a destination directory.
+
+        Args:
+            archive_url: URL of the archive file
+            destination_dir: Directory to extract files to
+        """
+        logging.info(f"Downloading and extracting archive from {archive_url}")
+
+        # Download the archive
+        response = requests.get(archive_url, stream=True, timeout=60)
+        response.raise_for_status()
+
+        # Extract directly from memory
+        archive_data = BytesIO(response.content)
+
+        # Determine archive type and extract
+        if archive_url.endswith('.tar.bz2'):
+            with tarfile.open(fileobj=archive_data, mode='r:bz2') as tar:
+                tar.extractall(path=destination_dir)
+        elif archive_url.endswith('.tar.gz'):
+            with tarfile.open(fileobj=archive_data, mode='r:gz') as tar:
+                tar.extractall(path=destination_dir)
+        else:
+            # For non-archive URLs (like MMS models), try direct file download
+            msg = f"Unsupported archive format: {archive_url}"
+            raise ValueError(msg)
+
+        logging.info(f"Archive extracted to {destination_dir}")
+
+    def _find_model_file(self, destination_dir: Path) -> Path | None:
+        """Find the model.onnx file in the extracted directory structure."""
+        for root, _dirs, files in os.walk(destination_dir):
+            for file in files:
+                # Look for model.onnx or any .onnx file
+                if file == "model.onnx" or file.endswith(".onnx"):
+                    model_path = Path(root) / file
+                    expected_path = destination_dir / "model.onnx"
+
+                    # Copy to expected location if it's not already in the root directory
+                    if model_path != expected_path:
+                        logging.info(f"Copying {model_path} to {expected_path}")
+                        expected_path.write_bytes(model_path.read_bytes())
+
+                    return expected_path
+        return None
+
+    def _find_tokens_file(self, destination_dir: Path) -> Path | None:
+        """Find the tokens.txt file in the extracted directory structure."""
+        for root, _dirs, files in os.walk(destination_dir):
+            for file in files:
+                if file == "tokens.txt":
+                    tokens_path = Path(root) / file
+                    # Copy to expected location if it's in a subdirectory
+                    expected_path = destination_dir / "tokens.txt"
+                    if tokens_path != expected_path:
+                        logging.info(f"Copying {tokens_path} to {expected_path}")
+                        expected_path.write_bytes(tokens_path.read_bytes())
+                    return expected_path
+        return None
 
     def _check_files_exist(
         self, model_path: str, tokens_path: str, model_id: str
@@ -158,22 +221,39 @@ class SherpaOnnxClient(AbstractTTS):
             raise ValueError(msg)
 
         base_url = models[safe_model_id]["url"]
-        model_url = f"{base_url}/model.onnx?download=true"
-        tokens_url = f"{base_url}/tokens.txt"
 
-        # Set paths in voice directory
-        model_path = destination_dir / "model.onnx"
-        tokens_path = destination_dir / "tokens.txt"
+        # Check if this is an archive or direct file URL
+        if base_url.endswith(('.tar.bz2', '.tar.gz')):
+            # Handle archive downloads (GitHub models)
+            logging.info("Downloading model archive from %s", base_url)
+            self._download_and_extract_archive(base_url, destination_dir)
 
-        # Download model file
-        logging.info("Downloading model from %s", base_url)
-        self._download_file(model_url, model_path)
-        logging.info("Model downloaded to %s", model_path)
+            # Find the extracted model files
+            model_path = self._find_model_file(destination_dir)
+            tokens_path = self._find_tokens_file(destination_dir)
 
-        # Download tokens file
-        logging.info("Downloading tokens from %s", tokens_url)
-        self._download_file(tokens_url, tokens_path)
-        logging.info("Tokens downloaded to %s", tokens_path)
+            if not model_path or not tokens_path:
+                msg = f"Could not find model.onnx or tokens.txt in extracted archive for {safe_model_id}"
+                raise RuntimeError(msg)
+
+        else:
+            # Handle direct file downloads (MMS models from HuggingFace)
+            model_url = f"{base_url}/model.onnx?download=true"
+            tokens_url = f"{base_url}/tokens.txt"
+
+            # Set paths in voice directory
+            model_path = destination_dir / "model.onnx"
+            tokens_path = destination_dir / "tokens.txt"
+
+            # Download model file
+            logging.info("Downloading model from %s", model_url)
+            self._download_file(model_url, model_path)
+            logging.info("Model downloaded to %s", model_path)
+
+            # Download tokens file
+            logging.info("Downloading tokens from %s", tokens_url)
+            self._download_file(tokens_url, tokens_path)
+            logging.info("Tokens downloaded to %s", tokens_path)
 
         # Set additional paths
         lexicon_path = str(destination_dir / "lexicon.txt")
@@ -236,13 +316,34 @@ class SherpaOnnxClient(AbstractTTS):
         # Create the VITS model configuration
         logging.debug("default dict dir %s", self.default_dict_dir_path)
 
-        vits_model_config = sherpa_onnx.OfflineTtsVitsModelConfig(
-            model=self.default_model_path,
-            lexicon=self.default_lexicon_path,
-            tokens=self.default_tokens_path,
-            data_dir="",
-            dict_dir=self.default_dict_dir_path,
-        )
+        # For GitHub models, try using data_dir instead of dict_dir
+        if self._model_id.startswith(("piper-", "coqui-", "icefall-", "mimic3-", "melo-", "vctk-", "zh-", "ljs-", "cantonese-")):
+            # Find espeak-ng-data directory for data_dir
+            voice_dir = self._base_dir / self._model_id
+            espeak_data_dir = ""
+            for item in voice_dir.iterdir():
+                if item.is_dir() and (item.name.startswith("vits-")):
+                    espeak_candidate = item / "espeak-ng-data"
+                    if espeak_candidate.exists():
+                        espeak_data_dir = str(espeak_candidate)
+                        break
+
+            vits_model_config = sherpa_onnx.OfflineTtsVitsModelConfig(
+                model=self.default_model_path,
+                lexicon=self.default_lexicon_path,
+                tokens=self.default_tokens_path,
+                data_dir=espeak_data_dir,
+                dict_dir="",
+            )
+            logging.info(f"Using data_dir: {espeak_data_dir}")
+        else:
+            vits_model_config = sherpa_onnx.OfflineTtsVitsModelConfig(
+                model=self.default_model_path,
+                lexicon=self.default_lexicon_path,
+                tokens=self.default_tokens_path,
+                data_dir="",
+                dict_dir=self.default_dict_dir_path,
+            )
 
         # Wrap it inside an OfflineTtsModelConfig with additional parameters
         model_config = sherpa_onnx.OfflineTtsModelConfig(
@@ -574,11 +675,18 @@ class SherpaOnnxClient(AbstractTTS):
         self.default_model_path = model_path
         self.default_tokens_path = tokens_path
 
-        # if mms language model set lexicon path and dict dir path to empty string
+        # Configure lexicon and dict_dir based on model type
         if self._model_id.startswith("mms_"):
+            # MMS models don't use lexicon or dict_dir
             self.default_lexicon_path = ""
             self.default_dict_dir_path = ""
+        elif self._model_id.startswith(("piper-", "coqui-", "icefall-", "mimic3-", "melo-", "vctk-", "zh-", "ljs-", "cantonese-")):
+            # GitHub archive models - avoid dict_dir to prevent jieba warnings
+            self.default_lexicon_path = ""
+            self.default_dict_dir_path = ""
+            logging.info(f"Using empty dict_dir for GitHub model {self._model_id} to avoid jieba issues")
         else:
+            # Other models (mimic3, icefall, etc.) may use lexicon/dict_dir
             self.default_lexicon_path = lexicon_path
             self.default_dict_dir_path = dict_dir
 
