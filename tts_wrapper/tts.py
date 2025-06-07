@@ -824,9 +824,21 @@ class AbstractTTS(ABC):
 
             # Save to file if requested
             if save_to_file_path and audio_data:
-                with open(save_to_file_path, "wb") as f:
-                    f.write(audio_data)
-                logging.debug(f"Audio saved to {save_to_file_path}")
+                # Convert raw PCM data to the specified format before saving
+                if audio_format.lower() != "raw":
+                    # Convert bytes to numpy array for format conversion
+                    pcm_array = np.frombuffer(audio_data, dtype=np.int16)
+                    # Use the existing format conversion method
+                    formatted_audio = self._convert_pcm_to_format(
+                        pcm_array, audio_format, self.audio_rate, self.channels
+                    )
+                    with open(save_to_file_path, "wb") as f:
+                        f.write(formatted_audio)
+                else:
+                    # Save raw PCM data as-is
+                    with open(save_to_file_path, "wb") as f:
+                        f.write(audio_data)
+                logging.debug(f"Audio saved to {save_to_file_path} in {audio_format} format")
 
             # Wait for playback to complete if requested
             if wait_for_completion and self.playback_thread:
