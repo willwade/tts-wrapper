@@ -27,8 +27,9 @@ class TestSpeakStreamedFileSaving(unittest.TestCase):
     def tearDown(self):
         """Clean up test fixtures."""
         # Clean up any files created during tests
-        for file_path in Path(self.temp_dir).glob("*.wav"):
-            file_path.unlink()
+        for file_path in Path(self.temp_dir).glob("*"):
+            if file_path.is_file():
+                file_path.unlink()
         Path(self.temp_dir).rmdir()
 
     def test_sherpaonnx_speak_streamed_wav_header(self):

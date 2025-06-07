@@ -238,6 +238,56 @@ class TestOfflineEngines(BaseTestFileCreation):
             "This is a test using SherpaONNX TTS.",
         )
 
+    def test_sherpaonnx_speak_streamed_wav_header(self) -> None:
+        """Test that SherpaOnnx speak_streamed creates proper WAV files with RIFF headers."""
+        tts_instance = self.tts_instances.get("sherpaonnx")
+        if not tts_instance:
+            self.skipTest("sherpaonnx is not available")
+
+        try:
+            import tempfile
+            import wave
+
+            # Create temporary file
+            with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as tmp_file:
+                temp_path = tmp_file.name
+
+            test_text = "Testing speak streamed WAV header fix."
+
+            # Use speak_streamed with file saving
+            tts_instance.speak_streamed(
+                test_text,
+                save_to_file_path=temp_path,
+                audio_format="wav",
+                wait_for_completion=True
+            )
+
+            # Verify file was created and has content
+            file_path = Path(temp_path)
+            assert file_path.exists(), "Audio file was not created"
+            assert file_path.stat().st_size > 0, "Audio file is empty"
+
+            # Verify WAV header
+            with open(temp_path, "rb") as f:
+                header = f.read(4)
+                assert header == b"RIFF", f"File does not start with RIFF header, got {header}"
+
+            # Verify it's a valid WAV file
+            try:
+                with wave.open(temp_path, "rb") as wav_file:
+                    assert wav_file.getnframes() > 0, "WAV file has no audio frames"
+                    assert wav_file.getnchannels() == 1, "Expected mono audio"
+                    assert wav_file.getframerate() > 0, "Invalid frame rate"
+            except wave.Error as e:
+                self.fail(f"Generated file is not a valid WAV file: {e}")
+
+            # Clean up
+            file_path.unlink()
+
+        except Exception as e:
+            logging.error(f"Error testing sherpaonnx speak_streamed: {e!s}")
+            self.skipTest(f"Error testing sherpaonnx speak_streamed: {e!s}")
+
     @pytest.mark.skipif(
         sys.platform != "darwin",
         reason="AVSynth only available on macOS",
