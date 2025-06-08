@@ -701,7 +701,9 @@ def main(
         test_models: If True, test a sample of models to ensure they generate audio
         test_sample_size: Number of models to test from each developer type
     """
-    output_file = "merged_models.json"
+    # Save to the same directory as this script
+    script_dir = Path(__file__).parent
+    output_file = script_dir / "merged_models.json"
     logger.info("Starting model index creation/update process")
 
     # Step 1: Load existing models or start fresh
