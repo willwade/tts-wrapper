@@ -313,16 +313,131 @@ class SherpaOnnxClient(AbstractTTS):
             msg = "Model and tokens paths must be set before initializing ONNX"
             raise ValueError(msg)
 
-        # Create the VITS model configuration
-        logging.debug("default dict dir %s", self.default_dict_dir_path)
+        # Determine model type from model_id
+        model_type = self._get_model_type()
+        logging.info(f"Detected model type: {model_type}")
 
+        # Create appropriate model configuration based on type
+        if model_type == "kokoro":
+            model_config = self._create_kokoro_config(sherpa_onnx)
+        elif model_type == "matcha":
+            model_config = self._create_matcha_config(sherpa_onnx)
+        else:
+            # Default to VITS configuration
+            model_config = self._create_vits_config(sherpa_onnx)
+
+        # Create the TTS configuration using OfflineTtsModelConfig
+        tts_config = sherpa_onnx.OfflineTtsConfig(
+            model=model_config,
+            rule_fsts="",  # Set if using rule FSTs, else empty string
+            max_num_sentences=1,  # Control how many sentences are processed at a time
+        )
+
+        self.tts = sherpa_onnx.OfflineTts(tts_config)
+        self.sample_rate = self.tts.sample_rate
+
+    def _get_model_type(self) -> str:
+        """Determine the model type based on model_id."""
+        if not self._model_id:
+            return "vits"
+
+        # Check model metadata first
+        if self._model_id in self.json_models:
+            model_data = self.json_models[self._model_id]
+            model_type = model_data.get("model_type", "unknown")
+            if model_type in ["kokoro", "matcha"]:
+                return model_type
+
+        # Fallback to prefix-based detection
+        if self._model_id.startswith("kokoro-"):
+            return "kokoro"
+        if self._model_id.startswith("icefall-") and "matcha" in self._model_id.lower():
+            return "matcha"
+        if any(self._model_id.startswith(prefix) for prefix in ["tts-", "icefall-"]):
+            # Check if it's a matcha model by looking at the model file
+            voice_dir = self._base_dir / self._model_id
+            for item in voice_dir.rglob("*"):
+                if item.name.startswith("matcha-"):
+                    return "matcha"
+
+        return "vits"
+
+    def _create_kokoro_config(self, sherpa_onnx):
+        """Create Kokoro model configuration."""
+        voice_dir = self._base_dir / self._model_id
+
+        # Find voices.bin file
+        voices_path = ""
+        for item in voice_dir.rglob("voices.bin"):
+            voices_path = str(item)
+            break
+
+        if not voices_path:
+            logging.warning("voices.bin not found for Kokoro model, using empty path")
+
+        # Find espeak-ng-data directory
+        espeak_data_dir = ""
+        for item in voice_dir.rglob("espeak-ng-data"):
+            if item.is_dir():
+                espeak_data_dir = str(item)
+                break
+
+        logging.info(f"Kokoro config - voices: {voices_path}, data_dir: {espeak_data_dir}")
+
+        kokoro_config = sherpa_onnx.OfflineTtsKokoroModelConfig(
+            model=self.default_model_path,
+            voices=voices_path,
+            tokens=self.default_tokens_path,
+            data_dir=espeak_data_dir,
+        )
+
+        return sherpa_onnx.OfflineTtsModelConfig(
+            kokoro=kokoro_config,
+            provider="cpu",
+            debug=False,
+            num_threads=1,
+        )
+
+    def _create_matcha_config(self, sherpa_onnx):
+        """Create Matcha model configuration."""
+        voice_dir = self._base_dir / self._model_id
+
+        # Find espeak-ng-data directory
+        espeak_data_dir = ""
+        for item in voice_dir.rglob("espeak-ng-data"):
+            if item.is_dir():
+                espeak_data_dir = str(item)
+                break
+
+        # Download vocoder if needed
+        vocoder_path = self._ensure_vocoder_downloaded()
+
+        logging.info(f"Matcha config - vocoder: {vocoder_path}, data_dir: {espeak_data_dir}")
+
+        matcha_config = sherpa_onnx.OfflineTtsMatchaModelConfig(
+            acoustic_model=self.default_model_path,
+            vocoder=vocoder_path,
+            lexicon="",  # Matcha models typically don't use lexicon
+            tokens=self.default_tokens_path,
+            data_dir=espeak_data_dir,
+        )
+
+        return sherpa_onnx.OfflineTtsModelConfig(
+            matcha=matcha_config,
+            provider="cpu",
+            debug=False,
+            num_threads=1,
+        )
+
+    def _create_vits_config(self, sherpa_onnx):
+        """Create VITS model configuration (default)."""
         # For GitHub models, try using data_dir instead of dict_dir
         if self._model_id.startswith(("piper-", "coqui-", "icefall-", "mimic3-", "melo-", "vctk-", "zh-", "ljs-", "cantonese-")):
             # Find espeak-ng-data directory for data_dir
             voice_dir = self._base_dir / self._model_id
             espeak_data_dir = ""
             for item in voice_dir.iterdir():
-                if item.is_dir() and (item.name.startswith("vits-")):
+                if item.is_dir() and item.name.startswith("vits-"):
                     espeak_candidate = item / "espeak-ng-data"
                     if espeak_candidate.exists():
                         espeak_data_dir = str(espeak_candidate)
@@ -345,23 +460,34 @@ class SherpaOnnxClient(AbstractTTS):
                 dict_dir=self.default_dict_dir_path,
             )
 
-        # Wrap it inside an OfflineTtsModelConfig with additional parameters
-        model_config = sherpa_onnx.OfflineTtsModelConfig(
+        return sherpa_onnx.OfflineTtsModelConfig(
             vits=vits_model_config,
-            provider="cpu",  # Specify the provider, e.g., "cpu", "cuda", etc.
-            debug=False,  # Set to True if you need debug information
-            num_threads=1,  # Number of threads for computation
+            provider="cpu",
+            debug=False,
+            num_threads=1,
         )
 
-        # Create the TTS configuration using OfflineTtsModelConfig
-        tts_config = sherpa_onnx.OfflineTtsConfig(
-            model=model_config,
-            rule_fsts="",  # Set if using rule FSTs, else empty string
-            max_num_sentences=1,  # Control how many sentences are processed at a time
-        )
+    def _ensure_vocoder_downloaded(self) -> str:
+        """Download vocoder for Matcha models if not present."""
+        vocoder_filename = "vocos-22khz-univ.onnx"
+        vocoder_path = self._base_dir / vocoder_filename
 
-        self.tts = sherpa_onnx.OfflineTts(tts_config)
-        self.sample_rate = self.tts.sample_rate
+        if vocoder_path.exists():
+            logging.info(f"Vocoder already exists: {vocoder_path}")
+            return str(vocoder_path)
+
+        # Download vocoder from sherpa-onnx releases
+        vocoder_url = "https://github.com/k2-fsa/sherpa-onnx/releases/download/vocoder-models/vocos-22khz-univ.onnx"
+
+        logging.info(f"Downloading vocoder from {vocoder_url}")
+        try:
+            self._download_file(vocoder_url, vocoder_path)
+            logging.info(f"Vocoder downloaded to {vocoder_path}")
+            return str(vocoder_path)
+        except Exception as e:
+            logging.error(f"Failed to download vocoder: {e}")
+            # Return empty string if download fails - let sherpa-onnx handle the error
+            return ""
 
     def generate_stream(self, text: str, sid: int = 0, speed: float = 1.0):
         """Generate audio progressively and yield each chunk."""
@@ -680,7 +806,7 @@ class SherpaOnnxClient(AbstractTTS):
             # MMS models don't use lexicon or dict_dir
             self.default_lexicon_path = ""
             self.default_dict_dir_path = ""
-        elif self._model_id.startswith(("piper-", "coqui-", "icefall-", "mimic3-", "melo-", "vctk-", "zh-", "ljs-", "cantonese-")):
+        elif self._model_id.startswith(("piper-", "coqui-", "icefall-", "mimic3-", "melo-", "vctk-", "zh-", "ljs-", "cantonese-", "kokoro-")):
             # GitHub archive models - avoid dict_dir to prevent jieba warnings
             self.default_lexicon_path = ""
             self.default_dict_dir_path = ""
