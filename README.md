@@ -19,6 +19,7 @@ _TTS-Wrapper_ simplifies using text-to-speech APIs by providing a unified interf
 
 - AWS Polly
 - Google TTS
+- Google Translate TTS (GoogleTrans)
 - Microsoft Azure TTS
 - IBM Watson
 - ElevenLabs
@@ -52,6 +53,7 @@ _TTS-Wrapper_ simplifies using text-to-speech APIs by providing a unified interf
 |------------|--------------------|--------------------|------|-----------------|-----------|------------------|-----------|
 | Polly      | Linux/MacOS/Windows| Online            | Yes  | Yes            | Yes       | Yes              | Full      |
 | Google     | Linux/MacOS/Windows| Online            | Yes  | Yes            | Yes       | Yes              | Full      |
+| GoogleTrans| Linux/MacOS/Windows| Online            | No*  | No**           | Yes       | Yes              | Basic     |
 | Microsoft  | Linux/MacOS/Windows| Online            | Yes  | Yes            | Yes       | Yes              | Full      |
 | Watson     | Linux/MacOS/Windows| Online            | Yes  | Yes            | Yes       | Yes              | Full      |
 | ElevenLabs | Linux/MacOS/Windows| Online            | No*  | Yes            | Yes       | Yes              | Full      |
@@ -288,12 +290,19 @@ Note: Only available on macOS. Provides high-quality speech synthesis with word 
 
 #### GoogleTrans
 
-Uses the gTTS library.
+Uses the gTTS library for free text-to-speech via Google Translate.
 
 ```python
 from tts_wrapper import GoogleTransClient
-voice_id = "en-co.uk"  # Example voice ID for UK English
-client = GoogleTransClient(voice_id)
+
+# Initialize with default voice (UK English)
+tts = GoogleTransClient()
+
+# Or specify a voice/language
+tts = GoogleTransClient(voice_id="en-co.uk")
+
+# Set voice after initialization
+tts.set_voice("fr-fr")  # French
 ```
 
 #### Sherpa-ONNX
@@ -517,7 +526,7 @@ print(f"Current volume: {current_volume}")
 
 #### Using callbacks on word-level boundaries
 
-Note only **Polly, Microsoft, Google, ElevenLabs, UWP, SAPI and Watson** can do this **correctly**. We can't do this in anything else but we do do a estimated tonings for all other engines (ie elevenlabs, witAi and Piper)
+Note only **Polly, Microsoft, Google, ElevenLabs, UWP, SAPI and Watson** can do this **correctly** with precise timing from the TTS engine. All other engines (GoogleTrans, Wit.Ai, Play.HT, OpenAI, eSpeak, AVSynth, Sherpa-ONNX) use **estimated timing** based on text length and average speaking rate.
 
 ```python
 def my_callback(word: str, start_time: float, end_time: float):
