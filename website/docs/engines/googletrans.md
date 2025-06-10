@@ -11,11 +11,10 @@ GoogleTrans provides free text-to-speech capabilities through Google Translate's
 GoogleTrans works on all platforms with internet connectivity:
 
 ```python
-from tts_wrapper import GoogleTransClient, GoogleTransTTS
+from tts_wrapper import GoogleTransClient
 
-# Initialize client and TTS (no credentials needed)
-client = GoogleTransClient()
-tts = GoogleTransTTS(client)
+# Initialize client (no credentials needed)
+tts = GoogleTransClient()
 ```
 
 ## Features
@@ -56,6 +55,20 @@ tts.synth_to_file("Hello world", "output.mp3", "mp3")
 tts.synth_to_file("Hello world", "output.wav", "wav")
 ```
 
+### Word Timing Callbacks
+GoogleTrans supports estimated word timing callbacks:
+
+```python
+# Define a callback function for word events
+def word_callback(word, start_time, end_time):
+    print(f"Word: {word}, Time: {start_time:.2f}s - {end_time:.2f}s")
+
+# Use word timing callbacks
+tts.start_playback_with_callbacks("Hello world test", callback=word_callback)
+```
+
+**Note**: Word timings are estimated based on text length and average speaking rate, not precise timing from the TTS engine.
+
 ## Best Practices
 
 1. **Usage Guidelines**
@@ -85,7 +98,7 @@ tts.synth_to_file("Hello world", "output.wav", "wav")
 - Requires internet connection
 - No SSML support
 - No voice selection (language-based only)
-- No word timing support
+- Word timing support is estimated (not precise)
 - Limited control over voice properties
 - Rate limits may apply
 - Not recommended for commercial use

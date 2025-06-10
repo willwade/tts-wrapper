@@ -4,8 +4,6 @@ from __future__ import annotations
 from io import BytesIO
 from typing import TYPE_CHECKING, Any, Callable
 
-import mp3
-
 from tts_wrapper.exceptions import UnsupportedFileFormat
 from tts_wrapper.tts import AbstractTTS
 
@@ -16,7 +14,13 @@ try:
     from gtts import gTTS
     from gtts.lang import tts_langs
 except ImportError:
-    gtts = None  # type: ignore
+    gTTS = None  # type: ignore[assignment]
+    tts_langs = None  # type: ignore[assignment]
+
+try:
+    import mp3
+except ImportError:
+    mp3 = None  # type: ignore[assignment]
 
 FORMATS = {"mp3": "mp3", "wav": "wav"}
 
@@ -26,6 +30,21 @@ class GoogleTransClient(AbstractTTS):
 
     def __init__(self, voice_id="en-co.uk") -> None:
         super().__init__()
+
+        # Check if required dependencies are available
+        if gTTS is None:
+            msg = (
+                "gTTS is required for GoogleTrans TTS. "
+                "Install it with: pip install gtts"
+            )
+            raise ImportError(msg)
+        if mp3 is None:
+            msg = (
+                "pymp3 is required for GoogleTrans TTS. "
+                "Install it with: pip install pymp3"
+            )
+            raise ImportError(msg)
+
         self.lang, self.tld = self._parse_voice_id(voice_id)
         self.audio_rate = 22050  # Default sample rate for gTTS
 
@@ -139,7 +158,7 @@ class GoogleTransClient(AbstractTTS):
         # Convert to WAV for consistent output
         return self._mp3_to_wav(mp3_fp)
 
-    def synth(
+    def synth_to_file(
         self,
         text: Any,
         output_file: str | Path,
@@ -165,11 +184,22 @@ class GoogleTransClient(AbstractTTS):
         elif output_format == "wav":
             # Convert to WAV
             audio_bytes = self.synth_to_bytes(text, voice_id)
-            with open(output_file, "wb") as f:
-                f.write(audio_bytes)
+            from pathlib import Path
+            Path(output_file).write_bytes(audio_bytes)
         else:
             msg = f"Unsupported format: {output_format}"
             raise UnsupportedFileFormat(msg, "GoogleTrans")
+
+    # Alias for backward compatibility
+    def synth(
+        self,
+        text: Any,
+        output_file: str | Path,
+        output_format: str = "wav",
+        voice_id: str | None = None,
+    ) -> None:
+        """Alias for synth_to_file for backward compatibility."""
+        return self.synth_to_file(text, output_file, output_format, voice_id)
 
     def synth_raw(self, text: str, target_format: str = "mp3") -> bytes:
         """Synthesizes text to MP3 or WAV audio bytes (legacy method)."""
@@ -208,15 +238,15 @@ class GoogleTransClient(AbstractTTS):
 
         for lang_code, lang_name in languages.items():
             if lang_code in accents:
-                for accent in accents[lang_code]:
-                    voices.append(
-                        {
-                            "id": f"{lang_code}-{accent}",
-                            "language_codes": [lang_code],
-                            "name": f"{lang_name} ({accent})",
-                            "gender": "Unknown",
-                        },
-                    )
+                voices.extend([
+                    {
+                        "id": f"{lang_code}-{accent}",
+                        "language_codes": [lang_code],
+                        "name": f"{lang_name} ({accent})",
+                        "gender": "Unknown",
+                    }
+                    for accent in accents[lang_code]
+                ])
             else:
                 voices.append(
                     {
