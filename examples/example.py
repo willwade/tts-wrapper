@@ -137,6 +137,52 @@ def test_tts_engine(client, service_name) -> None:
     # or you could do
     # client.speak(ssml_text)
 
+    # Demonstrate return_bytes functionality
+    print(f"\n--- Testing return_bytes functionality for {service_name} ---")
+
+    # Example 1: Get bytes from speak() method
+    test_text = "This demonstrates getting audio bytes without playing"
+    try:
+        audio_bytes = client.speak(test_text, return_bytes=True, wait_for_completion=False)
+        if audio_bytes:
+            print(f"speak() returned {len(audio_bytes)} bytes of audio data")
+        else:
+            print("speak() returned no bytes")
+    except Exception as e:
+        print(f"speak() with return_bytes failed: {e}")
+
+    # Example 2: Get bytes from speak_streamed() method
+    try:
+        audio_bytes = client.speak_streamed(
+            "This demonstrates streaming synthesis with byte return",
+            return_bytes=True,
+            wait_for_completion=False
+        )
+        if audio_bytes:
+            print(f"speak_streamed() returned {len(audio_bytes)} bytes of audio data")
+        else:
+            print("speak_streamed() returned no bytes")
+    except Exception as e:
+        print(f"speak_streamed() with return_bytes failed: {e}")
+
+    # Example 3: Get bytes AND save to file simultaneously
+    try:
+        bytes_output_file = Path(f"bytes_output_{service_name}.wav")
+        audio_bytes = client.speak_streamed(
+            "This saves to file AND returns bytes",
+            return_bytes=True,
+            save_to_file_path=str(bytes_output_file),
+            wait_for_completion=False
+        )
+        if audio_bytes and bytes_output_file.exists():
+            print(f"speak_streamed() returned {len(audio_bytes)} bytes AND saved to {bytes_output_file}")
+        else:
+            print("speak_streamed() with file saving failed")
+    except Exception as e:
+        print(f"speak_streamed() with return_bytes and file saving failed: {e}")
+
+    print("--- End return_bytes examples ---\n")
+
     # Change voice and test again if possible
     voices = client.get_voices()
     for voice in voices[:4]:  # Show details for first four voices
