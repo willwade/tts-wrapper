@@ -45,6 +45,7 @@ For a detailed comparison of features across all engines, see our [Engines Overv
 
 ### Core Functionality
 - Text-to-speech conversion with multiple output options
+- Silent audio synthesis for data processing pipelines
 - SSML (Speech Synthesis Markup Language) support
 - Voice and language selection
 - Streaming and direct playback
