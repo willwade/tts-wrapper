@@ -608,6 +608,24 @@ For advanced use cases where you need the raw audio data:
 audio_bytes = client.synth_to_bytes("Hello world")
 ```
 
+### 5. Silent Synthesis
+
+The `synthesize()` method provides silent audio synthesis without playback - perfect for applications that need audio data without immediate playback:
+
+```python
+# Get complete audio data (default behavior)
+audio_bytes = client.synthesize("Hello world")
+
+# Get streaming audio data for real-time processing
+audio_stream = client.synthesize("Hello world", streaming=True)
+for chunk in audio_stream:
+    # Process each audio chunk as it's generated
+    process_audio_chunk(chunk)
+
+# Use with specific voice
+audio_bytes = client.synthesize("Hello world", voice_id="en-US-JennyNeural")
+```
+
 ### Audio Format Notes
 
 - All engines output WAV format by default
