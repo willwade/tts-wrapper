@@ -13,6 +13,7 @@ const sidebars = {
         'guides/basic-usage',
         'guides/voices',
         'guides/ssml',
+        'guides/silent-synthesis',
         'guides/audio-control',
         'guides/streaming',
         'guides/callbacks',
