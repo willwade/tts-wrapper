@@ -646,7 +646,8 @@ class AbstractTTS(ABC):
         text: str | SSML,
         voice_id: str | None = None,
         wait_for_completion: bool = True,
-    ) -> None:
+        return_bytes: bool = False,
+    ) -> bytes | None:
         """
         Synthesize text and play it back using sounddevice.
 
@@ -658,15 +659,20 @@ class AbstractTTS(ABC):
             The ID of the voice to use for synthesis. If None, uses the voice set by set_voice.
         wait_for_completion : bool, optional
             Whether to wait for playback to complete before returning. Default is True.
+        return_bytes : bool, optional
+            Whether to return the audio bytes. Default is False.
+
+        Returns
+        -------
+        bytes | None
+            Raw PCM audio bytes if return_bytes=True, otherwise None.
         """
-        logging.debug("speak() called with wait_for_completion=%s", wait_for_completion)
+        logging.debug("speak() called with wait_for_completion=%s, return_bytes=%s", wait_for_completion, return_bytes)
         # Convert text to audio bytes
         audio_bytes = self.synth_to_bytes(text, voice_id)
 
-        # Load the audio into the player
+        # Load the audio into the player and play it
         self.load_audio(audio_bytes)
-
-        # Play the audio
         self.play()
 
         # Wait for playback to complete if requested
@@ -674,6 +680,9 @@ class AbstractTTS(ABC):
             logging.debug("Waiting for playback to complete")
             self.playback_thread.join()
             logging.debug("Playback completed")
+
+        # Return bytes if requested
+        return audio_bytes if return_bytes else None
 
     def synth(
         self,
@@ -794,7 +803,8 @@ class AbstractTTS(ABC):
         save_to_file_path: str | None = None,
         audio_format: str = "wav",
         wait_for_completion: bool = True,
-    ) -> None:
+        return_bytes: bool = False,
+    ) -> bytes | None:
         """
         Synthesize text to speech and stream it for playback.
 
@@ -812,6 +822,13 @@ class AbstractTTS(ABC):
             Audio format for file saving. Default is "wav".
         wait_for_completion : bool, optional
             Whether to wait for playback to complete before returning. Default is True.
+        return_bytes : bool, optional
+            Whether to return the audio bytes. Default is False.
+
+        Returns
+        -------
+        bytes | None
+            Raw PCM audio bytes if return_bytes=True, otherwise None.
         """
         try:
             # Check if the engine supports streaming via synth_to_bytestream
@@ -846,8 +863,12 @@ class AbstractTTS(ABC):
                 self.playback_thread.join()
                 logging.debug("Playback completed")
 
+            # Return bytes if requested
+            return audio_data if return_bytes else None
+
         except Exception:
             logging.exception("Error in streaming synthesis")
+            return None
 
     def setup_stream(
         self, samplerate: int = 44100, channels: int = 1, dtype: str | int = "int16"
