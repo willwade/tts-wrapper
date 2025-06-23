@@ -19,14 +19,44 @@ Streaming in TTS Wrapper works by:
 ### Simple Streaming
 
 ```python
-from tts_wrapper import PollyClient, PollyTTS
+from tts_wrapper import PollyClient
 
 # Initialize TTS
 client = PollyClient(credentials=('region', 'key_id', 'access_key'))
-tts = PollyTTS(client)
 
-# Stream text
-tts.speak_streamed("This text will be processed and played in real-time.")
+# Stream text (plays audio as it's synthesized)
+client.speak_streamed("This text will be processed and played in real-time.")
+```
+
+### Getting Audio Bytes from Streaming
+
+You can get the audio bytes from streaming synthesis for custom processing:
+
+```python
+# Get audio bytes without playing
+audio_bytes = client.speak_streamed(
+    "This text will be synthesized to bytes",
+    return_bytes=True,
+    wait_for_completion=False
+)
+
+# Process the bytes
+if audio_bytes:
+    print(f"Received {len(audio_bytes)} bytes of audio data")
+    # Use for custom playback, streaming, etc.
+```
+
+### Streaming with File Saving
+
+```python
+# Stream AND save to file
+audio_bytes = client.speak_streamed(
+    "This will be streamed and saved",
+    return_bytes=True,
+    save_to_file_path="output.wav"
+)
+
+# You now have both the file and the bytes for further processing
 ```
 
 ### Streaming with Callbacks

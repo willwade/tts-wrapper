@@ -69,6 +69,43 @@ client.set_property("volume", "80")  # Range: 0-100
 client.set_property("pitch", "high")  # Options: x-low, low, medium, high, x-high
 ```
 
+## Getting Audio Bytes
+
+Both `speak()` and `speak_streamed()` methods can return audio bytes for custom processing:
+
+```python
+# Get audio bytes from speak() method
+audio_bytes = client.speak("Hello world", return_bytes=True, wait_for_completion=False)
+
+# Get audio bytes from speak_streamed() method
+audio_bytes = client.speak_streamed("Hello world", return_bytes=True, wait_for_completion=False)
+
+# Process the audio bytes
+if audio_bytes:
+    print(f"Received {len(audio_bytes)} bytes of audio data")
+    # Use bytes for custom processing, streaming, etc.
+```
+
+### Use Cases for Audio Bytes
+
+- **No audio playback**: Perfect when you don't have audio hardware or the `controlaudio` extra
+- **Custom audio processing**: Apply effects, change format, or integrate with other audio libraries
+- **Streaming applications**: Send audio data over network or to custom playback systems
+- **Memory-efficient processing**: Work with audio data without temporary files
+
+### Combined Operations
+
+You can also get bytes while saving to file:
+
+```python
+# Get bytes AND save to file simultaneously
+audio_bytes = client.speak_streamed(
+    "Hello world",
+    return_bytes=True,
+    save_to_file_path="output.wav"
+)
+```
+
 ## Next Steps
 
 - Learn about [SSML support](ssml)

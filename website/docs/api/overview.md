@@ -10,8 +10,8 @@ The `AbstractTTS` class is the foundation of all TTS engines. It defines the com
 
 ```python
 class AbstractTTS:
-    def speak(self, text: str) -> None: ...
-    def speak_streamed(self, text: str, callback=None) -> None: ...
+    def speak(self, text: str, return_bytes: bool = False) -> bytes | None: ...
+    def speak_streamed(self, text: str, callback=None, return_bytes: bool = False) -> bytes | None: ...
     def synth_to_file(self, text: str, filepath: str, format: str = 'wav') -> None: ...
     def synth_to_bytes(self, text: str) -> bytes: ...
     def get_voices(self) -> List[Voice]: ...
@@ -99,6 +99,13 @@ tts.speak_streamed("Hello world", callback=on_word)
 
 # Save to file
 tts.synth_to_file("Hello world", "output.wav")
+
+# Get audio bytes (new in v1.x)
+audio_bytes = tts.speak("Hello world", return_bytes=True)
+audio_bytes = tts.speak_streamed("Hello world", return_bytes=True)
+
+# Get bytes AND save to file
+audio_bytes = tts.speak_streamed("Hello world", return_bytes=True, save_to_file_path="output.wav")
 ```
 
 ## Engine-Specific Features
