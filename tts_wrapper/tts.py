@@ -18,6 +18,7 @@ from io import BytesIO
 from pathlib import Path
 from threading import Event
 from typing import (
+    TYPE_CHECKING,
     Any,
     Callable,
     Union,
@@ -28,6 +29,9 @@ import sounddevice as sd
 import soundfile as sf
 
 from .ssml import AbstractSSMLNode
+
+if TYPE_CHECKING:
+    from collections.abc import Generator
 
 # Type Definitions and Constants
 FileFormat = Union[str, None]
@@ -795,6 +799,106 @@ class AbstractTTS(ABC):
             word_timings.append((start_time, end_time, word))
         self.set_timings(word_timings)
 
+    def synthesize(
+        self,
+        text: str | SSML,
+        voice_id: str | None = None,
+        streaming: bool = False,
+    ) -> bytes | Generator[bytes, None, None]:
+        """
+        Synthesize text to audio data without playback.
+
+        This method provides silent audio synthesis, perfect for SAPI bridges,
+        audio processing pipelines, and applications that need audio data
+        without immediate playback.
+
+        Parameters
+        ----------
+        text : str | SSML
+            The text to synthesize.
+        voice_id : str | None, optional
+            The ID of the voice to use for synthesis. If None, uses the voice set by set_voice.
+        streaming : bool, optional
+            Controls data delivery method:
+            - False (default): Return complete audio data as bytes
+            - True: Return generator yielding audio chunks in real-time
+
+        Returns
+        -------
+        bytes | Generator[bytes, None, None]
+            - bytes: When streaming=False, complete audio data
+            - Generator[bytes, None, None]: When streaming=True, audio chunks as they're generated
+
+        Examples
+        --------
+        Complete audio data (perfect for SAPI bridges):
+        >>> audio_bytes = tts.synthesize("Hello world", streaming=False)
+        >>> # Returns complete WAV data, no audio playback
+
+        Real-time streaming (perfect for live processing):
+        >>> for chunk in tts.synthesize("Hello world", streaming=True):
+        ...     process_audio_chunk(chunk)  # Process each chunk as generated
+        """
+        try:
+            if streaming:
+                # Return streaming generator
+                if hasattr(self, "synth_to_bytestream") and callable(
+                    self.synth_to_bytestream
+                ):
+                    return self._synthesize_streaming(text, voice_id)
+                # For non-streaming engines, fall back to complete data
+                return self._synthesize_complete(text, voice_id)
+            # Return complete audio data
+            return self._synthesize_complete(text, voice_id)
+        except Exception:
+            logging.exception("Error in synthesis")
+            raise
+
+    def _synthesize_streaming(
+        self, text: str | SSML, voice_id: str | None
+    ) -> Generator[bytes, None, None]:
+        """Generate streaming audio chunks without playback."""
+        if hasattr(self, "synth_to_bytestream") and callable(self.synth_to_bytestream):
+            # True streaming for engines that support it
+            generator = self.synth_to_bytestream(text, voice_id)
+
+            # Set word timings if available
+            if hasattr(self, "get_word_timings") and callable(self.get_word_timings):
+                word_timings = self.get_word_timings()
+                if word_timings:
+                    self.set_timings(word_timings)
+
+            # Yield chunks as they're generated
+            for chunk in generator:
+                if hasattr(self, "stop_flag") and self.stop_flag.is_set():
+                    break
+                yield chunk
+        else:
+            # Pretend to stream for engines that don't support true streaming
+            # Get complete audio data and chunk it
+            audio_data = self.synth_to_bytes(text, voice_id)
+
+            # Set word timings
+            self._create_estimated_word_timings(text)
+
+            # Chunk the audio data to simulate streaming
+            chunk_size = 4096  # 4KB chunks
+            for i in range(0, len(audio_data), chunk_size):
+                if hasattr(self, "stop_flag") and self.stop_flag.is_set():
+                    break
+                chunk = audio_data[i : i + chunk_size]
+                if chunk:  # Only yield non-empty chunks
+                    yield chunk
+
+    def _synthesize_complete(self, text: str | SSML, voice_id: str | None) -> bytes:
+        """Generate complete audio data without playback."""
+        audio_data = self.synth_to_bytes(text, voice_id)
+
+        # Create estimated word timings for non-streaming engines
+        self._create_estimated_word_timings(text)
+
+        return audio_data
+
     def speak_streamed(
         self,
         text: str | SSML,
@@ -835,9 +939,13 @@ class AbstractTTS(ABC):
             if hasattr(self, "synth_to_bytestream") and callable(
                 self.synth_to_bytestream
             ):
-                audio_data = self._process_streaming_synthesis(text, voice_id, trigger_callbacks)
+                audio_data = self._process_streaming_synthesis(
+                    text, voice_id, trigger_callbacks
+                )
             else:
-                audio_data = self._process_non_streaming_synthesis(text, voice_id, trigger_callbacks)
+                audio_data = self._process_non_streaming_synthesis(
+                    text, voice_id, trigger_callbacks
+                )
 
             # Save to file if requested
             if save_to_file_path and audio_data:
@@ -855,7 +963,9 @@ class AbstractTTS(ABC):
                     # Save raw PCM data as-is
                     with open(save_to_file_path, "wb") as f:
                         f.write(audio_data)
-                logging.debug(f"Audio saved to {save_to_file_path} in {audio_format} format")
+                logging.debug(
+                    f"Audio saved to {save_to_file_path} in {audio_format} format"
+                )
 
             # Wait for playback to complete if requested
             if wait_for_completion and self.playback_thread:
@@ -1051,7 +1161,9 @@ class AbstractTTS(ABC):
 
         # Call speak_streamed with trigger_callbacks=False to avoid duplicate callbacks
         # and wait_for_completion=False so we can set up word timing callbacks while audio plays
-        self.speak_streamed(text, voice_id, trigger_callbacks=False, wait_for_completion=False)
+        self.speak_streamed(
+            text, voice_id, trigger_callbacks=False, wait_for_completion=False
+        )
         start_time = time.time()
 
         try:

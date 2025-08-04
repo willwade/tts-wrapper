@@ -84,8 +84,8 @@ _TTS-Wrapper_ simplifies using text-to-speech APIs by providing a unified interf
 
 | Method                    | Description                                  | Availability |
 |--------------------------|----------------------------------------------|--------------|
-| `speak()`                | Direct speech playback (optionally returns bytes) | All engines  |
-| `speak_streamed()`       | Streamed speech playback (optionally returns bytes) | All engines  |
+| `speak()`                | Direct speech playback                       | All engines  |
+| `speak_streamed()`       | Streamed speech playback                    | All engines  |
 | `synth_to_file()`        | Save speech to file                         | All engines  |
 | `pause()`, `resume()`    | Playback control                            | All engines  |
 | `stop()`                 | Stop playback                               | All engines  |
@@ -608,41 +608,23 @@ For advanced use cases where you need the raw audio data:
 audio_bytes = client.synth_to_bytes("Hello world")
 ```
 
-### 5. Getting Audio Bytes from speak() and speak_streamed()
+### 5. Silent Synthesis
 
-Both `speak()` and `speak_streamed()` methods support a `return_bytes` parameter that allows you to get the audio data as bytes while optionally playing or saving the audio:
+The `synthesize()` method provides silent audio synthesis without playback - perfect for applications that need audio data without immediate playback:
 
 ```python
-# Get bytes from speak() method without playing audio
-audio_bytes = client.speak("Hello world", return_bytes=True, wait_for_completion=False)
+# Get complete audio data (default behavior)
+audio_bytes = client.synthesize("Hello world")
 
-# Get bytes from speak_streamed() method without playing audio
-audio_bytes = client.speak_streamed("Hello world", return_bytes=True, wait_for_completion=False)
+# Get streaming audio data for real-time processing
+audio_stream = client.synthesize("Hello world", streaming=True)
+for chunk in audio_stream:
+    # Process each audio chunk as it's generated
+    process_audio_chunk(chunk)
 
-# Get bytes AND save to file simultaneously
-audio_bytes = client.speak_streamed(
-    "Hello world",
-    return_bytes=True,
-    save_to_file_path="output.wav"
-)
-
-# Process the returned bytes
-if audio_bytes:
-    print(f"Received {len(audio_bytes)} bytes of audio data")
-    # Use the bytes for your own processing...
+# Use with specific voice
+audio_bytes = client.synthesize("Hello world", voice_id="en-US-JennyNeural")
 ```
-
-**Use Cases:**
-- **No audio playback needed**: Perfect when you don't have the `controlaudio` extra installed but still need the audio data
-- **Custom audio processing**: Get the raw audio bytes for your own playback or processing pipeline
-- **Dual output**: Save to file AND get bytes for immediate processing
-- **Memory-efficient streaming**: Get audio bytes from streaming synthesis without temporary files
-
-**Notes:**
-- When `return_bytes=False` (default), methods return `None` to maintain backward compatibility
-- When `return_bytes=True`, methods return raw PCM audio bytes
-- Audio playback still occurs normally (if `controlaudio` is available) unless you set `wait_for_completion=False`
-- This works with all TTS engines and doesn't require additional dependencies
 
 ### Audio Format Notes
 
