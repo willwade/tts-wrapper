@@ -4,6 +4,13 @@ creds/*
 .envrc
 venv/
 .DS_Store
+
+# Audio and log files (but keep test data)
+*.log
+*.wav
+*.mp3
+!tests/data/*.wav
+!tests/data/*.mp3
 # Distribution / packaging
 .Python
 *.pyc

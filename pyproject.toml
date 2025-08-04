@@ -43,7 +43,9 @@ microsoft = ["azure-cognitiveservices-speech>=1.43.0"]
 elevenlabs = []
 witai = []
 uwp = ["winrt-runtime>=2.0.1; sys_platform == 'win32'"]
-sherpaonnx = ["sherpa-onnx>=1.10.17"]
+sherpaonnx = [
+    "sherpa-onnx>=1.10.17,<1.11.7",
+]  # Pin to 1.11.x for better Windows wheel support across Python versions
 playht = []  # No additional dependencies needed as we use requests which is in core dependencies
 googletrans = ["gTTS>=2.5.2"]
 sapi = ["comtypes>=1.4.8; sys_platform == 'win32'"]
