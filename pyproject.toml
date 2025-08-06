@@ -48,7 +48,10 @@ sherpaonnx = [
 ]  # Pin to 1.11.x for better Windows wheel support across Python versions
 playht = []  # No additional dependencies needed as we use requests which is in core dependencies
 googletrans = ["gTTS>=2.5.2"]
-sapi = ["comtypes>=1.4.8; sys_platform == 'win32'"]
+sapi = [
+    "comtypes>=1.4.11",
+    "comtypes>=1.4.11; sys_platform == 'win32'",
+]
 controlaudio = ["pyaudio>=0.2.14"]
 espeak = []  # No additional dependencies as espeak-ng needs to be installed system-wide
 avsynth = []  # No additional dependencies as it uses built-in Swift bridge

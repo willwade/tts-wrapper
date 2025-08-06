@@ -2,8 +2,10 @@ version = 1
 revision = 2
 requires-python = ">=3.10, <3.13"
 resolution-markers = [
-    "python_full_version >= '3.11'",
-    "python_full_version < '3.11'",
+    "python_full_version >= '3.11' and sys_platform == 'win32'",
+    "python_full_version >= '3.11' and sys_platform != 'win32'",
+    "python_full_version < '3.11' and sys_platform == 'win32'",
+    "python_full_version < '3.11' and sys_platform != 'win32'",
 ]
 
 [[package]]
@@ -715,7 +717,8 @@ name = "numpy"
 version = "2.2.6"
 source = { registry = "https://pypi.org/simple" }
 resolution-markers = [
-    "python_full_version < '3.11'",
+    "python_full_version < '3.11' and sys_platform == 'win32'",
+    "python_full_version < '3.11' and sys_platform != 'win32'",
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/76/21/7d2a95e4bba9dc13d043ee156a356c0a8f0c6309dff6b21b4d71a073b8a8/numpy-2.2.6.tar.gz", hash = "sha256:e29554e2bef54a90aa5cc07da6ce955accb83f21ab5de01a62c8478897b264fd", size = 20276440, upload-time = "2025-05-17T22:38:04.611Z" }
 wheels = [
@@ -760,7 +763,8 @@ name = "numpy"
 version = "2.3.2"
 source = { registry = "https://pypi.org/simple" }
 resolution-markers = [
-    "python_full_version >= '3.11'",
+    "python_full_version >= '3.11' and sys_platform == 'win32'",
+    "python_full_version >= '3.11' and sys_platform != 'win32'",
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/37/7d/3fec4199c5ffb892bed55cff901e4f39a58c81df9c44c280499e92cad264/numpy-2.3.2.tar.gz", hash = "sha256:e0486a11ec30cdecb53f184d496d1c6a20786c81e55e41640270130056f8ee48", size = 20489306, upload-time = "2025-07-24T21:32:07.553Z" }
 wheels = [
@@ -911,7 +915,7 @@ polly = [
     { name = "boto3" },
 ]
 sapi = [
-    { name = "comtypes", marker = "sys_platform == 'win32'" },
+    { name = "comtypes" },
 ]
 sherpaonnx = [
     { name = "sherpa-onnx" },
@@ -941,7 +945,8 @@ dev = [
 requires-dist = [
     { name = "azure-cognitiveservices-speech", marker = "extra == 'microsoft'", specifier = ">=1.43.0" },
     { name = "boto3", marker = "extra == 'polly'", specifier = ">=1.34.137" },
-    { name = "comtypes", marker = "sys_platform == 'win32' and extra == 'sapi'", specifier = ">=1.4.8" },
+    { name = "comtypes", marker = "sys_platform == 'win32' and extra == 'sapi'", specifier = ">=1.4.11" },
+    { name = "comtypes", marker = "extra == 'sapi'", specifier = ">=1.4.11" },
     { name = "google-cloud-texttospeech", marker = "extra == 'google'", specifier = ">=2.12.0" },
     { name = "gtts", marker = "extra == 'googletrans'", specifier = ">=2.5.2" },
     { name = "ibm-watson", marker = "extra == 'watson'", specifier = ">=8.1.0" },
@@ -1496,7 +1501,7 @@ name = "winrt-runtime"
 version = "3.2.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "typing-extensions" },
+    { name = "typing-extensions", marker = "sys_platform == 'win32'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/16/dd/acdd527c1d890c8f852cc2af644aa6c160974e66631289420aa871b05e65/winrt_runtime-3.2.1.tar.gz", hash = "sha256:c8dca19e12b234ae6c3dadf1a4d0761b51e708457492c13beb666556958801ea", size = 21721, upload-time = "2025-06-06T14:40:27.593Z" }
 wheels = [

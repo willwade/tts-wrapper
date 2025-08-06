@@ -241,12 +241,9 @@ class SAPIClient(AbstractTTS):
             msg = "Events are not supported for SAPI 4."
             raise NotImplementedError(msg)
 
-    def get_voices(self, langcodes: str = "bcp47") -> list[dict[str, Any]]:
+    def _get_voices(self) -> list[dict[str, Any]]:
         """
-        Retrieve available voices.
-
-        Args:
-            langcodes: Format for language codes (not used in SAPI)
+        Retrieve available voices from SAPI.
 
         Returns:
             List[dict]: A list of voices with metadata.
@@ -258,12 +255,35 @@ class SAPIClient(AbstractTTS):
                 "name": voice.GetDescription(),
                 "language_codes": [voice.GetAttribute("Language")],
                 "gender": voice.GetAttribute("Gender"),
-                "age": (
-                    int(voice.GetAttribute("Age")) if voice.GetAttribute("Age") else 0
-                ),
+                "age": self._parse_age(voice.GetAttribute("Age")),
             }
             for voice in voices
         ]
+
+    def _parse_age(self, age_attr: str | None) -> int:
+        """Parse the age attribute from SAPI voice, handling both numeric and text values.
+
+        Args:
+            age_attr: The age attribute from SAPI voice
+
+        Returns:
+            Numeric age value, defaulting to 0 for unknown ages
+        """
+        if not age_attr:
+            return 0
+
+        # Try to parse as integer first
+        try:
+            return int(age_attr)
+        except ValueError:
+            # Handle text age values
+            age_mapping = {
+                "child": 10,
+                "teen": 16,
+                "adult": 30,
+                "senior": 65,
+            }
+            return age_mapping.get(age_attr.lower(), 0)
 
     def set_voice(self, voice_id: str, lang: str | None = None) -> None:
         """
