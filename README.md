@@ -26,6 +26,7 @@ _TTS-Wrapper_ simplifies using text-to-speech APIs by providing a unified interf
 - Wit.Ai
 - eSpeak-NG
 - Play.HT
+- UpliftAI
 - OpenAI
 - AVSynth (macOS only)
 - SAPI (Windows only)
@@ -58,6 +59,7 @@ _TTS-Wrapper_ simplifies using text-to-speech APIs by providing a unified interf
 | Watson     | Linux/MacOS/Windows| Online            | Yes  | Yes            | Yes       | Yes              | Full      |
 | ElevenLabs | Linux/MacOS/Windows| Online            | No*  | Yes            | Yes       | Yes              | Full      |
 | Play.HT    | Linux/MacOS/Windows| Online            | No*  | No**           | Yes       | Yes              | Basic     |
+| UpliftAI   | Linux/MacOS/Windows| Online            | No*  | No**           | Yes       | Yes              | Basic     |
 | OpenAI   | Linux/MacOS/Windows| Online            | No | No           | Yes       | Yes              | Basic     |
 | Wit.Ai     | Linux/MacOS/Windows| Online            | No*  | No**           | Yes       | Yes              | Basic     |
 | eSpeak     | Linux/MacOS        | Offline           | Yes  | No**           | Yes       | Yes              | Basic     |
@@ -253,6 +255,13 @@ client = PlayHTClient(credentials=('api_key', 'user_id'))
 ```
 
 - **Note**: Play.HT does not support SSML, but we automatically strip SSML tags if present.
+
+#### UpliftAI
+
+```python
+from tts_wrapper import UpliftAIClient
+client = UpliftAIClient(api_key="api_key")
+```
 
 #### UWP
 

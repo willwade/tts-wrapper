@@ -13,6 +13,7 @@ from tts_wrapper import (
     GoogleClient,
     GoogleTransClient,
     MicrosoftClient,
+    UpliftAIClient,
     PollyClient,
     SherpaOnnxClient,
     WatsonClient,
@@ -47,6 +48,10 @@ ONLINE_CLIENTS = {
     "witai": {
         "client": WitAiClient,
         "credential_keys": ["WITAI_TOKEN"],
+    },
+    "upliftai": {
+        "client": UpliftAIClient,
+        "credential_keys": ["UPLIFTAI_KEY"],
     },
     "googletrans": {
         "client_lambda": lambda: GoogleTransClient("en-co.uk"),
