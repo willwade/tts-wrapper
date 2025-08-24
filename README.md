@@ -5,6 +5,9 @@
 
 > **Contributions are welcome! Check our [contribution guide](./CONTRIBUTING.md).**
 
+> **Want this for NodeJS/JS?** - see http://github.com/willwade/js-tts-wrapper
+
+
 _TTS-Wrapper_ simplifies using text-to-speech APIs by providing a unified interface across multiple services, allowing easy integration and manipulation of TTS capabilities.
 
  > ℹ️ Full documentation is available at [https://willwade.github.io/tts-wrapper/](https://willwade.github.io/tts-wrapper/)
