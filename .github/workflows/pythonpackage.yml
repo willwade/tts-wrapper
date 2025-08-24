@@ -95,6 +95,7 @@ jobs:
       GOOGLE_SA_FILE_B64: ${{ secrets.GOOGLE_SA_FILE_B64 }}
       PLAYHT_API_KEY: ${{ secrets.PLAYHT_API_KEY }}
       PLAYHT_USER_ID: ${{ secrets.PLAYHT_USER_ID }}
+      UPLIFTAI_KEY: ${{ secrets.UPLIFTAI_KEY }}
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
