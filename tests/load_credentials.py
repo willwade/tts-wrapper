@@ -13,6 +13,7 @@ REQUIRED_ENV_VARS = {
     "elevenlabs": ["ELEVENLABS_API_KEY"],
     "witai": ["WITAI_TOKEN"],
     "playht": ["PLAYHT_API_KEY", "PLAYHT_USER_ID"],
+    "upliftai": ["UPLIFTAI_KEY"],
 }
 
 

@@ -15,6 +15,7 @@ from tts_wrapper import (
     PlayHTClient,
     PollyClient,
     SherpaOnnxClient,
+    UpliftAIClient,
     WatsonClient,
     WitAiClient,
     eSpeakClient,
@@ -37,6 +38,7 @@ TTS_CLIENTS = {
     "espeak": eSpeakClient,
     "playht": PlayHTClient,
     "openai": OpenAIClient,
+    "upliftai": UpliftAIClient,
 }
 
 # Add AVSynth only on macOS
@@ -126,6 +128,8 @@ def check_credentials(service):
                 f"ElevenLabs API key: {elevenlabs_api_key[:5]}...{elevenlabs_api_key[-5:] if elevenlabs_api_key else ''}"
             )
             client = ElevenLabsClient(credentials=elevenlabs_api_key)
+        elif service == "upliftai":
+            client = UpliftAIClient(api_key=os.getenv("UPLIFTAI_KEY"))
         elif service == "witai":
             client = WitAiClient(credentials=os.getenv("WITAI_API_KEY"))
         elif service == "googletrans":
@@ -199,6 +203,8 @@ def create_tts_client(service):
         return PlayHTClient(
             credentials=(os.getenv("PLAYHT_API_KEY"), os.getenv("PLAYHT_USER_ID"))
         )
+    if service == "upliftai":
+        return UpliftAIClient(api_key=os.getenv("UPLIFTAI_KEY"))
     if service == "avsynth" and sys.platform == "darwin":
         return AVSynthClient()
     if service == "openai":
