@@ -30,6 +30,7 @@ _TTS-Wrapper_ simplifies using text-to-speech APIs by providing a unified interf
 - eSpeak-NG
 - Play.HT
 - UpliftAI
+- ModelsLab
 - OpenAI
 - AVSynth (macOS only)
 - SAPI (Windows only)
@@ -63,6 +64,7 @@ _TTS-Wrapper_ simplifies using text-to-speech APIs by providing a unified interf
 | ElevenLabs | Linux/MacOS/Windows| Online            | No*  | Yes            | Yes       | Yes              | Full      |
 | Play.HT    | Linux/MacOS/Windows| Online            | No*  | No**           | Yes       | Yes              | Basic     |
 | UpliftAI   | Linux/MacOS/Windows| Online            | No*  | No**           | Yes       | Yes              | Basic     |
+| ModelsLab  | Linux/MacOS/Windows| Online            | No*  | No**           | Yes       | Yes              | Basic     |
 | OpenAI   | Linux/MacOS/Windows| Online            | No | No           | Yes       | Yes              | Basic     |
 | Wit.Ai     | Linux/MacOS/Windows| Online            | No*  | No**           | Yes       | Yes              | Basic     |
 | eSpeak     | Linux/MacOS        | Offline           | Yes  | No**           | Yes       | Yes              | Basic     |
@@ -269,6 +271,13 @@ client = PlayHTClient(credentials=('api_key', 'user_id'))
 ```python
 from tts_wrapper import UpliftAIClient
 client = UpliftAIClient(api_key="api_key")
+```
+
+#### ModelsLab
+
+```python
+from tts_wrapper import ModelsLabClient
+client = ModelsLabClient(api_key="your_modelslab_api_key")
 ```
 
 #### UWP
@@ -930,6 +939,9 @@ Example structure (do NOT commit actual credentials):
     "Microsoft": {
         "token": "your-subscription-key",
         "region": "your-region"
+    },
+    "ModelsLab": {
+        "api_key": "your-modelslab-api-key"
     }
 }
 ```
@@ -970,6 +982,11 @@ Example structure (do NOT commit actual credentials):
 - [Create a Wit.ai account](https://wit.ai/)
 - [Create a new app and get token](https://wit.ai/docs/quickstart)
 - [Wit.ai Documentation](https://wit.ai/docs)
+
+#### ModelsLab
+- [Create a ModelsLab account](https://modelslab.com/)
+- [Get your API key](https://docs.modelslab.com/)
+- [ModelsLab TTS Documentation](https://docs.modelslab.com/voice-cloning/text-to-speech)
 
 ## License
 

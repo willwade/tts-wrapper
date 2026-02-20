@@ -11,6 +11,7 @@ from tts_wrapper import (
     GoogleClient,
     GoogleTransClient,
     MicrosoftClient,
+    ModelsLabClient,
     OpenAIClient,
     PlayHTClient,
     PollyClient,
@@ -39,6 +40,7 @@ TTS_CLIENTS = {
     "playht": PlayHTClient,
     "openai": OpenAIClient,
     "upliftai": UpliftAIClient,
+    "modelslab": ModelsLabClient,
 }
 
 # Add AVSynth only on macOS
@@ -146,6 +148,8 @@ def check_credentials(service):
             client = AVSynthClient()
         elif service == "openai":
             client = OpenAIClient(api_key=os.getenv("OPENAI_API_KEY"))
+        elif service == "modelslab":
+            client = ModelsLabClient(api_key=os.getenv("MODELSLAB_API_KEY"))
         else:
             # Unknown service or not available on this platform
             VALID_CREDENTIALS[service] = False
@@ -209,6 +213,8 @@ def create_tts_client(service):
         return AVSynthClient()
     if service == "openai":
         return OpenAIClient(api_key=os.getenv("OPENAI_API_KEY"))
+    if service == "modelslab":
+        return ModelsLabClient(api_key=os.getenv("MODELSLAB_API_KEY"))
     msg = f"Unknown service or not available on this platform: {service}"
     raise ValueError(msg)
 

@@ -114,15 +114,25 @@ Remember that most TTS services require credentials to work and thus you must br
 
 ```bash
 POLLY_REGION=
-POLLY_AWS_ID=
-POLLY_AWS_KEY=
+POLLY_AWS_KEY_ID=
+POLLY_AWS_ACCESS_KEY=
 
-MICROSOFT_KEY=
+MICROSOFT_TOKEN=
+MICROSOFT_REGION=
 
 GOOGLE_SA_PATH=.secrets/google.json
+GOOGLE_SA_FILE_B64=
 
 WATSON_API_KEY=
-WATSON_API_URL=
+WATSON_REGION=
+WATSON_INSTANCE_ID=
+
+ELEVENLABS_API_KEY=
+WITAI_TOKEN=
+PLAYHT_API_KEY=
+PLAYHT_USER_ID=
+UPLIFTAI_KEY=
+MODELSLAB_API_KEY=
 ```
 
 For PicoTTS you also need to install the package for your system. Check the documentation for how to do that.
@@ -148,7 +158,7 @@ You don't actually need to run tests for all services if you don't want to. Sinc
 
 ```Python
 source .secrets/.env && \
-  export POLLY_REGION POLLY_AWS_ID POLLY_AWS_KEY && \
+  export POLLY_REGION POLLY_AWS_KEY_ID POLLY_AWS_ACCESS_KEY && \
   pytest tests/engines/test_polly.py
 ```
 

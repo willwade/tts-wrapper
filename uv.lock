@@ -1247,7 +1247,7 @@ requires-dist = [
     { name = "websocket-client", marker = "extra == 'watson'" },
     { name = "winrt-runtime", marker = "sys_platform == 'win32' and extra == 'uwp'", specifier = ">=2.0.1" },
 ]
-provides-extras = ["avsynth", "controlaudio", "elevenlabs", "espeak", "google", "googletrans", "microsoft", "mp3", "openai", "playht", "polly", "sapi", "sherpaonnx", "uwp", "watson", "witai"]
+provides-extras = ["avsynth", "controlaudio", "elevenlabs", "espeak", "google", "googletrans", "microsoft", "modelslab", "mp3", "openai", "playht", "polly", "sapi", "sherpaonnx", "uwp", "watson", "witai"]
 
 [package.metadata.requires-dev]
 dev = [

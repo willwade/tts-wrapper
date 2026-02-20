@@ -8,7 +8,7 @@ authors = [
 ]
 license = "MIT"
 readme = "README.md"
-keywords = ["tts", "text-to-speech", "speech synthesis", "polly", "sapi", "mms", "gTTS", "witai", "elevenlabs", "playht", "upliftai", "sherpaonnx"]
+keywords = ["tts", "text-to-speech", "speech synthesis", "polly", "sapi", "mms", "gTTS", "witai", "elevenlabs", "playht", "upliftai", "sherpaonnx", "modelslab"]
 requires-python = ">=3.10,<3.14"
 
 dependencies = [
@@ -47,6 +47,7 @@ sherpaonnx = [
     "sherpa-onnx>=1.10.17,<1.11.7",
 ]  # Pin to 1.11.x for better Windows wheel support across Python versions
 playht = []  # No additional dependencies needed as we use requests which is in core dependencies
+modelslab = []  # No additional dependencies needed as we use requests which is in core dependencies
 googletrans = ["gTTS>=2.5.2"]
 mp3 = [
     "pymp3>=0.2.0; python_version < '3.13'",

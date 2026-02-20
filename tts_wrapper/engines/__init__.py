@@ -4,6 +4,7 @@ from contextlib import suppress
 from .elevenlabs import *
 from .espeak import *
 from .google import *
+from .modelslab import *
 from .googletrans import *
 from .microsoft import *
 from .openai import *
